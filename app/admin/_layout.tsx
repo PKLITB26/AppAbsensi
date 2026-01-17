@@ -2,44 +2,47 @@ import React from 'react';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
-export default function AdminLayout() {
+export default function NavbarLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: '#004643', // Hijau ITB sesuai tema Anda
+        tabBarActiveTintColor: '#004643',
         tabBarInactiveTintColor: '#888',
         tabBarStyle: {
           height: 65,
           paddingBottom: 10,
           paddingTop: 5,
+          backgroundColor: '#fff',
+          borderTopWidth: 1,
+          borderTopColor: '#F0F0F0'
         },
-        headerShown: false, // Kita sembunyikan header bawaan karena Anda sudah buat header custom
+        headerShown: false,
       }}
     >
       <Tabs.Screen
         name="dashboard-admin"
         options={{
-          title: 'Beranda',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="grid-outline" size={size} color={color} />
+          title: 'Home',
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? "home" : "home-outline"} size={24} color={color} />
           ),
         }}
       />
       <Tabs.Screen
-        name="laporan-admin"
+        name="tracking-admin"
         options={{
-          title: 'Laporan',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="document-text-outline" size={size} color={color} />
+          title: 'Lacak',
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? "location" : "location-outline"} size={24} color={color} />
           ),
         }}
       />
       <Tabs.Screen
         name="profil-admin"
         options={{
-          title: 'Profil',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person-outline" size={size} color={color} />
+          title: 'Profile',
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? "person" : "person-outline"} size={24} color={color} />
           ),
         }}
       />

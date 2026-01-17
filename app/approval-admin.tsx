@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, StatusBar, FlatList, TouchableOpacity, Alert, ActivityIndicator, Modal, TextInput, Image, TouchableWithoutFeedback, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { getApiUrl, API_CONFIG } from '../constants/config';
 
 interface PengajuanData {
   id_pengajuan: number;
@@ -45,7 +46,7 @@ export default function ApprovalAdminScreen() {
 
   const fetchPengajuan = async () => {
     try {
-      const response = await fetch('http://10.251.109.131/hadirinapp/approval.php');
+      const response = await fetch(getApiUrl(API_CONFIG.ENDPOINTS.APPROVAL));
       const result = await response.json();
       
       if (result.success) {
@@ -84,13 +85,7 @@ export default function ApprovalAdminScreen() {
       'izin_pribadi': 'Izin Pribadi',
       'pulang_cepat_terencana': 'Pulang Cepat',
       'pulang_cepat_mendadak': 'Pulang Cepat Mendadak',
-      'koreksi_presensi': 'Koreksi Presensi',
-      'lembur_weekday': 'Lembur Weekday',
-      'lembur_weekend': 'Lembur Weekend',
-      'lembur_holiday': 'Lembur Holiday',
-      'dinas_lokal': 'Dinas Lokal',
-      'dinas_luar_kota': 'Dinas Luar Kota',
-      'dinas_luar_negeri': 'Dinas Luar Negeri'
+      'koreksi_presensi': 'Koreksi Presensi'
     };
     return labels[jenis] || jenis;
   };
@@ -124,7 +119,7 @@ export default function ApprovalAdminScreen() {
     if (!selectedPengajuan) return;
 
     try {
-      const response = await fetch('http://10.251.109.131/hadirinapp/approval.php', {
+      const response = await fetch(getApiUrl(API_CONFIG.ENDPOINTS.APPROVAL), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -237,13 +232,7 @@ export default function ApprovalAdminScreen() {
       { key: 'izin_pribadi', label: 'Izin Pribadi' },
       { key: 'pulang_cepat_terencana', label: 'Pulang Cepat' },
       { key: 'pulang_cepat_mendadak', label: 'Pulang Mendadak' },
-      { key: 'koreksi_presensi', label: 'Koreksi Presensi' },
-      { key: 'lembur_weekday', label: 'Lembur Weekday' },
-      { key: 'lembur_weekend', label: 'Lembur Weekend' },
-      { key: 'lembur_holiday', label: 'Lembur Holiday' },
-      { key: 'dinas_lokal', label: 'Dinas Lokal' },
-      { key: 'dinas_luar_kota', label: 'Dinas Luar Kota' },
-      { key: 'dinas_luar_negeri', label: 'Dinas Luar Negeri' }
+      { key: 'koreksi_presensi', label: 'Koreksi Presensi' }
     ];
 
     return (
@@ -907,5 +896,44 @@ const styles = StyleSheet.create({
   modalSubmitText: {
     color: '#fff',
     fontWeight: 'bold',
+  },
+
+  paginationContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 20,
+    marginTop: 10
+  },
+  pageBtn: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: '#F5F5F5'
+  },
+  pageBtnDisabled: {
+    backgroundColor: '#F0F0F0'
+  },
+  pageNumbers: {
+    flexDirection: 'row',
+    marginHorizontal: 15
+  },
+  pageNumber: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginHorizontal: 2,
+    borderRadius: 8,
+    backgroundColor: '#F5F5F5'
+  },
+  pageNumberActive: {
+    backgroundColor: '#004643'
+  },
+  pageNumberText: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '500'
+  },
+  pageNumberTextActive: {
+    color: '#fff',
+    fontWeight: 'bold'
   },
 });

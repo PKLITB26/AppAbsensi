@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import { Alert, Image, Modal, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import { getApiUrl, API_CONFIG } from '../../constants/config';
 
 interface UserProfile {
   id_user: number;
@@ -40,7 +41,7 @@ export default function ProfileScreen() {
   const fetchProfile = async () => {
     try {
       console.log('Fetching profile data...');
-      const response = await fetch('http://10.251.109.131/hadirinapp/profile.php', {
+      const response = await fetch(getApiUrl(API_CONFIG.ENDPOINTS.PROFILE), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: 1 })
@@ -77,7 +78,7 @@ export default function ProfileScreen() {
   const updateProfile = async () => {
     try {
       console.log('Updating profile with data:', editData);
-      const response = await fetch('http://10.251.109.131/hadirinapp/profile.php', {
+      const response = await fetch(getApiUrl(API_CONFIG.ENDPOINTS.PROFILE), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

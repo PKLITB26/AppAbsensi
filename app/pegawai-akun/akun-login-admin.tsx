@@ -1,73 +1,70 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, StatusBar, TextInput, FlatList, TouchableOpacity, Alert, ActivityIndicator, Image } from 'react-native';
+import { StyleSheet, View, Text, TextInput, FlatList, TouchableOpacity, SafeAreaView, StatusBar, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { getApiUrl, API_CONFIG } from '../../constants/config';
 
-interface PegawaiData {
-  id_pegawai?: number;
-  id_user?: number;
-  nama_lengkap: string;
-  email?: string;
+interface LoginAccount {
+  id_user: number;
+  email: string;
+  role: string;
+  nama_lengkap?: string;
   nip?: string;
-  jenis_kelamin?: string;
   jabatan?: string;
   divisi?: string;
-  no_telepon?: string;
-  status_pegawai?: string;
-  foto_profil?: string;
-  role?: string;
 }
 
-export default function DataPegawaiAdminScreen() {
+export default function AkunLoginAdminScreen() {
   const router = useRouter();
-  const [pegawai, setPegawai] = useState<PegawaiData[]>([]);
-  const [filteredPegawai, setFilteredPegawai] = useState<PegawaiData[]>([]);
+  const [accounts, setAccounts] = useState<LoginAccount[]>([]);
+  const [filteredAccounts, setFilteredAccounts] = useState<LoginAccount[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [menuVisible, setMenuVisible] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchPegawai();
+    fetchAccounts();
   }, []);
 
   useEffect(() => {
-    filterPegawai();
-  }, [searchQuery, pegawai]);
+    filterAccounts();
+  }, [searchQuery, accounts]);
 
-  const filterPegawai = () => {
+  const filterAccounts = () => {
     if (searchQuery.trim() === '') {
-      setFilteredPegawai(pegawai);
+      setFilteredAccounts(accounts);
     } else {
-      const filtered = pegawai.filter(p =>
-        p.nama_lengkap.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (p.email && p.email.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (p.jabatan && p.jabatan.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (p.nip && p.nip.includes(searchQuery))
+      const filtered = accounts.filter(account =>
+        account.nama_lengkap?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        account.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        account.role.toLowerCase().includes(searchQuery.toLowerCase())
       );
-      setFilteredPegawai(filtered);
+      setFilteredAccounts(filtered);
     }
   };
 
-  const fetchPegawai = async () => {
+  const fetchAccounts = async () => {
     try {
-      console.log('Fetching pegawai data...');
-      const response = await fetch('http://10.251.109.131/hadirinapp/data-pegawai.php');
+      console.log('Fetching login accounts...');
+      const response = await fetch(getApiUrl(API_CONFIG.ENDPOINTS.AKUN_LOGIN));
       console.log('Response status:', response.status);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
       
       const result = await response.json();
       console.log('API Result:', result);
       
       if (result.success) {
-        setPegawai(result.data);
-        setFilteredPegawai(result.data);
-        console.log('Pegawai data set:', result.data);
+        setAccounts(result.data || []);
+        setFilteredAccounts(result.data || []);
       } else {
         console.log('API Error:', result.message);
-        Alert.alert('Error', 'Gagal memuat data pegawai');
+        Alert.alert('Error', result.message || 'Gagal memuat data akun login');
       }
     } catch (error) {
       console.log('Fetch Error:', error);
-      Alert.alert('Koneksi Error', 'Pastikan XAMPP nyala dan HP satu Wi-Fi dengan laptop.');
+      Alert.alert('Koneksi Error', 'Pastikan XAMPP Apache dan MySQL sudah berjalan.');
     } finally {
       setLoading(false);
     }
@@ -93,7 +90,7 @@ export default function DataPegawaiAdminScreen() {
         {
           text: 'Hapus',
           style: 'destructive',
-          onPress: () => deletePegawai(id)
+          onPress: () => deleteAccount(id)
         },
         {
           text: 'Batal',
@@ -103,10 +100,10 @@ export default function DataPegawaiAdminScreen() {
     );
   };
 
-  const deletePegawai = async (id: number) => {
+  const deleteAccount = async (id: number) => {
     Alert.alert(
       'Konfirmasi',
-      'Yakin ingin menghapus data pegawai ini?',
+      'Yakin ingin menghapus akun login ini?',
       [
         { text: 'Batal', style: 'cancel' },
         {
@@ -114,29 +111,27 @@ export default function DataPegawaiAdminScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              const response = await fetch('http://10.251.109.131/hadirinapp/data-pegawai.php', {
+              const response = await fetch(getApiUrl(API_CONFIG.ENDPOINTS.AKUN_LOGIN), {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id_pegawai: id })
+                body: JSON.stringify({ id_user: id })
               });
               
               const result = await response.json();
               if (result.success) {
-                fetchPegawai();
-                Alert.alert('Sukses', 'Data pegawai berhasil dihapus');
+                fetchAccounts();
+                Alert.alert('Sukses', 'Akun login berhasil dihapus');
               } else {
                 Alert.alert('Error', result.message);
               }
             } catch (error) {
-              Alert.alert('Error', 'Gagal menghapus data pegawai');
+              Alert.alert('Error', 'Gagal menghapus akun login');
             }
           }
         }
       ]
     );
   };
-
-
 
   const renderHeader = () => (
     <View style={styles.stickyHeader}>
@@ -148,10 +143,10 @@ export default function DataPegawaiAdminScreen() {
           >
             <Ionicons name="arrow-back" size={24} color="#004643" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Data Pegawai</Text>
+          <Text style={styles.headerTitle}>Kelola Akun Login</Text>
         </View>
         <View style={styles.headerStats}>
-          <Text style={styles.statsText}>{filteredPegawai.length} Pegawai</Text>
+          <Text style={styles.statsText}>{filteredAccounts.length} Akun</Text>
         </View>
       </View>
       
@@ -159,7 +154,7 @@ export default function DataPegawaiAdminScreen() {
         <Ionicons name="search" size={20} color="#666" style={styles.searchIcon} />
         <TextInput
           style={styles.searchInput}
-          placeholder="Cari nama, email, jabatan, atau NIP..."
+          placeholder="Cari nama, email, atau role..."
           value={searchQuery}
           onChangeText={setSearchQuery}
           placeholderTextColor="#999"
@@ -180,33 +175,31 @@ export default function DataPegawaiAdminScreen() {
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#004643" />
-          <Text style={styles.loadingText}>Memuat data pegawai...</Text>
+          <Text style={styles.loadingText}>Memuat data...</Text>
         </View>
       ) : (
         <FlatList
-          data={filteredPegawai}
-          keyExtractor={(item) => item.id_pegawai?.toString() || item.id_user?.toString() || Math.random().toString()}
+          data={filteredAccounts}
+          keyExtractor={(item) => item.id_user.toString()}
           ListHeaderComponent={renderHeader}
           stickyHeaderIndices={[0]}
           renderItem={({ item }) => (
-            <View style={styles.pegawaiCard}>
+            <View style={styles.accountCard}>
               <View style={styles.avatar}>
-                <Text style={styles.avatarText}>{item.nama_lengkap?.charAt(0) || 'P'}</Text>
+                <Text style={styles.avatarText}>{item.nama_lengkap?.charAt(0) || item.email.charAt(0).toUpperCase()}</Text>
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.pegawaiName}>{item.nama_lengkap}</Text>
-                <Text style={styles.pegawaiEmail}>{item.email || 'Email belum diisi'}</Text>
-                <Text style={styles.pegawaiNip}>NIP: {item.nip || 'Belum diisi'}</Text>
+                <Text style={styles.accountName}>{item.nama_lengkap || 'Nama belum diisi'}</Text>
+                <Text style={styles.accountEmail}>{item.email}</Text>
+                <Text style={styles.accountPassword}>••••••••</Text>
               </View>
-              <View style={styles.pegawaiActions}>
-                <View style={[styles.statusBadge, {
-                  backgroundColor: item.nip ? '#E8F5E9' : '#FFF3E0'
+              <View style={styles.accountActions}>
+                <View style={[styles.roleBadge, { 
+                  backgroundColor: item.role === 'admin' ? '#E3F2FD' : '#E8F5E9' 
                 }]}>
-                  <Text style={[styles.statusText, {
-                    color: item.nip ? '#2E7D32' : '#F57C00'
-                  }]}>
-                    {item.nip ? 'Lengkap' : 'Belum Lengkap'}
-                  </Text>
+                  <Text style={[styles.roleText, {
+                    color: item.role === 'admin' ? '#1976D2' : '#388E3C'
+                  }]}>{item.role}</Text>
                 </View>
                 <View style={styles.actionButtons}>
                   <TouchableOpacity 
@@ -223,7 +216,7 @@ export default function DataPegawaiAdminScreen() {
                   </TouchableOpacity>
                   <TouchableOpacity 
                     style={styles.deleteBtn}
-                    onPress={() => deletePegawai(item.id_pegawai || item.id_user || 0)}
+                    onPress={() => deleteAccount(item.id_user)}
                   >
                     <Ionicons name="trash-outline" size={15} color="#F44336" />
                   </TouchableOpacity>
@@ -233,19 +226,13 @@ export default function DataPegawaiAdminScreen() {
           )}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
-          ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <Ionicons name="people-outline" size={80} color="#ccc" />
-              <Text style={styles.emptyText}>Belum ada data pegawai</Text>
-            </View>
-          }
         />
       )}
       
       {/* Floating Add Button */}
       <TouchableOpacity 
         style={styles.floatingAddBtn}
-        onPress={() => router.push('/add-data-pegawai')}
+        onPress={() => router.push('/pegawai-akun/add-data-pegawai' as any)}
       >
         <Ionicons name="add" size={28} color="#fff" />
       </TouchableOpacity>
@@ -293,7 +280,25 @@ const styles = StyleSheet.create({
   clearButton: {
     padding: 5,
   },
-
+  header: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 50,
+    paddingBottom: 15,
+    backgroundColor: '#fff',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4
+  },
   headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -305,9 +310,9 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     backgroundColor: '#F5F5F5'
   },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
+  headerTitle: { 
+    fontSize: 20, 
+    fontWeight: 'bold', 
     color: '#004643',
     flex: 1
   },
@@ -334,7 +339,7 @@ const styles = StyleSheet.create({
   listContent: {
     paddingBottom: 20,
   },
-  pegawaiCard: { 
+  accountCard: { 
     flexDirection: 'row', 
     alignItems: 'center', 
     backgroundColor: '#fff', 
@@ -359,10 +364,10 @@ const styles = StyleSheet.create({
     marginRight: 16 
   },
   avatarText: { color: '#004643', fontWeight: 'bold', fontSize: 20 },
-  pegawaiName: { fontWeight: 'bold', fontSize: 16, color: '#333', marginBottom: 2 },
-  pegawaiEmail: { color: '#888', fontSize: 12, marginBottom: 2 },
-  pegawaiNip: { color: '#666', fontSize: 12, marginBottom: 2 },
-  pegawaiActions: {
+  accountName: { fontWeight: 'bold', fontSize: 16, color: '#333', marginBottom: 2 },
+  accountEmail: { color: '#888', fontSize: 12, marginBottom: 2 },
+  accountPassword: { color: '#666', fontSize: 12, marginBottom: 2 },
+  accountActions: {
     alignItems: 'flex-end',
     justifyContent: 'space-between'
   },
@@ -380,28 +385,17 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     backgroundColor: '#FFF3E0'
   },
-  statusBadge: { 
+  roleBadge: { 
     paddingHorizontal: 8, 
     paddingVertical: 4, 
     borderRadius: 8, 
     marginBottom: 8 
   },
-  statusText: { fontSize: 10, fontWeight: 'bold' },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingTop: 100
-  },
-  emptyText: {
-    fontSize: 16,
-    color: '#ccc',
-    marginTop: 16
-  },
-  deleteBtn: {
-    padding: 6,
-    borderRadius: 6,
-    backgroundColor: '#FFEBEE'
+  roleText: { fontSize: 10, fontWeight: 'bold' },
+  deleteBtn: { 
+    padding: 6, 
+    borderRadius: 6, 
+    backgroundColor: '#FFEBEE' 
   },
   floatingAddBtn: {
     position: 'absolute',

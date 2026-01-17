@@ -1,15 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   StyleSheet, View, Text, TextInput, TouchableOpacity, 
-  SafeAreaView, Alert, ActivityIndicator, ScrollView 
+  SafeAreaView, Alert, ActivityIndicator, ScrollView, Platform, KeyboardAvoidingView 
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { getApiUrl, API_CONFIG } from '../../constants/config';
 
 export default function AddDataPegawaiForm() {
   const router = useRouter();
   const [formData, setFormData] = useState({
     nama_lengkap: '',
+    email: '',
+    password: '',
     nip: '',
     jenis_kelamin: '',
     jabatan: '',
@@ -19,26 +23,152 @@ export default function AddDataPegawaiForm() {
     tanggal_lahir: ''
   });
   const [loading, setLoading] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [existingEmails, setExistingEmails] = useState<string[]>([]);
+
+  const formatDate = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const handleDateChange = (event: any, date?: Date) => {
+    setShowDatePicker(Platform.OS === 'ios');
+    if (date) {
+      setSelectedDate(date);
+      const formattedDate = formatDate(date);
+      setFormData({...formData, tanggal_lahir: formattedDate});
+    }
+  };
+
+  const generateEmail = (nama: string) => {
+    if (!nama.trim()) return '';
+    
+    const words = nama.toLowerCase()
+      .replace(/[^a-z\s]/g, '')
+      .trim()
+      .split(' ')
+      .filter(word => word.length > 0);
+    
+    if (words.length === 0) return '';
+    
+    const firstName = words[0];
+    let baseEmail = `${firstName}001@itb.ac.id`;
+    
+    // Cek duplikat dan increment angka
+    if (!existingEmails.includes(baseEmail)) {
+      return baseEmail;
+    }
+    
+    // Cari nomor yang belum dipakai
+    for (let i = 2; i <= 999; i++) {
+      const paddedNumber = i.toString().padStart(3, '0');
+      const numberedEmail = `${firstName}${paddedNumber}@itb.ac.id`;
+      
+      if (!existingEmails.includes(numberedEmail)) {
+        return numberedEmail;
+      }
+    }
+    
+    // Jika sampai 999 masih duplikat, pakai 4 digit
+    for (let i = 1000; i <= 9999; i++) {
+      const numberedEmail = `${firstName}${i}@itb.ac.id`;
+      
+      if (!existingEmails.includes(numberedEmail)) {
+        return numberedEmail;
+      }
+    }
+    
+    return `${firstName}${Date.now()}@itb.ac.id`; // fallback
+  };
+
+  const fetchExistingEmails = async () => {
+    try {
+      const response = await fetch(getApiUrl(API_CONFIG.ENDPOINTS.CHECK_EMAILS));
+      const result = await response.json();
+      if (result.success) {
+        setExistingEmails(result.emails || []);
+      }
+    } catch (error) {
+      console.log('Error fetching emails:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchExistingEmails();
+  }, []);
+
+  const handleNameChange = (text: string) => {
+    setFormData({
+      ...formData, 
+      nama_lengkap: text
+    });
+  };
+
+  const formatDateInput = (text: string) => {
+    // Hapus semua karakter selain angka
+    const numbers = text.replace(/[^0-9]/g, '');
+    
+    // Format otomatis DD/MM/YYYY
+    if (numbers.length <= 2) {
+      return numbers;
+    } else if (numbers.length <= 4) {
+      return `${numbers.slice(0, 2)}/${numbers.slice(2)}`;
+    } else if (numbers.length <= 8) {
+      return `${numbers.slice(0, 2)}/${numbers.slice(2, 4)}/${numbers.slice(4)}`;
+    } else {
+      return `${numbers.slice(0, 2)}/${numbers.slice(2, 4)}/${numbers.slice(4, 8)}`;
+    }
+  };
+
+  const handleDateInputChange = (text: string) => {
+    const formatted = formatDateInput(text);
+    setFormData({...formData, tanggal_lahir: formatted});
+  };
+
+  const showDatePickerModal = () => {
+    setShowDatePicker(true);
+  };
 
   const handleSubmit = async () => {
-    if (!formData.nama_lengkap || !formData.nip) {
-      Alert.alert('Error', 'Nama Lengkap dan NIP harus diisi!');
+    if (!formData.nama_lengkap || !formData.nip || !formData.email || !formData.password) {
+      Alert.alert('Error', 'Nama Lengkap, Email, NIP, dan Password harus diisi!');
       return;
     }
 
+    const dataToSend = formData;
+
     setLoading(true);
     try {
-      const response = await fetch('http://10.251.109.131/hadirinapp/data-pegawai.php', {
+      const response = await fetch(getApiUrl(API_CONFIG.ENDPOINTS.DATA_PEGAWAI), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(dataToSend)
       });
 
       const result = await response.json();
       
       if (result.success) {
         Alert.alert('Sukses', 'Data pegawai berhasil ditambahkan!', [
-          { text: 'OK', onPress: () => router.back() }
+          { text: 'OK', onPress: () => {
+              // Reset form
+              setFormData({
+                nama_lengkap: '',
+                email: '',
+                password: '',
+                nip: '',
+                jenis_kelamin: '',
+                jabatan: '',
+                divisi: '',
+                no_telepon: '',
+                alamat: '',
+                tanggal_lahir: ''
+              });
+              router.back();
+            }
+          }
         ]);
       } else {
         Alert.alert('Error', result.message || 'Gagal menambahkan data pegawai');
@@ -51,7 +181,11 @@ export default function AddDataPegawaiForm() {
   };
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView 
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+    >
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <TouchableOpacity 
@@ -75,7 +209,7 @@ export default function AddDataPegawaiForm() {
                 style={styles.input}
                 placeholder="Masukkan nama lengkap"
                 value={formData.nama_lengkap}
-                onChangeText={(text) => setFormData({...formData, nama_lengkap: text})}
+                onChangeText={handleNameChange}
               />
             </View>
           </View>
@@ -172,35 +306,86 @@ export default function AddDataPegawaiForm() {
 
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Tanggal Lahir</Text>
-            <View style={styles.inputWrapper}>
-              <Ionicons name="calendar-outline" size={20} color="#666" style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="YYYY-MM-DD"
-                value={formData.tanggal_lahir}
-                onChangeText={(text) => setFormData({...formData, tanggal_lahir: text})}
-              />
+            <View style={styles.dateInputContainer}>
+              <View style={styles.inputWrapper}>
+                <Ionicons name="calendar-outline" size={20} color="#666" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="DD/MM/YYYY"
+                  value={formData.tanggal_lahir}
+                  onChangeText={handleDateInputChange}
+                  keyboardType="numeric"
+                  maxLength={10}
+                />
+                <TouchableOpacity onPress={showDatePickerModal} style={styles.calendarButton}>
+                  <Ionicons name="calendar" size={20} color="#004643" />
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
 
-          <TouchableOpacity 
-            style={[styles.submitBtn, loading && styles.submitBtnDisabled]} 
-            onPress={handleSubmit}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <>
-                <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
-                <Text style={styles.submitText}>Simpan Data Pegawai</Text>
-              </>
-            )}
-          </TouchableOpacity>
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Email *</Text>
+            <View style={styles.inputWrapper}>
+              <Ionicons name="mail-outline" size={20} color="#666" style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Masukkan email"
+                value={formData.email}
+                onChangeText={(text) => setFormData({...formData, email: text})}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+            </View>
+            <Text style={styles.helperText}>*Email wajib diisi untuk akun login</Text>
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Password *</Text>
+            <View style={styles.inputWrapper}>
+              <Ionicons name="lock-closed-outline" size={20} color="#666" style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Masukkan password"
+                value={formData.password}
+                onChangeText={(text) => setFormData({...formData, password: text})}
+                secureTextEntry
+              />
+            </View>
+            <Text style={styles.helperText}>*Password wajib diisi untuk akun login</Text>
+          </View>
+
+          {showDatePicker && (
+            <DateTimePicker
+              value={selectedDate}
+              mode="date"
+              display="default"
+              onChange={handleDateChange}
+              maximumDate={new Date()}
+            />
+          )}
 
         </View>
       </ScrollView>
-    </View>
+
+      {/* Sticky Save Button */}
+      <View style={styles.stickyFooter}>
+        <TouchableOpacity 
+          style={[styles.submitBtn, loading && styles.submitBtnDisabled]} 
+          onPress={handleSubmit}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <>
+              <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
+              <Text style={styles.submitText}>Simpan Data Pegawai</Text>
+            </>
+          )}
+        </TouchableOpacity>
+      </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -245,7 +430,8 @@ const styles = StyleSheet.create({
     marginTop: 100
   },
   formContainer: {
-    padding: 20
+    padding: 20,
+    paddingBottom: 100
   },
   inputGroup: {
     marginBottom: 20
@@ -263,11 +449,8 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingHorizontal: 12,
     minHeight: 45,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2
+    borderWidth: 1,
+    borderColor: '#E0E0E0'
   },
   inputIcon: {
     marginRight: 12
@@ -292,11 +475,8 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     backgroundColor: '#fff',
     alignItems: 'center',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2
+    borderWidth: 1,
+    borderColor: '#E0E0E0'
   },
   roleActive: {
     backgroundColor: '#004643'
@@ -315,13 +495,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 16,
-    borderRadius: 12,
-    marginTop: 30,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4
+    borderRadius: 12
   },
   submitBtnDisabled: {
     backgroundColor: '#ccc'
@@ -331,5 +505,29 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     marginLeft: 8
+  },
+  helperText: {
+    fontSize: 12,
+    color: '#888',
+    marginTop: 4,
+    fontStyle: 'italic'
+  },
+  dateInputContainer: {
+    position: 'relative'
+  },
+  calendarButton: {
+    padding: 8,
+    borderRadius: 6,
+    backgroundColor: '#F0F8F0'
+  },
+  stickyFooter: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(248, 250, 251, 0.98)',
+    paddingHorizontal: 20,
+    paddingTop: 15,
+    paddingBottom: 20
   }
 });

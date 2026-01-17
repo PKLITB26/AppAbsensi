@@ -13,6 +13,7 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getApiUrl, API_CONFIG } from '../constants/config';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -32,7 +33,7 @@ export default function LoginScreen() {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 8000);
       
-      const response = await fetch('http://10.251.109.131/hadirinapp/login.php', {
+      const response = await fetch(getApiUrl(API_CONFIG.ENDPOINTS.LOGIN), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -46,7 +47,7 @@ export default function LoginScreen() {
         await AsyncStorage.setItem('userData', JSON.stringify(result.data));
         
         if (result.data.role === 'admin') {
-          router.replace('/admin/dashboard-admin');
+          router.replace('/admin/dashboard-admin' as any);
         } else {
           router.replace('/(tabs)/beranda');
         }
@@ -64,7 +65,7 @@ export default function LoginScreen() {
       }));
       
       if (email.includes('admin')) {
-        router.replace('/admin/dashboard-admin');
+        router.replace('/admin/dashboard-admin' as any);
       } else {
         router.replace('/(tabs)/beranda');
       }
@@ -116,11 +117,7 @@ export default function LoginScreen() {
           </View>
 
           <TouchableOpacity style={styles.loginBtn} onPress={handleLogin} disabled={loading}>
-            {loading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.loginText}>Masuk Sekarang</Text>
-            )}
+            <Text style={styles.loginText}>{loading ? 'Memproses...' : 'Masuk Sekarang'}</Text>
           </TouchableOpacity>
 
           <View style={styles.helpSection}>
@@ -131,7 +128,7 @@ export default function LoginScreen() {
           </View>
         </View>
 
-        <Text style={styles.footerText}>Versi 1.0.0 • ITB Support</Text>
+
       </View>
     </KeyboardAvoidingView>
   );
@@ -203,13 +200,5 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textDecorationLine: 'underline'
   },
-  footerText: { 
-    textAlign: 'center', 
-    position: 'absolute', 
-    bottom: 30, 
-    left: 0, 
-    right: 0, 
-    color: '#CCC', 
-    fontSize: 12 
-  }
+
 });

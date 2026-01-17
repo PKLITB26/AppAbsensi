@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { getApiUrl, API_CONFIG } from '../../constants/config';
 
 interface UserData {
   nama: string;
@@ -40,7 +41,7 @@ export default function BerandaScreen() {
   const fetchUserData = async () => {
     try {
       console.log('Fetching user data...');
-      const response = await fetch('http://10.251.109.131/hadirinapp/test-api.php', {
+      const response = await fetch(getApiUrl(API_CONFIG.ENDPOINTS.TEST_API), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: 1 })
@@ -162,10 +163,10 @@ export default function BerandaScreen() {
                 key={item.id} 
                 style={styles.menuItem}
                 onPress={() => {
-                  if (item.name === 'Izin/Cuti') {
-                    router.push('/pengajuan'); // Arahkan ke file pengajuan.tsx
+                  if (item.name === 'Pengajuan') {
+                    router.push('/pengajuan'); // Arahkan ke file pengajuan.tsx di root
                   } else if (item.name === 'Presensi') {
-                    router.push('/presensi'); // Arahkan ke file presensi.tsx
+                    router.push('/(tabs)/presensi'); // Arahkan ke tab presensi
                   }
                 }}
               >
@@ -176,11 +177,6 @@ export default function BerandaScreen() {
               </TouchableOpacity>
             ))}
           </View>
-        </View>
-
-        {/* FOOTER INFO */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>Hadir.in v1.0.0 - ITB Internship</Text>
         </View>
 
       </ScrollView>

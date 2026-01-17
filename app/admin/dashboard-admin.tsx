@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { 
   StyleSheet, View, Text, ScrollView, TouchableOpacity, 
-  SafeAreaView, StatusBar, Image, RefreshControl 
+  SafeAreaView, StatusBar, Image, RefreshControl, Modal 
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getApiUrl, API_CONFIG } from '../../constants/config';
 
 interface RecentActivity {
   nama_lengkap: string;
@@ -15,44 +17,86 @@ interface RecentActivity {
 interface DashboardData {
   stats: {
     hadir: number;
-    lambat: number;
+    tidak_hadir: number;
   };
   recent: RecentActivity[];
   user?: {
     nama_lengkap: string;
+    email: string;
+    password?: string;
   };
 }
 
 export default function AdminDashboard() {
   const router = useRouter();
   const [data, setData] = useState<DashboardData>({
-    stats: { hadir: 0, lambat: 0 }, 
+    stats: { hadir: 0, tidak_hadir: 0 }, 
     recent: [],
-    user: { nama_lengkap: 'Administrator ITB' }
+    user: { nama_lengkap: 'Administrator', email: '', password: '' }
   });
   const [loading, setLoading] = useState(true);
+  const [showNotifications, setShowNotifications] = useState(false);
 
   useEffect(() => {
+    loadUserData();
     getDashboardData();
+    
+    // Auto refresh setiap 30 detik
+    const interval = setInterval(() => {
+      getDashboardData();
+    }, 30000);
+    
+    return () => clearInterval(interval);
   }, []);
+
+  const loadUserData = async () => {
+    try {
+      const userData = await AsyncStorage.getItem('userData');
+      if (userData) {
+        const user = JSON.parse(userData);
+        setData(prev => ({
+          ...prev,
+          user: {
+            nama_lengkap: user.nama || user.nama_lengkap || 'Administrator',
+            email: user.email || '',
+            password: ''
+          }
+        }));
+      }
+    } catch (error) {
+      console.log('Error loading user data:', error);
+    }
+  };
 
   const getDashboardData = async () => {
     try {
-      const response = await fetch('http://10.251.109.131/hadirinapp/admin.php');
+      console.log('Fetching dashboard data from:', getApiUrl(API_CONFIG.ENDPOINTS.ADMIN));
+      const response = await fetch(getApiUrl(API_CONFIG.ENDPOINTS.ADMIN));
+      console.log('Response status:', response.status);
+      
       const result = await response.json();
+      console.log('API Result:', result);
       
       if (result.success) {
         setData({
           stats: {
             hadir: result.stats.hadir || 0,
-            lambat: result.stats.lambat || 0
+            tidak_hadir: result.stats.tidak_hadir || 0
           },
           recent: result.recent || [],
-          user: result.user || { nama_lengkap: 'Administrator ITB' }
+          user: result.user || { nama_lengkap: 'Administrator', email: 'admin@itb.ac.id', password: '' }
         });
+      } else {
+        console.log('API returned success: false', result.message);
       }
     } catch (error) {
       console.log("Koneksi Error:", error);
+      // Set default data jika error
+      setData({
+        stats: { hadir: 0, tidak_hadir: 0 },
+        recent: [],
+        user: { nama_lengkap: 'Administrator', email: 'admin@itb.ac.id', password: '' }
+      });
     } finally {
       setLoading(false);
     }
@@ -69,81 +113,100 @@ export default function AdminDashboard() {
         
         {/* SECTION 1: HEADER */}
         <View style={styles.headerSection}>
-          <View>
-            <Text style={styles.greetingText}>Administrator,</Text>
-            <Text style={styles.userName}>{data.user?.nama_lengkap || ''}</Text>
-            <Text style={styles.userJob}>HR & Operational Manager</Text>
+          <View style={styles.adminInfo}>
+            <Text style={styles.greetingText}>Selamat datang,</Text>
+            <Text style={styles.userName}>Administrator</Text>
+            <View style={styles.credentialRow}>
+              <Text style={styles.emailText}>{data.user?.email || 'Loading...'}</Text>
+            </View>
           </View>
-          <TouchableOpacity style={styles.notificationBtn}>
+          <TouchableOpacity 
+            style={styles.notificationBtn}
+            onPress={() => setShowNotifications(true)}
+          >
             <Ionicons name="notifications-outline" size={24} color="#333" />
             <View style={styles.dotBadge} />
           </TouchableOpacity>
         </View>
 
-        {/* SECTION 2: RINGKASAN STATUS */}
-        <View style={styles.statusCard}>
-          <View style={styles.statusInfo}>
-            <Text style={styles.statusTitle}>Ringkasan Kehadiran</Text>
-            <View style={styles.limitBadge}>
-              <Text style={styles.limitText}>Hari Ini</Text>
+        {/* SECTION 2: RINGKASAN KEHADIRAN */}
+        <View style={styles.summarySection}>
+          <View style={styles.summaryHeader}>
+            <View style={styles.summaryTitleRow}>
+              <View style={styles.titleIconContainer}>
+                <Ionicons name="analytics" size={18} color="#004643" />
+              </View>
+              <Text style={styles.summaryTitle}>Ringkasan Kehadiran</Text>
+            </View>
+            <View style={styles.dateBadge}>
+              <Text style={styles.dateText}>Hari Ini</Text>
             </View>
           </View>
-          <Text style={styles.statusDescription}>
-            Sistem memantau {data.stats.hadir} pegawai yang sudah masuk secara tepat waktu hari ini.
+          
+          {/* Main Percentage */}
+          <View style={styles.mainPercentage}>
+            <Text style={styles.percentageNumber}>
+              {data.stats.hadir + data.stats.tidak_hadir > 0 ? 
+                Math.round((data.stats.hadir / (data.stats.hadir + data.stats.tidak_hadir)) * 100) : 0}%
+            </Text>
+            <Text style={styles.percentageLabel}>Tingkat Kehadiran</Text>
+          </View>
+          
+          {/* Progress Bar */}
+          <View style={styles.progressContainer}>
+            <View style={styles.progressBar}>
+              <View style={[styles.progressFill, { 
+                width: `${data.stats.hadir + data.stats.tidak_hadir > 0 ? 
+                  (data.stats.hadir / (data.stats.hadir + data.stats.tidak_hadir)) * 100 : 0}%` 
+              }]} />
+            </View>
+          </View>
+          
+          {/* Stats Row */}
+          <View style={styles.statsRow}>
+            <View style={styles.statItem}>
+              <View style={[styles.statDot, { backgroundColor: '#4CAF50' }]} />
+              <Text style={styles.statNumber}>{data.stats.hadir}</Text>
+              <Text style={styles.statLabel}>Hadir</Text>
+            </View>
+            
+            <View style={styles.statItem}>
+              <View style={[styles.statDot, { backgroundColor: '#F44336' }]} />
+              <Text style={styles.statNumber}>{data.stats.tidak_hadir}</Text>
+              <Text style={styles.statLabel}>Tidak Hadir</Text>
+            </View>
+            
+            <View style={styles.statItem}>
+              <View style={[styles.statDot, { backgroundColor: '#2196F3' }]} />
+              <Text style={styles.statNumber}>{data.stats.hadir + data.stats.tidak_hadir}</Text>
+              <Text style={styles.statLabel}>Total</Text>
+            </View>
+          </View>
+          
+          {/* Summary Text */}
+          <Text style={styles.summaryText}>
+            {data.stats.hadir} dari {data.stats.hadir + data.stats.tidak_hadir} pegawai telah hadir hari ini
           </Text>
         </View>
 
-        {/* SECTION 3: QUICK STATS */}
-        <View style={styles.logContainer}>
-          <View style={styles.logBox}>
-            <View style={[styles.iconBox, { backgroundColor: '#E6F0EF' }]}>
-              <Ionicons name="people-outline" size={20} color="#004643" />
-            </View>
-            <View>
-              <Text style={styles.logLabel}>Total Hadir</Text>
-              <Text style={styles.logValue}>{data.stats.hadir} Pegawai</Text>
-            </View>
-          </View>
-
-          <View style={styles.logBox}>
-            <View style={[styles.iconBox, { backgroundColor: '#FFF4E5' }]}>
-              <Ionicons name="alert-circle-outline" size={20} color="#F9BC60" />
-            </View>
-            <View>
-              <Text style={styles.logLabel}>Terlambat</Text>
-              <Text style={styles.logValue}>{data.stats.lambat} Orang</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* SECTION 4: MENU LAYANAN */}
+        {/* SECTION 3: MENU LAYANAN */}
         <View style={styles.menuSection}>
             <View style={styles.sectionHeader}>
                 <Text style={styles.sectionTitle}>Layanan Kelola</Text>
             </View>
-            <View style={styles.menuGrid}>
+            
+            {/* Baris pertama - 4 menu utama */}
+            <View style={styles.mainMenuRow}>
                 {[
-                { id: 1, name: 'Data Pegawai', icon: 'people-outline', color: '#E3F2FD' },
-                { id: 2, name: 'Akun Login', icon: 'key-outline', color: '#FFF9C4' },
-                { id: 3, name: 'Approval', icon: 'checkbox-outline', color: '#E8F5E9' },
-                { id: 4, name: 'Tracking', icon: 'map-outline', color: '#FFF3E0' },
-                { id: 5, name: 'Laporan', icon: 'document-text-outline', color: '#F3E5F5' },
-                { id: 6, name: 'Pengaturan', icon: 'settings-outline', color: '#FFEBEE' },
+                { id: 1, name: 'Pegawai', icon: 'people-outline', color: '#E8F5E9', route: '/pegawai-akun' },
+                { id: 2, name: 'Dinas', icon: 'business-outline', color: '#E3F2FD', route: '/kelola-dinas' },
+                { id: 3, name: 'Persetujuan', icon: 'checkbox-outline', color: '#FFF3E0', route: '/approval-admin' },
+                { id: 4, name: 'Laporan', icon: 'document-text-outline', color: '#F3E5F5', route: '/laporan/laporan-admin' },
                 ].map((item) => (
                 <TouchableOpacity 
                   key={item.id} 
-                  style={styles.menuItem}
-                  onPress={() => {
-                    if (item.name === 'Data Pegawai') {
-                      router.push('/data-pegawai-admin');
-                    } else if (item.name === 'Akun Login') {
-                      router.push('/akun-login-admin');
-                    } else if (item.name === 'Approval') {
-                      router.push('/approval-admin');
-                    } else if (item.name === 'Tracking') {
-                      router.push('/tracking-admin');
-                    }
-                  }}
+                  style={styles.mainMenuItem}
+                  onPress={() => router.push(item.route as any)}
                 >
                     <View style={[styles.menuIconCircle, { backgroundColor: item.color }]}>
                     <Ionicons name={item.icon as any} size={22} color="#333" />
@@ -152,9 +215,22 @@ export default function AdminDashboard() {
                 </TouchableOpacity>
                 ))}
             </View>
+            
+            {/* Baris kedua - Pengaturan di bawah Pegawai */}
+            <View style={styles.settingsRow}>
+                <TouchableOpacity 
+                  style={styles.mainMenuItem}
+                  onPress={() => router.push('/pengaturan' as any)}
+                >
+                    <View style={[styles.menuIconCircle, { backgroundColor: '#FFEBEE' }]}>
+                    <Ionicons name="settings-outline" size={22} color="#333" />
+                    </View>
+                    <Text style={styles.menuLabel}>Pengaturan</Text>
+                </TouchableOpacity>
+            </View>
         </View>
 
-        {/* SECTION 5: LOG AKTIVITAS */}
+        {/* SECTION 4: LOG AKTIVITAS */}
         <View style={styles.recentList}>
           <Text style={styles.sectionTitle}>Aktivitas Terbaru</Text>
           
@@ -167,7 +243,7 @@ export default function AdminDashboard() {
                 />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.nameText}>{item.nama_lengkap}</Text>
-                  <Text style={styles.activityText}>{item.status} • {item.jam_masuk.substring(0,5)} WIB</Text>
+                  <Text style={styles.activityText}>{item.status} • {item.jam_masuk ? item.jam_masuk.substring(0,5) : '-'} WIB</Text>
                 </View>
                 <View style={[styles.statusBadge, { backgroundColor: item.status === 'Hadir' ? '#E8F5E9' : '#FFF4E5' }]}>
                   <Text style={{ color: item.status === 'Hadir' ? '#2E7D32' : '#F9BC60', fontSize: 10, fontWeight: 'bold' }}>{item.status}</Text>
@@ -179,11 +255,69 @@ export default function AdminDashboard() {
           )}
         </View>
 
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>Hadir.in Admin v1.0.0</Text>
-        </View>
 
       </ScrollView>
+      
+      {/* Modal Notifikasi */}
+      <Modal
+        visible={showNotifications}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setShowNotifications(false)}
+      >
+        <TouchableOpacity 
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowNotifications(false)}
+        >
+          <View style={styles.notificationDropdown}>
+            <View style={styles.dropdownHeader}>
+              <Text style={styles.modalTitle}>Notifikasi</Text>
+              <TouchableOpacity onPress={() => {
+                setShowNotifications(false);
+                router.push('/notifikasi-admin' as any);
+              }}>
+                <Text style={styles.seeAllText}>Lihat Semua</Text>
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView style={styles.notificationList}>
+              <View style={styles.notificationItem}>
+                <View style={styles.notificationIcon}>
+                  <Ionicons name="person-add" size={16} color="#4CAF50" />
+                </View>
+                <View style={styles.notificationContent}>
+                  <Text style={styles.notificationTitle}>Pegawai Baru Terdaftar</Text>
+                  <Text style={styles.notificationDesc}>John Doe telah mendaftar sebagai pegawai baru</Text>
+                  <Text style={styles.notificationTime}>2 jam yang lalu</Text>
+                </View>
+              </View>
+              
+              <View style={styles.notificationItem}>
+                <View style={styles.notificationIcon}>
+                  <Ionicons name="time" size={16} color="#FF9800" />
+                </View>
+                <View style={styles.notificationContent}>
+                  <Text style={styles.notificationTitle}>Keterlambatan</Text>
+                  <Text style={styles.notificationDesc}>5 pegawai terlambat masuk hari ini</Text>
+                  <Text style={styles.notificationTime}>1 jam yang lalu</Text>
+                </View>
+              </View>
+              
+              <View style={styles.notificationItem}>
+                <View style={styles.notificationIcon}>
+                  <Ionicons name="checkmark-circle" size={16} color="#2196F3" />
+                </View>
+                <View style={styles.notificationContent}>
+                  <Text style={styles.notificationTitle}>Persetujuan Cuti</Text>
+                  <Text style={styles.notificationDesc}>3 pengajuan cuti menunggu persetujuan</Text>
+                  <Text style={styles.notificationTime}>30 menit yang lalu</Text>
+                </View>
+              </View>
+            </ScrollView>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -191,28 +325,128 @@ export default function AdminDashboard() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFB' },
   scrollContent: { paddingBottom: 30 },
-  headerSection: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 20, marginBottom: 20 },
+  headerSection: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingHorizontal: 20, paddingTop: 40, marginBottom: 20 },
+  adminInfo: { flex: 1 },
+  credentialRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
+  emailText: { fontSize: 12, color: '#666', fontFamily: 'monospace' },
+  passwordText: { fontSize: 12, color: '#666', fontFamily: 'monospace' },
+  eyeBtn: { padding: 2, marginLeft: 2 },
   greetingText: { fontSize: 14, color: '#777' },
   userName: { fontSize: 22, fontWeight: 'bold', color: '#333' },
-  userJob: { fontSize: 12, color: '#004643', fontWeight: '500' },
+  userJob: { fontSize: 12, color: '#004643', fontWeight: '500', marginTop: 2 },
   notificationBtn: { padding: 10, backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: '#F0F0F0' },
   dotBadge: { position: 'absolute', top: 10, right: 12, width: 8, height: 8, borderRadius: 4, backgroundColor: '#FF4D4D', borderWidth: 1, borderColor: '#fff' },
-  statusCard: { marginHorizontal: 20, padding: 20, backgroundColor: '#004643', borderRadius: 20 },
-  statusInfo: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  statusTitle: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
-  limitBadge: { backgroundColor: 'rgba(255,255,255,0.2)', paddingVertical: 4, paddingHorizontal: 8, borderRadius: 6 },
-  limitText: { color: '#fff', fontSize: 10, fontWeight: 'bold' },
-  statusDescription: { color: '#B2D2D0', fontSize: 12, lineHeight: 18 },
-  logContainer: { flexDirection: 'row', paddingHorizontal: 20, marginTop: 20, justifyContent: 'space-between' },
-  logBox: { backgroundColor: '#fff', width: '48%', padding: 15, borderRadius: 16, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#F0F0F0' },
-  iconBox: { width: 40, height: 40, borderRadius: 10, justifyContent: 'center', alignItems: 'center', marginRight: 10 },
-  logLabel: { fontSize: 10, color: '#888' },
-  logValue: { fontSize: 13, fontWeight: 'bold', color: '#333' },
+  summarySection: {
+    marginHorizontal: 20,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 20,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+  },
+  summaryHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  summaryTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  titleIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: '#E6F0EF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  summaryTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  dateBadge: {
+    backgroundColor: '#E6F0EF',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  dateText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#004643',
+  },
+  mainPercentage: {
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  percentageNumber: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#004643',
+  },
+  percentageLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 2,
+  },
+  progressContainer: {
+    marginBottom: 20,
+  },
+  progressBar: {
+    height: 6,
+    backgroundColor: '#F0F0F0',
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#4CAF50',
+    borderRadius: 3,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 15,
+  },
+  statItem: {
+    alignItems: 'center',
+  },
+  statDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginBottom: 6,
+  },
+  statNumber: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 2,
+  },
+  statLabel: {
+    fontSize: 11,
+    color: '#666',
+  },
+  summaryText: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 16,
+  },
   menuSection: { marginTop: 30, paddingHorizontal: 20 },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
   sectionTitle: { fontSize: 16, fontWeight: 'bold', color: '#333' },
-  menuGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
-  menuItem: { width: '30%', alignItems: 'center', marginBottom: 25 },
+  mainMenuRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 },
+  mainMenuItem: { width: '23%', alignItems: 'center' },
+  settingsRow: { flexDirection: 'row', justifyContent: 'flex-start', marginTop: 10 },
   menuIconCircle: { width: 56, height: 56, borderRadius: 16, justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
   menuLabel: { fontSize: 11, color: '#444', fontWeight: '500', textAlign: 'center' },
   recentList: { paddingHorizontal: 20, marginTop: 10 },
@@ -223,4 +457,29 @@ const styles = StyleSheet.create({
   statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
   footer: { marginTop: 20, alignItems: 'center' },
   footerText: { fontSize: 10, color: '#BBB' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.3)' },
+  notificationDropdown: { 
+    position: 'absolute', 
+    top: 90, 
+    right: 20, 
+    width: 280, 
+    backgroundColor: '#fff', 
+    borderRadius: 12, 
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 8,
+    maxHeight: 400
+  },
+  dropdownHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: '#F0F0F0' },
+  modalTitle: { fontSize: 16, fontWeight: 'bold', color: '#333' },
+  seeAllText: { fontSize: 12, color: '#004643', fontWeight: '600' },
+  notificationList: { maxHeight: 300 },
+  notificationItem: { flexDirection: 'row', alignItems: 'flex-start', padding: 12, borderBottomWidth: 1, borderBottomColor: '#F8F8F8' },
+  notificationIcon: { width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F5F5F5', marginRight: 10 },
+  notificationContent: { flex: 1 },
+  notificationTitle: { fontSize: 13, fontWeight: 'bold', color: '#333', marginBottom: 2 },
+  notificationDesc: { fontSize: 11, color: '#666', marginBottom: 2 },
+  notificationTime: { fontSize: 9, color: '#999' },
 });
