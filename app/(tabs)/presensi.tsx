@@ -292,16 +292,37 @@ export default function PresensiScreen() {
         return;
       }
 
+      // Ambil lokasi terbaru sebelum foto
+      let currentLocation = location;
+      try {
+        const freshLocation = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.High
+        });
+        currentLocation = freshLocation.coords;
+        setLocation(currentLocation);
+      } catch (locError) {
+        console.log('Menggunakan lokasi terakhir:', locError);
+      }
+
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: false,
         aspect: [1, 1],
         quality: 0.8,
         cameraType: ImagePicker.CameraType.front,
+        exif: true, // Simpan metadata EXIF termasuk lokasi
       });
 
       if (!result.canceled && result.assets[0]) {
-        setCapturedPhoto(result.assets[0].uri);
+        const photoData = {
+          uri: result.assets[0].uri,
+          location: currentLocation,
+          timestamp: new Date().toISOString(),
+          distance: distance,
+          nearestLocation: nearestLocation?.nama_lokasi
+        };
+        
+        setCapturedPhoto(JSON.stringify(photoData));
         
         // Jika pulang dan belum waktunya, tampilkan form alasan
         if (type === 'pulang' && !isWorkTimeOver()) {
@@ -312,7 +333,7 @@ export default function PresensiScreen() {
             Alert.alert('Error', 'Lokasi tidak valid saat mengambil foto: ' + currentValidation.message);
             return;
           }
-          showConfirmation(result.assets[0].uri, type);
+          showConfirmation(JSON.stringify(photoData), type);
         }
       }
     } catch (error) {
@@ -347,7 +368,7 @@ export default function PresensiScreen() {
     );
   };
 
-  const submitAbsen = async (photoUri: string, type: string = 'masuk') => {
+  const submitAbsen = async (photoData: string, type: string = 'masuk') => {
     setIsProcessing(true);
     
     try {
@@ -364,6 +385,21 @@ export default function PresensiScreen() {
         return;
       }
       
+      // Parse photo data yang mengandung lokasi
+      let parsedPhotoData;
+      try {
+        parsedPhotoData = JSON.parse(photoData);
+      } catch {
+        // Fallback jika photoData adalah string URI biasa
+        parsedPhotoData = {
+          uri: photoData,
+          location: location,
+          timestamp: new Date().toISOString(),
+          distance: distance,
+          nearestLocation: nearestLocation?.nama_lokasi
+        };
+      }
+      
       let result;
       
       if (isDinas && dinasLocation) {
@@ -373,11 +409,16 @@ export default function PresensiScreen() {
           id_user: userId,
           tanggal_absen: new Date().toISOString().split('T')[0],
           [type === 'masuk' ? 'jam_masuk' : 'jam_pulang']: new Date().toTimeString().split(' ')[0],
-          [type === 'masuk' ? 'latitude_masuk' : 'latitude_pulang']: location?.latitude || 0,
-          [type === 'masuk' ? 'longitude_masuk' : 'longitude_pulang']: location?.longitude || 0,
-          [type === 'masuk' ? 'foto_masuk' : 'foto_pulang']: photoUri,
+          [type === 'masuk' ? 'latitude_masuk' : 'latitude_pulang']: parsedPhotoData.location?.latitude || 0,
+          [type === 'masuk' ? 'longitude_masuk' : 'longitude_pulang']: parsedPhotoData.location?.longitude || 0,
+          [type === 'masuk' ? 'foto_masuk' : 'foto_pulang']: parsedPhotoData.uri,
           status: 'hadir',
-          keterangan: type === 'pulang_cepat' ? earlyLeaveReason : `Absen ${type} dinas di ${nearestLocation?.nama_lokasi}`
+          keterangan: type === 'pulang_cepat' ? earlyLeaveReason : `Absen ${type} dinas di ${parsedPhotoData.nearestLocation}`,
+          photo_metadata: JSON.stringify({
+            timestamp: parsedPhotoData.timestamp,
+            distance: parsedPhotoData.distance,
+            location_name: parsedPhotoData.nearestLocation
+          })
         };
         
         const response = await fetch(`${API_CONFIG.BASE_URL}/submit-absen-dinas.php`, {
@@ -392,11 +433,16 @@ export default function PresensiScreen() {
           id_user: userId,
           tanggal: new Date().toISOString().split('T')[0],
           [type === 'masuk' ? 'jam_masuk' : 'jam_pulang']: new Date().toTimeString().split(' ')[0],
-          [type === 'masuk' ? 'lat_absen' : 'lat_pulang']: location?.latitude || 0,
-          [type === 'masuk' ? 'long_absen' : 'long_pulang']: location?.longitude || 0,
-          [type === 'masuk' ? 'foto_selfie' : 'foto_pulang']: photoUri,
+          [type === 'masuk' ? 'lat_absen' : 'lat_pulang']: parsedPhotoData.location?.latitude || 0,
+          [type === 'masuk' ? 'long_absen' : 'long_pulang']: parsedPhotoData.location?.longitude || 0,
+          [type === 'masuk' ? 'foto_selfie' : 'foto_pulang']: parsedPhotoData.uri,
           status: type === 'pulang_cepat' ? 'Pulang Cepat' : 'Hadir',
-          alasan_luar_lokasi: type === 'pulang_cepat' ? earlyLeaveReason : nearestLocation?.nama_lokasi || 'Lokasi kantor'
+          alasan_luar_lokasi: type === 'pulang_cepat' ? earlyLeaveReason : parsedPhotoData.nearestLocation || 'Lokasi kantor',
+          photo_metadata: JSON.stringify({
+            timestamp: parsedPhotoData.timestamp,
+            distance: parsedPhotoData.distance,
+            location_name: parsedPhotoData.nearestLocation
+          })
         };
         
         result = await PegawaiAPI.submitPresensi(presensiData);
@@ -413,6 +459,8 @@ export default function PresensiScreen() {
         } else {
           message = "Absen pulang berhasil!";
         }
+        
+        message += `\n\nLokasi foto: ${parsedPhotoData.nearestLocation}\nJarak: ${Math.round(parsedPhotoData.distance)}m`;
         
         Alert.alert("Berhasil", message);
         setCapturedPhoto(null);
