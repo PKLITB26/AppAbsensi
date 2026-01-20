@@ -46,8 +46,9 @@ export default function ProfileScreen() {
 
   const fetchProfile = async () => {
     try {
-      // Ambil user data dari AsyncStorage
       const userData = await AsyncStorage.getItem('userData');
+      console.log('AsyncStorage userData:', userData);
+      
       if (!userData) {
         Alert.alert('Error', 'Silakan login ulang');
         router.replace('/');
@@ -56,13 +57,54 @@ export default function ProfileScreen() {
       
       const user = JSON.parse(userData);
       const userId = user.id_user || user.id;
+      console.log('User ID:', userId);
+      console.log('User data from AsyncStorage:', user);
+      
       if (!userId) {
         Alert.alert('Error', 'Data login tidak valid');
         router.replace('/');
         return;
       }
       
-      // Gunakan data dari AsyncStorage sebagai fallback
+      // Coba ambil dari server terlebih dahulu
+      try {
+        console.log('Calling PegawaiAPI.getProfile with userId:', userId);
+        const result = await PegawaiAPI.getProfile(userId.toString());
+        console.log('Server profile response:', result);
+        
+        if (result.success && result.data) {
+          console.log('Profile data from server:', result.data);
+          
+          // Update AsyncStorage dengan data terbaru dari server
+          const updatedUserData = {
+            ...user,
+            ...result.data
+          };
+          console.log('Updated user data to save:', updatedUserData);
+          await AsyncStorage.setItem('userData', JSON.stringify(updatedUserData));
+          
+          setProfile(result.data);
+          setHasNIP(!!result.data.nip);
+          setEditData({
+            nip: result.data.nip || '',
+            jenis_kelamin: result.data.jenis_kelamin || '',
+            jabatan: result.data.jabatan || '',
+            divisi: result.data.divisi || '',
+            no_telepon: result.data.no_telepon || '',
+            alamat: result.data.alamat || '',
+            tanggal_lahir: result.data.tanggal_lahir || '',
+            password_baru: '',
+            konfirmasi_password: ''
+          });
+          return;
+        } else {
+          console.log('Server response not successful or no data:', result);
+        }
+      } catch (serverError) {
+        console.log('Server error, using AsyncStorage data:', serverError);
+      }
+      
+      // Fallback ke data AsyncStorage jika server error
       const fallbackProfile = {
         id_user: userId,
         nama_lengkap: user.nama_lengkap || user.nama || user.email.split('@')[0],
@@ -77,6 +119,8 @@ export default function ProfileScreen() {
         foto_profil: user.foto_profil || null
       };
       
+      console.log('Fallback profile data:', fallbackProfile);
+      
       setProfile(fallbackProfile);
       setHasNIP(!!fallbackProfile.nip);
       setEditData({
@@ -90,30 +134,6 @@ export default function ProfileScreen() {
         password_baru: '',
         konfirmasi_password: ''
       });
-      
-      // Coba ambil dari server (opsional)
-      try {
-        const result = await PegawaiAPI.getProfile(userId.toString());
-        
-        if (result.success) {
-          setProfile(result.data);
-          setHasNIP(!!result.data.nip);
-          setEditData({
-            nip: result.data.nip || '',
-            jenis_kelamin: result.data.jenis_kelamin || '',
-            jabatan: result.data.jabatan || '',
-            divisi: result.data.divisi || '',
-            no_telepon: result.data.no_telepon || '',
-            alamat: result.data.alamat || '',
-            tanggal_lahir: result.data.tanggal_lahir || '',
-            password_baru: '',
-            konfirmasi_password: ''
-          });
-        }
-      } catch (serverError) {
-        console.log('Server error (using fallback):', serverError);
-        // Tetap gunakan data fallback
-      }
     } catch (error) {
       console.log('Profile Error:', error);
       Alert.alert('Error', 'Gagal memuat profil');
