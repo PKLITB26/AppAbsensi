@@ -4,7 +4,7 @@ import MapView, { Marker, Circle } from 'react-native-maps';
 import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
-import { PegawaiAPI } from '../../constants/config';
+import { PegawaiAPI, API_CONFIG } from '../../constants/config';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function PresensiScreen() {
@@ -51,7 +51,7 @@ export default function PresensiScreen() {
       const userId = user.id_user || user.id;
       const today = new Date().toISOString().split('T')[0];
       
-      const response = await fetch(`http://10.251.109.158/hadirinapp/check-attendance.php?user_id=${userId}&date=${today}`);
+      const response = await fetch(`${API_CONFIG.BASE_URL}/check-attendance.php?user_id=${userId}&date=${today}`);
       const data = await response.json();
       
       if (data.success && data.has_checked_in) {
@@ -73,7 +73,7 @@ export default function PresensiScreen() {
       const userId = user.id_user || user.id;
       
       // Cek status dinas hari ini
-      const response = await fetch(`http://10.251.109.158/hadirinapp/check-dinas.php?user_id=${userId}`);
+      const response = await fetch(`${API_CONFIG.BASE_URL}/check-dinas.php?user_id=${userId}`);
       const responseText = await response.text();
       
       // Cek apakah response adalah JSON yang valid
@@ -106,7 +106,7 @@ export default function PresensiScreen() {
   const fetchLocations = async () => {
     try {
       // Fetch lokasi dari API debug yang sudah dibuat
-      const response = await fetch('http://10.251.109.158/hadirinapp/debug-lokasi.php');
+      const response = await fetch(`${API_CONFIG.BASE_URL}/debug-lokasi.php`);
       const data = await response.json();
       
       if (data.lokasi_kantor) {
@@ -380,7 +380,7 @@ export default function PresensiScreen() {
           keterangan: type === 'pulang_cepat' ? earlyLeaveReason : `Absen ${type} dinas di ${nearestLocation?.nama_lokasi}`
         };
         
-        const response = await fetch('http://10.251.109.158/hadirinapp/submit-absen-dinas.php', {
+        const response = await fetch(`${API_CONFIG.BASE_URL}/submit-absen-dinas.php`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(dinasData)
