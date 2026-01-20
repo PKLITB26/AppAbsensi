@@ -47,7 +47,6 @@ export default function ProfileScreen() {
   const fetchProfile = async () => {
     try {
       const userData = await AsyncStorage.getItem('userData');
-      console.log('AsyncStorage userData:', userData);
       
       if (!userData) {
         Alert.alert('Error', 'Silakan login ulang');
@@ -57,8 +56,6 @@ export default function ProfileScreen() {
       
       const user = JSON.parse(userData);
       const userId = user.id_user || user.id;
-      console.log('User ID:', userId);
-      console.log('User data from AsyncStorage:', user);
       
       if (!userId) {
         Alert.alert('Error', 'Data login tidak valid');
@@ -68,19 +65,14 @@ export default function ProfileScreen() {
       
       // Coba ambil dari server terlebih dahulu
       try {
-        console.log('Calling PegawaiAPI.getProfile with userId:', userId);
         const result = await PegawaiAPI.getProfile(userId.toString());
-        console.log('Server profile response:', result);
         
         if (result.success && result.data) {
-          console.log('Profile data from server:', result.data);
-          
           // Update AsyncStorage dengan data terbaru dari server
           const updatedUserData = {
             ...user,
             ...result.data
           };
-          console.log('Updated user data to save:', updatedUserData);
           await AsyncStorage.setItem('userData', JSON.stringify(updatedUserData));
           
           setProfile(result.data);
@@ -97,8 +89,6 @@ export default function ProfileScreen() {
             konfirmasi_password: ''
           });
           return;
-        } else {
-          console.log('Server response not successful or no data:', result);
         }
       } catch (serverError) {
         console.log('Server error, using AsyncStorage data:', serverError);
@@ -118,8 +108,6 @@ export default function ProfileScreen() {
         tanggal_lahir: user.tanggal_lahir || null,
         foto_profil: user.foto_profil || null
       };
-      
-      console.log('Fallback profile data:', fallbackProfile);
       
       setProfile(fallbackProfile);
       setHasNIP(!!fallbackProfile.nip);
