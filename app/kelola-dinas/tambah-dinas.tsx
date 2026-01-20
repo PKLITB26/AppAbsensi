@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, StatusBar, ScrollView, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform, Modal, FlatList } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { KelolaDinasAPI, PegawaiAkunAPI, PengaturanAPI } from '../../constants/config';
 import * as Location from 'expo-location';
 import MapView, { Marker } from 'react-native-maps';
 import * as DocumentPicker from 'expo-document-picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function TambahDinasScreen() {
   const router = useRouter();
@@ -36,6 +38,20 @@ export default function TambahDinasScreen() {
   const [showJamMulaiPicker, setShowJamMulaiPicker] = useState(false);
   const [showJamSelesaiPicker, setShowJamSelesaiPicker] = useState(false);
   const [showJenisDinasDropdown, setShowJenisDinasDropdown] = useState(false);
+  const [showDateMulaiPicker, setShowDateMulaiPicker] = useState(false);
+  const [showDateSelesaiPicker, setShowDateSelesaiPicker] = useState(false);
+  const [selectedDateMulai, setSelectedDateMulai] = useState(new Date());
+  const [selectedDateSelesai, setSelectedDateSelesai] = useState(new Date());
+  const [showTimeMulaiPicker, setShowTimeMulaiPicker] = useState(false);
+  const [showTimeSelesaiPicker, setShowTimeSelesaiPicker] = useState(false);
+  const [selectedTimeMulai, setSelectedTimeMulai] = useState(new Date());
+  const [selectedTimeSelesai, setSelectedTimeSelesai] = useState(new Date());
+  
+  // New states for improvements
+  const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({});
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [currentStep, setCurrentStep] = useState(1);
+  const totalSteps = 5;
 
   const jamOptions = [
     '06:00', '06:30', '07:00', '07:30', '08:00', '08:30', '09:00', '09:30',
@@ -234,7 +250,162 @@ export default function TambahDinasScreen() {
   useEffect(() => {
     fetchPegawai();
     fetchAvailableLokasi();
+    loadDraftData();
   }, []);
+
+  // Auto-save draft every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      saveDraftData();
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [formData, selectedPegawai, selectedLokasi]);
+
+  // Real-time validation
+  const validateField = (field: string, value: any) => {
+    const errors = { ...validationErrors };
+    
+    switch (field) {
+      case 'namaKegiatan':
+        if (!value?.trim()) {
+          errors.namaKegiatan = 'Nama kegiatan wajib diisi';
+        } else {
+          delete errors.namaKegiatan;
+        }
+        break;
+      case 'nomorSpt':
+        if (!value?.trim()) {
+          errors.nomorSpt = 'Nomor SPT wajib diisi';
+        } else {
+          delete errors.nomorSpt;
+        }
+        break;
+      case 'tanggalMulai':
+        if (!value) {
+          errors.tanggalMulai = 'Tanggal mulai wajib diisi';
+        } else if (!isValidDate(value)) {
+          errors.tanggalMulai = 'Format tanggal tidak valid';
+        } else {
+          delete errors.tanggalMulai;
+        }
+        break;
+      case 'tanggalSelesai':
+        if (!value) {
+          errors.tanggalSelesai = 'Tanggal selesai wajib diisi';
+        } else if (!isValidDate(value)) {
+          errors.tanggalSelesai = 'Format tanggal tidak valid';
+        } else if (formData.tanggalMulai && new Date(convertDateFormat(value)) < new Date(convertDateFormat(formData.tanggalMulai))) {
+          errors.tanggalSelesai = 'Tanggal selesai harus setelah tanggal mulai';
+        } else {
+          delete errors.tanggalSelesai;
+        }
+        break;
+      case 'jamMulai':
+        if (!value) {
+          errors.jamMulai = 'Jam mulai wajib diisi';
+        } else if (!isValidTime(value)) {
+          errors.jamMulai = 'Format jam tidak valid (HH:MM)';
+        } else {
+          delete errors.jamMulai;
+        }
+        break;
+      case 'jamSelesai':
+        if (!value) {
+          errors.jamSelesai = 'Jam selesai wajib diisi';
+        } else if (!isValidTime(value)) {
+          errors.jamSelesai = 'Format jam tidak valid (HH:MM)';
+        } else if (formData.jamMulai && value <= formData.jamMulai) {
+          errors.jamSelesai = 'Jam selesai harus setelah jam mulai';
+        } else {
+          delete errors.jamSelesai;
+        }
+        break;
+    }
+    
+    setValidationErrors(errors);
+  };
+
+  const isValidDate = (dateStr: string) => {
+    const regex = /^\d{2}\/\d{2}\/\d{4}$/;
+    if (!regex.test(dateStr)) return false;
+    const [day, month, year] = dateStr.split('/').map(Number);
+    const date = new Date(year, month - 1, day);
+    return date.getDate() === day && date.getMonth() === month - 1 && date.getFullYear() === year;
+  };
+
+  const isValidTime = (timeStr: string) => {
+    const regex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
+    return regex.test(timeStr);
+  };
+
+  // Auto-save functions
+  const saveDraftData = async () => {
+    try {
+      const draftData = {
+        formData,
+        selectedPegawai,
+        selectedLokasi,
+        selectedFile,
+        timestamp: new Date().toISOString()
+      };
+      await AsyncStorage.setItem('dinas_draft', JSON.stringify(draftData));
+    } catch (error) {
+      console.error('Error saving draft:', error);
+    }
+  };
+
+  const loadDraftData = async () => {
+    try {
+      const draftStr = await AsyncStorage.getItem('dinas_draft');
+      if (draftStr) {
+        const draft = JSON.parse(draftStr);
+        const draftAge = new Date().getTime() - new Date(draft.timestamp).getTime();
+        
+        // Only load draft if it's less than 24 hours old
+        if (draftAge < 24 * 60 * 60 * 1000) {
+          Alert.alert(
+            'Draft Ditemukan',
+            'Ditemukan data draft yang belum disimpan. Muat data draft?',
+            [
+              { text: 'Tidak', onPress: () => clearDraftData() },
+              { 
+                text: 'Ya', 
+                onPress: () => {
+                  setFormData(draft.formData || formData);
+                  setSelectedPegawai(draft.selectedPegawai || []);
+                  setSelectedLokasi(draft.selectedLokasi || []);
+                  setSelectedFile(draft.selectedFile || null);
+                }
+              }
+            ]
+          );
+        } else {
+          clearDraftData();
+        }
+      }
+    } catch (error) {
+      console.error('Error loading draft:', error);
+    }
+  };
+
+  const clearDraftData = async () => {
+    try {
+      await AsyncStorage.removeItem('dinas_draft');
+    } catch (error) {
+      console.error('Error clearing draft:', error);
+    }
+  };
+
+  // Progress calculation
+  const calculateProgress = () => {
+    let completedSteps = 0;
+    if (formData.namaKegiatan && formData.nomorSpt) completedSteps++;
+    if (formData.tanggalMulai && formData.tanggalSelesai) completedSteps++;
+    if (formData.jamMulai && formData.jamSelesai) completedSteps++;
+    if (selectedLokasi.length > 0) completedSteps++;
+    if (selectedPegawai.length > 0) completedSteps++;
+    return completedSteps;
+  };
 
   const fetchAvailableLokasi = async () => {
     try {
@@ -337,6 +508,57 @@ export default function TambahDinasScreen() {
     });
   };
 
+  const formatDate = (date: Date) => {
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
+  const handleDateMulaiChange = (event: any, date?: Date) => {
+    setShowDateMulaiPicker(Platform.OS === 'ios');
+    if (date) {
+      setSelectedDateMulai(date);
+      const formattedDate = formatDate(date);
+      setFormData({...formData, tanggalMulai: formattedDate});
+    }
+  };
+
+  const handleDateSelesaiChange = (event: any, date?: Date) => {
+    setShowDateSelesaiPicker(Platform.OS === 'ios');
+    if (date) {
+      setSelectedDateSelesai(date);
+      const formattedDate = formatDate(date);
+      setFormData({...formData, tanggalSelesai: formattedDate});
+    }
+  };
+
+  const handleTimeMulaiChange = (event: any, time?: Date) => {
+    setShowTimeMulaiPicker(Platform.OS === 'ios');
+    if (time) {
+      setSelectedTimeMulai(time);
+      const formattedTime = formatTime(time);
+      setFormData({...formData, jamMulai: formattedTime});
+      validateField('jamMulai', formattedTime);
+    }
+  };
+
+  const handleTimeSelesaiChange = (event: any, time?: Date) => {
+    setShowTimeSelesaiPicker(Platform.OS === 'ios');
+    if (time) {
+      setSelectedTimeSelesai(time);
+      const formattedTime = formatTime(time);
+      setFormData({...formData, jamSelesai: formattedTime});
+      validateField('jamSelesai', formattedTime);
+    }
+  };
+
+  const formatTime = (time: Date) => {
+    const hours = String(time.getHours()).padStart(2, '0');
+    const minutes = String(time.getMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`;
+  };
+
   const formatTanggal = (text: string) => {
     const cleaned = text.replace(/\D/g, '');
     if (cleaned.length >= 5) {
@@ -365,49 +587,51 @@ export default function TambahDinasScreen() {
   };
 
   const handleSave = async () => {
-    // Validasi field wajib
-    if (!formData.namaKegiatan.trim()) {
-      Alert.alert('Error', 'Nama kegiatan wajib diisi');
+    // Validate all required fields first
+    const errors: {[key: string]: string} = {};
+    
+    if (!formData.namaKegiatan.trim()) errors.namaKegiatan = 'Nama kegiatan wajib diisi';
+    if (!formData.nomorSpt.trim()) errors.nomorSpt = 'Nomor SPT wajib diisi';
+    if (!formData.tanggalMulai) errors.tanggalMulai = 'Tanggal mulai wajib diisi';
+    if (!formData.tanggalSelesai) errors.tanggalSelesai = 'Tanggal selesai wajib diisi';
+    if (!formData.jamMulai) errors.jamMulai = 'Jam mulai wajib diisi';
+    if (!formData.jamSelesai) errors.jamSelesai = 'Jam selesai wajib diisi';
+    if (selectedLokasi.length === 0) errors.lokasi = 'Minimal pilih 1 lokasi untuk dinas';
+    if (selectedPegawai.length === 0) errors.pegawai = 'Minimal pilih 1 pegawai untuk dinas';
+    
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      Alert.alert('Data Belum Lengkap', 'Mohon lengkapi semua field yang wajib diisi sebelum melanjutkan');
       return;
     }
     
-    if (!formData.nomorSpt.trim()) {
-      Alert.alert('Error', 'Nomor SPT wajib diisi');
-      return;
-    }
+    // Show confirmation modal if all data is valid
+    setShowConfirmModal(true);
+  };
+
+  const confirmSave = async () => {
+    // Validate all fields
+    const errors: {[key: string]: string} = {};
     
-    if (!formData.tanggalMulai) {
-      Alert.alert('Error', 'Tanggal mulai wajib diisi');
-      return;
-    }
+    if (!formData.namaKegiatan.trim()) errors.namaKegiatan = 'Nama kegiatan wajib diisi';
+    if (!formData.nomorSpt.trim()) errors.nomorSpt = 'Nomor SPT wajib diisi';
+    if (!formData.tanggalMulai) errors.tanggalMulai = 'Tanggal mulai wajib diisi';
+    if (!formData.tanggalSelesai) errors.tanggalSelesai = 'Tanggal selesai wajib diisi';
+    if (!formData.jamMulai) errors.jamMulai = 'Jam mulai wajib diisi';
+    if (!formData.jamSelesai) errors.jamSelesai = 'Jam selesai wajib diisi';
+    if (selectedLokasi.length === 0) errors.lokasi = 'Minimal pilih 1 lokasi untuk dinas';
+    if (selectedPegawai.length === 0) errors.pegawai = 'Minimal pilih 1 pegawai untuk dinas';
     
-    if (!formData.tanggalSelesai) {
-      Alert.alert('Error', 'Tanggal selesai wajib diisi');
-      return;
-    }
-    
-    if (!formData.jamMulai) {
-      Alert.alert('Error', 'Jam mulai wajib diisi');
-      return;
-    }
-    
-    if (!formData.jamSelesai) {
-      Alert.alert('Error', 'Jam selesai wajib diisi');
-      return;
-    }
-    
-    if (selectedLokasi.length === 0) {
-      Alert.alert('Error', 'Minimal pilih 1 lokasi untuk dinas');
-      return;
-    }
-    
-    if (selectedPegawai.length === 0) {
-      Alert.alert('Error', 'Minimal pilih 1 pegawai untuk dinas');
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      setShowConfirmModal(false);
+      Alert.alert('Error', 'Mohon lengkapi semua field yang wajib diisi');
       return;
     }
     
     try {
       setLoading(true);
+      setShowConfirmModal(false);
       
       const dinasData = {
         nama_kegiatan: formData.namaKegiatan.trim(),
@@ -428,6 +652,8 @@ export default function TambahDinasScreen() {
         const response = await KelolaDinasAPI.createDinas(dinasData);
         
         if (response.success) {
+          // Clear draft after successful save
+          await clearDraftData();
           Alert.alert('Sukses', 'Data dinas berhasil disimpan', [
             { text: 'OK', onPress: () => router.replace('/kelola-dinas/dinas-aktif' as any) }
           ]);
@@ -472,33 +698,52 @@ export default function TambahDinasScreen() {
         </View>
       </View>
 
+      {/* Progress Indicator */}
+      <View style={styles.progressContainer}>
+        <View style={styles.progressBar}>
+          <View style={[styles.progressFill, { width: `${(calculateProgress() / totalSteps) * 100}%` }]} />
+        </View>
+      </View>
+
       <ScrollView style={styles.contentContainer} showsVerticalScrollIndicator={false}>
         <View style={styles.formContainer}>
           
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Nama Kegiatan *</Text>
-            <View style={styles.inputWrapper}>
+            <View style={[styles.inputWrapper, validationErrors.namaKegiatan && styles.inputError]}>
               <Ionicons name="clipboard-outline" size={20} color="#666" style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
                 placeholder="Contoh: Rapat Koordinasi Regional"
                 value={formData.namaKegiatan}
-                onChangeText={(text) => setFormData({...formData, namaKegiatan: text})}
+                onChangeText={(text) => {
+                  setFormData({...formData, namaKegiatan: text});
+                  validateField('namaKegiatan', text);
+                }}
               />
             </View>
+            {validationErrors.namaKegiatan && (
+              <Text style={styles.errorText}>{validationErrors.namaKegiatan}</Text>
+            )}
           </View>
 
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Nomor SPT *</Text>
-            <View style={styles.inputWrapper}>
+            <View style={[styles.inputWrapper, validationErrors.nomorSpt && styles.inputError]}>
               <Ionicons name="document-text-outline" size={20} color="#666" style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
                 placeholder="Contoh: SPT/001/2024"
                 value={formData.nomorSpt}
-                onChangeText={(text) => setFormData({...formData, nomorSpt: text})}
+                onChangeText={(text) => {
+                  setFormData({...formData, nomorSpt: text});
+                  validateField('nomorSpt', text);
+                }}
               />
             </View>
+            {validationErrors.nomorSpt && (
+              <Text style={styles.errorText}>{validationErrors.nomorSpt}</Text>
+            )}
           </View>
 
           <View style={styles.inputGroup}>
@@ -549,10 +794,10 @@ export default function TambahDinasScreen() {
             )}
           </View>
 
-          <View style={styles.row}>
-            <View style={styles.halfInput}>
-              <Text style={styles.label}>Tanggal Mulai *</Text>
-              <View style={styles.inputWrapper}>
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Tanggal Mulai *</Text>
+            <View style={styles.dateInputContainer}>
+              <View style={[styles.inputWrapper, validationErrors.tanggalMulai && styles.inputError]}>
                 <Ionicons name="calendar-outline" size={20} color="#666" style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
@@ -561,15 +806,25 @@ export default function TambahDinasScreen() {
                   onChangeText={(text) => {
                     const formatted = formatTanggal(text);
                     setFormData({...formData, tanggalMulai: formatted});
+                    validateField('tanggalMulai', formatted);
                   }}
                   keyboardType="numeric"
                   maxLength={10}
                 />
+                <TouchableOpacity onPress={() => setShowDateMulaiPicker(true)} style={styles.calendarButton}>
+                  <Ionicons name="calendar" size={20} color="#004643" />
+                </TouchableOpacity>
               </View>
             </View>
-            <View style={styles.halfInput}>
-              <Text style={styles.label}>Tanggal Selesai *</Text>
-              <View style={styles.inputWrapper}>
+            {validationErrors.tanggalMulai && (
+              <Text style={styles.errorText}>{validationErrors.tanggalMulai}</Text>
+            )}
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Tanggal Selesai *</Text>
+            <View style={styles.dateInputContainer}>
+              <View style={[styles.inputWrapper, validationErrors.tanggalSelesai && styles.inputError]}>
                 <Ionicons name="calendar-outline" size={20} color="#666" style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
@@ -578,18 +833,25 @@ export default function TambahDinasScreen() {
                   onChangeText={(text) => {
                     const formatted = formatTanggal(text);
                     setFormData({...formData, tanggalSelesai: formatted});
+                    validateField('tanggalSelesai', formatted);
                   }}
                   keyboardType="numeric"
                   maxLength={10}
                 />
+                <TouchableOpacity onPress={() => setShowDateSelesaiPicker(true)} style={styles.calendarButton}>
+                  <Ionicons name="calendar" size={20} color="#004643" />
+                </TouchableOpacity>
               </View>
             </View>
+            {validationErrors.tanggalSelesai && (
+              <Text style={styles.errorText}>{validationErrors.tanggalSelesai}</Text>
+            )}
           </View>
 
-          <View style={styles.row}>
-            <View style={styles.halfInput}>
-              <Text style={styles.label}>Jam Mulai *</Text>
-              <View style={styles.inputWrapper}>
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Jam Mulai *</Text>
+            <View style={styles.dateInputContainer}>
+              <View style={[styles.inputWrapper, validationErrors.jamMulai && styles.inputError]}>
                 <Ionicons name="time-outline" size={20} color="#666" style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
@@ -598,16 +860,25 @@ export default function TambahDinasScreen() {
                   onChangeText={(text) => {
                     const formatted = formatJam(text);
                     setFormData({...formData, jamMulai: formatted});
+                    validateField('jamMulai', formatted);
                   }}
                   keyboardType="numeric"
                   maxLength={5}
                 />
+                <TouchableOpacity onPress={() => setShowTimeMulaiPicker(true)} style={styles.calendarButton}>
+                  <Ionicons name="time" size={20} color="#004643" />
+                </TouchableOpacity>
               </View>
             </View>
-            
-            <View style={styles.halfInput}>
-              <Text style={styles.label}>Jam Selesai *</Text>
-              <View style={styles.inputWrapper}>
+            {validationErrors.jamMulai && (
+              <Text style={styles.errorText}>{validationErrors.jamMulai}</Text>
+            )}
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Jam Selesai *</Text>
+            <View style={styles.dateInputContainer}>
+              <View style={[styles.inputWrapper, validationErrors.jamSelesai && styles.inputError]}>
                 <Ionicons name="time-outline" size={20} color="#666" style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
@@ -616,12 +887,19 @@ export default function TambahDinasScreen() {
                   onChangeText={(text) => {
                     const formatted = formatJam(text);
                     setFormData({...formData, jamSelesai: formatted});
+                    validateField('jamSelesai', formatted);
                   }}
                   keyboardType="numeric"
                   maxLength={5}
                 />
+                <TouchableOpacity onPress={() => setShowTimeSelesaiPicker(true)} style={styles.calendarButton}>
+                  <Ionicons name="time" size={20} color="#004643" />
+                </TouchableOpacity>
               </View>
             </View>
+            {validationErrors.jamSelesai && (
+              <Text style={styles.errorText}>{validationErrors.jamSelesai}</Text>
+            )}
           </View>
 
           <View style={styles.inputGroup}>
@@ -841,6 +1119,54 @@ export default function TambahDinasScreen() {
         </View>
       </ScrollView>
 
+      {/* Date Pickers */}
+      {showDateMulaiPicker && (
+        <DateTimePicker
+          value={selectedDateMulai}
+          mode="date"
+          display="default"
+          onChange={handleDateMulaiChange}
+          minimumDate={new Date()}
+          accentColor="#004643"
+          textColor="#004643"
+        />
+      )}
+      
+      {showDateSelesaiPicker && (
+        <DateTimePicker
+          value={selectedDateSelesai}
+          mode="date"
+          display="default"
+          onChange={handleDateSelesaiChange}
+          minimumDate={new Date()}
+          accentColor="#004643"
+          textColor="#004643"
+        />
+      )}
+
+      {/* Time Pickers */}
+      {showTimeMulaiPicker && (
+        <DateTimePicker
+          value={selectedTimeMulai}
+          mode="time"
+          display="default"
+          onChange={handleTimeMulaiChange}
+          accentColor="#004643"
+          textColor="#004643"
+        />
+      )}
+      
+      {showTimeSelesaiPicker && (
+        <DateTimePicker
+          value={selectedTimeSelesai}
+          mode="time"
+          display="default"
+          onChange={handleTimeSelesaiChange}
+          accentColor="#004643"
+          textColor="#004643"
+        />
+      )}
+
       {/* Sticky Save Button */}
       <View style={styles.stickyFooter}>
         <TouchableOpacity 
@@ -854,6 +1180,94 @@ export default function TambahDinasScreen() {
           </Text>
         </TouchableOpacity>
       </View>
+
+      {/* Confirmation Modal */}
+      <Modal visible={showConfirmModal} transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.confirmModalContainer}>
+            <View style={styles.confirmModalHeader}>
+              <Text style={styles.confirmModalTitle}>Konfirmasi Data Dinas</Text>
+              <TouchableOpacity onPress={() => setShowConfirmModal(false)}>
+                <Ionicons name="close" size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView style={styles.confirmModalContent}>
+              <View style={styles.confirmItem}>
+                <Text style={styles.confirmLabel}>Nama Kegiatan:</Text>
+                <Text style={styles.confirmValue}>{formData.namaKegiatan}</Text>
+              </View>
+              
+              <View style={styles.confirmItem}>
+                <Text style={styles.confirmLabel}>Nomor SPT:</Text>
+                <Text style={styles.confirmValue}>{formData.nomorSpt}</Text>
+              </View>
+              
+              <View style={styles.confirmItem}>
+                <Text style={styles.confirmLabel}>Jenis Dinas:</Text>
+                <Text style={styles.confirmValue}>
+                  {formData.jenisDinas === 'lokal' ? 'Dinas Lokal' : 
+                   formData.jenisDinas === 'luar_kota' ? 'Dinas Luar Kota' : 'Dinas Luar Negeri'}
+                </Text>
+              </View>
+              
+              <View style={styles.confirmItem}>
+                <Text style={styles.confirmLabel}>Periode:</Text>
+                <Text style={styles.confirmValue}>
+                  {formData.tanggalMulai} - {formData.tanggalSelesai}
+                </Text>
+              </View>
+              
+              <View style={styles.confirmItem}>
+                <Text style={styles.confirmLabel}>Waktu:</Text>
+                <Text style={styles.confirmValue}>
+                  {formData.jamMulai} - {formData.jamSelesai}
+                </Text>
+              </View>
+              
+              <View style={styles.confirmItem}>
+                <Text style={styles.confirmLabel}>Lokasi ({selectedLokasi.length}):</Text>
+                {selectedLokasi.map((lokasi, index) => (
+                  <Text key={index} style={styles.confirmValue}>• {lokasi.nama_lokasi}</Text>
+                ))}
+              </View>
+              
+              <View style={styles.confirmItem}>
+                <Text style={styles.confirmLabel}>Pegawai ({selectedPegawai.length}):</Text>
+                {selectedPegawai.map((pegawai, index) => (
+                  <Text key={index} style={styles.confirmValue}>• {pegawai.nama_lengkap}</Text>
+                ))}
+              </View>
+              
+              {formData.deskripsi && (
+                <View style={styles.confirmItem}>
+                  <Text style={styles.confirmLabel}>Deskripsi:</Text>
+                  <Text style={styles.confirmValue}>{formData.deskripsi}</Text>
+                </View>
+              )}
+            </ScrollView>
+            
+            <View style={styles.confirmModalFooter}>
+              <TouchableOpacity 
+                style={styles.cancelConfirmBtn}
+                onPress={() => setShowConfirmModal(false)}
+              >
+                <Text style={styles.cancelConfirmText}>Batal</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.saveConfirmBtn}
+                onPress={confirmSave}
+                disabled={loading}
+              >
+                <Text style={styles.saveConfirmText}>
+                  {loading ? 'Menyimpan...' : 'Simpan Data'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* Input Modal */}
       <Modal visible={showInputModal} animationType="slide" transparent>
@@ -938,18 +1352,20 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     flex: 1,
-    marginTop: 100
+    marginTop: 120
   },
   formContainer: {
     padding: 20,
     paddingBottom: 100
   },
-  inputGroup: { marginBottom: 20 },
+  inputGroup: { 
+    marginBottom: 25 
+  },
   label: {
     fontSize: 16,
     fontWeight: '600',
     color: '#333',
-    marginBottom: 8
+    marginBottom: 10
   },
   inputWrapper: {
     flexDirection: 'row',
@@ -977,9 +1393,12 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 20
+    marginBottom: 25,
+    gap: 20
   },
-  halfInput: { width: '48%' },
+  halfInput: { 
+    flex: 1
+  },
 
   roleContainer: {
     flexDirection: 'row',
@@ -1401,7 +1820,8 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end'
+    justifyContent: 'center',
+    alignItems: 'center'
   },
   pegawaiModal: {
     backgroundColor: '#fff',
@@ -1669,5 +2089,128 @@ const styles = StyleSheet.create({
     color: '#CCC',
     marginTop: 4,
     textAlign: 'center'
+  },
+  dateInputContainer: {
+    position: 'relative'
+  },
+  calendarButton: {
+    padding: 8,
+    borderRadius: 6,
+    backgroundColor: '#F0F8F0'
+  },
+  
+  // New styles for improvements
+  progressContainer: {
+    position: 'absolute',
+    top: 90,
+    left: 0,
+    right: 0,
+    zIndex: 999,
+    backgroundColor: '#fff',
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0'
+  },
+  progressBar: {
+    height: 4,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 2
+  },
+  progressFill: {
+    height: 4,
+    backgroundColor: '#004643',
+    borderRadius: 2
+  },
+  progressText: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center'
+  },
+  
+  inputError: {
+    borderColor: '#F44336',
+    borderWidth: 2
+  },
+  errorText: {
+    fontSize: 12,
+    color: '#F44336',
+    marginTop: 4,
+    marginLeft: 4
+  },
+  
+  confirmModalContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 15,
+    width: '90%',
+    maxHeight: '80%',
+    alignSelf: 'center',
+    marginTop: 'auto',
+    marginBottom: 'auto'
+  },
+  confirmModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0'
+  },
+  confirmModalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333'
+  },
+  confirmModalContent: {
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    maxHeight: 400
+  },
+  confirmItem: {
+    marginBottom: 15
+  },
+  confirmLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666',
+    marginBottom: 4
+  },
+  confirmValue: {
+    fontSize: 14,
+    color: '#333',
+    lineHeight: 20
+  },
+  confirmModalFooter: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0',
+    gap: 10
+  },
+  cancelConfirmBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    backgroundColor: '#F5F5F5',
+    alignItems: 'center'
+  },
+  cancelConfirmText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666'
+  },
+  saveConfirmBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    backgroundColor: '#004643',
+    alignItems: 'center'
+  },
+  saveConfirmText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#fff'
   }
 });

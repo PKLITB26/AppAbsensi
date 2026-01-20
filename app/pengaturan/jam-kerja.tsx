@@ -174,7 +174,7 @@ export default function JamKerjaScreen() {
         >
           <Ionicons name="checkmark-circle" size={20} color="#fff" />
           <Text style={styles.saveBtnText}>
-            {loading ? 'Menyimpan...' : 'Simpan Pengaturan'}
+            {loading ? 'Menyimpan...' : 'Simpan'}
           </Text>
         </TouchableOpacity>
       </View>

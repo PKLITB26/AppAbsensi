@@ -196,7 +196,6 @@ export default function DataPegawaiAdminScreen() {
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#004643" />
-          <Text style={styles.loadingText}>Memuat data pegawai...</Text>
         </View>
       ) : (
         <FlatList
@@ -411,7 +410,6 @@ const styles = StyleSheet.create({
   headerStats: { backgroundColor: '#E6F0EF', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12 },
   statsText: { fontSize: 12, fontWeight: 'bold', color: '#004643' },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  loadingText: { marginTop: 10, color: '#666' },
   listContent: { paddingBottom: 20 },
   pegawaiCard: { 
     flexDirection: 'row', 

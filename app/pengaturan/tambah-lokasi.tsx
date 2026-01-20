@@ -108,12 +108,12 @@ export default function TambahLokasiScreen() {
             }]);
             return;
           } catch (error) {
-            Alert.alert('Error', 'Koordinat tidak valid atau tidak dapat diakses');
+            Alert.alert('Info', 'Koordinat tidak valid atau tidak dapat diakses');
             setSearchResults([]);
             return;
           }
         } else {
-          Alert.alert('Error', 'Koordinat di luar wilayah Indonesia');
+          Alert.alert('Info', 'Koordinat di luar wilayah Indonesia');
           setSearchResults([]);
           return;
         }
@@ -240,7 +240,7 @@ export default function TambahLokasiScreen() {
     } catch (error) {
       console.error('Search error:', error);
       setSearchResults([]);
-      Alert.alert('Error', 'Gagal mencari lokasi. Periksa koneksi internet.');
+      Alert.alert('Info', 'Gagal mencari lokasi. Periksa koneksi internet.');
     } finally {
       setSearchLoading(false);
     }
@@ -282,7 +282,7 @@ export default function TambahLokasiScreen() {
 
   const confirmLocation = async () => {
     if (!markerPosition) {
-      Alert.alert('Error', 'Pilih lokasi terlebih dahulu');
+      Alert.alert('Info', 'Pilih lokasi terlebih dahulu');
       return;
     }
 
@@ -303,23 +303,23 @@ export default function TambahLokasiScreen() {
       setShowMapModal(false);
       setMarkerPosition(null);
     } catch (error) {
-      Alert.alert('Error', 'Gagal mendapatkan alamat');
+      Alert.alert('Info', 'Gagal mendapatkan alamat');
     }
   };
 
   const handleSave = async () => {
     if (!formData.namaLokasi.trim() || !formData.alamat.trim()) {
-      Alert.alert('Error', 'Nama lokasi dan alamat wajib diisi');
+      Alert.alert('Info', 'Nama lokasi dan alamat wajib diisi');
       return;
     }
 
     if (!formData.latitude || !formData.longitude) {
-      Alert.alert('Error', 'Lokasi wajib dipilih di peta');
+      Alert.alert('Info', 'Lokasi wajib dipilih di peta');
       return;
     }
 
     if (!formData.radius || parseInt(formData.radius) < 10 || parseInt(formData.radius) > 1000) {
-      Alert.alert('Error', 'Radius harus antara 10-1000 meter');
+      Alert.alert('Info', 'Radius harus antara 10-1000 meter');
       return;
     }
 
@@ -339,10 +339,10 @@ export default function TambahLokasiScreen() {
           { text: 'OK', onPress: () => router.back() }
         ]);
       } else {
-        Alert.alert('Error', response.message || 'Gagal menyimpan lokasi');
+        Alert.alert('Info', response.message || 'Gagal menyimpan lokasi');
       }
     } catch (error) {
-      Alert.alert('Error', 'Terjadi kesalahan saat menyimpan');
+      Alert.alert('Info', 'Terjadi kesalahan saat menyimpan');
     } finally {
       setLoading(false);
     }

@@ -80,8 +80,8 @@ export default function AdminDashboard() {
       if (result.success) {
         setData({
           stats: {
-            hadir: result.stats.hadir || 0,
-            tidak_hadir: result.stats.tidak_hadir || 0
+            hadir: result.stats?.hadir || 0,
+            tidak_hadir: result.stats?.tidak_hadir || 0
           },
           recent: result.recent || [],
           user: result.user || { nama_lengkap: 'Administrator', email: 'admin@itb.ac.id', password: '' }
@@ -116,9 +116,6 @@ export default function AdminDashboard() {
           <View style={styles.adminInfo}>
             <Text style={styles.greetingText}>Selamat datang,</Text>
             <Text style={styles.userName}>Administrator</Text>
-            <View style={styles.credentialRow}>
-              <Text style={styles.emailText}>{data.user?.email || 'Loading...'}</Text>
-            </View>
           </View>
           <TouchableOpacity 
             style={styles.notificationBtn}
@@ -134,7 +131,7 @@ export default function AdminDashboard() {
           <View style={styles.summaryHeader}>
             <View style={styles.summaryTitleRow}>
               <View style={styles.titleIconContainer}>
-                <Ionicons name="analytics" size={18} color="#004643" />
+                <Ionicons name="analytics" size={16} color="#FFFFFF" />
               </View>
               <Text style={styles.summaryTitle}>Ringkasan Kehadiran</Text>
             </View>
@@ -192,7 +189,7 @@ export default function AdminDashboard() {
         {/* SECTION 3: MENU LAYANAN */}
         <View style={styles.menuSection}>
             <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Layanan Kelola</Text>
+                <Text style={styles.sectionTitle}>Layanan</Text>
             </View>
             
             {/* Baris pertama - 4 menu utama */}
@@ -339,82 +336,82 @@ const styles = StyleSheet.create({
   summarySection: {
     marginHorizontal: 20,
     backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 20,
+    borderRadius: 12,
+    padding: 16,
     marginBottom: 20,
-    elevation: 4,
+    elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
-    shadowRadius: 6,
+    shadowRadius: 3,
   },
   summaryHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 16,
   },
   summaryTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   titleIconContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: '#E6F0EF',
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    backgroundColor: '#004643',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 10,
+    marginRight: 8,
   },
   summaryTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: 14,
+    fontWeight: '600',
     color: '#333',
   },
   dateBadge: {
-    backgroundColor: '#E6F0EF',
+    backgroundColor: '#F0F8FF',
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 8,
+    borderRadius: 6,
   },
   dateText: {
     fontSize: 10,
-    fontWeight: '600',
-    color: '#004643',
+    fontWeight: '500',
+    color: '#2196F3',
   },
   mainPercentage: {
     alignItems: 'center',
-    marginBottom: 15,
+    marginBottom: 16,
   },
   percentageNumber: {
-    fontSize: 32,
+    fontSize: 24,
     fontWeight: 'bold',
     color: '#004643',
   },
   percentageLabel: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#666',
     marginTop: 2,
   },
   progressContainer: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   progressBar: {
-    height: 6,
+    height: 4,
     backgroundColor: '#F0F0F0',
-    borderRadius: 3,
+    borderRadius: 2,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
     backgroundColor: '#4CAF50',
-    borderRadius: 3,
+    borderRadius: 2,
   },
   statsRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    marginBottom: 15,
+    marginBottom: 12,
   },
   statItem: {
     alignItems: 'center',
@@ -423,23 +420,23 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    marginBottom: 6,
+    marginBottom: 4,
   },
   statNumber: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
     color: '#333',
     marginBottom: 2,
   },
   statLabel: {
-    fontSize: 11,
+    fontSize: 10,
     color: '#666',
   },
   summaryText: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#666',
     textAlign: 'center',
-    lineHeight: 16,
+    lineHeight: 14,
   },
   menuSection: { marginTop: 30, paddingHorizontal: 20 },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },

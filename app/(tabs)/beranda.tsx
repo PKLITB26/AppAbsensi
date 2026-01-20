@@ -11,7 +11,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { getApiUrl, API_CONFIG } from '../../constants/config';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { PegawaiAPI } from '../../constants/config';
 
 interface UserData {
   nama: string;
@@ -34,54 +35,102 @@ export default function BerandaScreen() {
   });
   const [loading, setLoading] = useState(true);
 
+  const [currentTime, setCurrentTime] = useState(new Date());
+
   useEffect(() => {
     fetchUserData();
+    
+    // Update time every 30 seconds
+    const interval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 30000);
+    
+    return () => clearInterval(interval);
   }, []);
+
+  const formatDate = () => {
+    const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+    
+    const day = days[currentTime.getDay()];
+    const date = currentTime.getDate();
+    const month = months[currentTime.getMonth()];
+    const year = currentTime.getFullYear();
+    
+    return `${day}, ${date} ${month} ${year}`;
+  };
+
+  const getGreeting = () => {
+    const hour = currentTime.getHours();
+    if (hour >= 5 && hour < 11) return 'Selamat Pagi';
+    if (hour >= 11 && hour < 15) return 'Selamat Siang';
+    if (hour >= 15 && hour < 18) return 'Selamat Sore';
+    return 'Selamat Malam';
+  };
 
   const fetchUserData = async () => {
     try {
-      console.log('Fetching user data...');
-      const response = await fetch(getApiUrl(API_CONFIG.ENDPOINTS.TEST_API), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: 1 })
-      });
+      // Ambil user data dari AsyncStorage (dari hasil login)
+      const userData = await AsyncStorage.getItem('userData');
+      console.log('AsyncStorage userData:', userData);
       
-      console.log('Response status:', response.status);
-      const result = await response.json();
-      console.log('API Result:', result);
-      
-      if (result.success) {
-        setUserData(result.data);
-        console.log('User data set:', result.data);
-      } else {
-        console.log('API Error:', result.message);
-        // Gunakan data fallback jika API error
+      if (!userData) {
+        console.log('No userData in AsyncStorage');
+        // Gunakan data fallback jika tidak ada data login
         setUserData({
-          nama: 'Demo User',
-          jabatan: 'Staff IT',
+          nama: 'Pengguna',
+          jabatan: 'Pegawai', 
           statusAbsen: 'Belum Absen',
           jamMasuk: '08:00',
           jamKeluar: '17:00',
-          totalJamKerja: '0j 0m'
+          totalJamKerja: '0h'
         });
-        Alert.alert('Info', 'Menggunakan data demo. Error: ' + result.message);
+        return;
+      }
+      
+      const user = JSON.parse(userData);
+      console.log('Parsed user:', user);
+      
+      // Gunakan id atau id_user yang tersedia
+      const userId = user.id_user || user.id;
+      if (!userId) {
+        throw new Error('No user ID found');
+      }
+      
+      const result = await PegawaiAPI.getDashboard(userId.toString());
+      console.log('Dashboard API result:', result);
+      console.log('Jam kerja data:', result.data?.jam_kerja);
+      console.log('Jam masuk dari API:', result.data?.jam_kerja?.jam_masuk);
+      console.log('Jam keluar dari API:', result.data?.jam_kerja?.jam_keluar);
+      
+      if (result.success) {
+        const data = result.data;
+        setUserData({
+          nama: data.user_info?.nama_lengkap || user.nama || 'Pengguna',
+          jabatan: data.user_info?.jabatan || 'Pegawai',
+          statusAbsen: data.presensi_hari_ini ? 'Sudah Absen' : 'Belum Absen',
+          jamMasuk: data.jam_kerja?.jam_masuk || '08:00',
+          jamKeluar: data.jam_kerja?.jam_keluar || '17:00',
+          totalJamKerja: data.summary_bulan_ini?.total_hadir + 'h' || '0h'
+        });
+      } else {
+        throw new Error(result.message);
       }
     } catch (error) {
-      console.log('Fetch Error:', error);
-      // Gunakan data fallback jika koneksi error
+      console.log('Dashboard Error:', error);
       setUserData({
-        nama: 'Demo User',
-        jabatan: 'Staff IT',
+        nama: 'Pengguna',
+        jabatan: 'Pegawai',
         statusAbsen: 'Belum Absen',
         jamMasuk: '08:00',
         jamKeluar: '17:00',
-        totalJamKerja: '0j 0m'
+        totalJamKerja: '0h'
       });
-      Alert.alert(
-        'Mode Demo', 
-        'Tidak dapat terhubung ke server.\nMenggunakan data demo.\n\nPastikan:\n1. XAMPP sudah nyala\n2. HP dan laptop satu WiFi (10.251.109.x)\n3. Database hadirin_db ada\n4. File PHP ada di htdocs/hadirin-api/'
-      );
+      // Hanya tampilkan alert jika benar-benar error API, bukan karena tidak ada data login
+      const userData = await AsyncStorage.getItem('userData');
+      if (userData) {
+        Alert.alert('Info', 'Tidak dapat memuat data dari server');
+      }
     } finally {
       setLoading(false);
     }
@@ -95,7 +144,7 @@ export default function BerandaScreen() {
         {/* SECTION 1: HEADER & USER PROFILE */}
         <View style={styles.headerSection}>
           <View>
-            <Text style={styles.greetingText}>Selamat Pagi,</Text>
+            <Text style={styles.greetingText}>{getGreeting()},</Text>
             <Text style={styles.userName}>{userData.nama || 'Memuat...'}</Text>
             <Text style={styles.userJob}>{userData.jabatan || 'Memuat...'}</Text>
           </View>
@@ -106,17 +155,30 @@ export default function BerandaScreen() {
         </View>
 
         {/* SECTION 2: STATUS ABSENSI CARD */}
-        <View style={styles.statusCard}>
-          <View style={styles.statusInfo}>
-            <Text style={styles.statusTitle}>{userData.statusAbsen === 'Belum Absen' ? 'Belum Melakukan Absen Masuk' : `Status: ${userData.statusAbsen}`}</Text>
-            <View style={styles.limitBadge}>
-              <Text style={styles.limitText}>Batas: 08:45 WIB</Text>
+        <TouchableOpacity style={styles.statusCard} activeOpacity={0.8}>
+          <View style={styles.cardGradientOverlay} />
+          <View style={styles.statusHeader}>
+            <View style={styles.statusLeft}>
+              <View style={[styles.iconContainer, userData.statusAbsen === 'Sudah Absen' && styles.iconContainerSuccess]}>
+                <Ionicons name={userData.statusAbsen === 'Belum Absen' ? 'time-outline' : 'checkmark-circle'} size={26} color="#fff" />
+              </View>
+              <View style={styles.statusTextContainer}>
+                <Text style={styles.statusTitle}>
+                  {userData.statusAbsen === 'Belum Absen' ? 'Belum Melakukan Absen Masuk' : 'Sudah Absen'}
+                </Text>
+                <Text style={styles.statusDate}>{formatDate()}</Text>
+              </View>
+            </View>
+            <View style={[styles.statusBadge, userData.statusAbsen === 'Sudah Absen' && styles.statusBadgeSuccess]}>
+              <Text style={styles.badgeText}>{userData.statusAbsen === 'Belum Absen' ? 'PENDING' : 'DONE'}</Text>
             </View>
           </View>
           <Text style={styles.statusDescription}>
-            Segera lakukan presensi. Jika Anda sedang Dinas Luar, pastikan memilih kategori 'Dinas' pada menu Presensi.
+            {userData.statusAbsen === 'Belum Absen' 
+              ? 'Segera lakukan presensi hari ini' 
+              : 'Presensi berhasil dicatat'}
           </Text>
-        </View>
+        </TouchableOpacity>
 
         {/* SECTION 3: ATTENDANCE LOGS */}
         <View style={styles.logContainer}>
@@ -125,8 +187,8 @@ export default function BerandaScreen() {
               <Ionicons name="timer-outline" size={20} color="#004643" />
             </View>
             <View>
-              <Text style={styles.logLabel}>Log Kehadiran</Text>
-              <Text style={styles.logValue}>{userData.totalJamKerja}</Text>
+              <Text style={styles.logLabel}>Jam Masuk</Text>
+              <Text style={styles.logValue}>{userData.jamMasuk || '08:00'}</Text>
             </View>
           </View>
 
@@ -135,8 +197,8 @@ export default function BerandaScreen() {
               <Ionicons name="calendar-outline" size={20} color="#F9BC60" />
             </View>
             <View>
-              <Text style={styles.logLabel}>Jam Kerja</Text>
-              <Text style={styles.logValue}>{userData.jamMasuk} - {userData.jamKeluar}</Text>
+              <Text style={styles.logLabel}>Jam Pulang</Text>
+              <Text style={styles.logValue}>{userData.jamKeluar || '17:00'}</Text>
             </View>
           </View>
         </View>
@@ -153,20 +215,17 @@ export default function BerandaScreen() {
           <View style={styles.menuGrid}>
             {[
               { id: 1, name: 'Kegiatan', icon: 'document-text-outline', color: '#E3F2FD' },
-              { id: 2, name: 'Presensi', icon: 'time-outline', color: '#E8F5E9' },
               { id: 3, name: 'Pengajuan', icon: 'clipboard-outline', color: '#FFF3E0' },
               { id: 4, name: 'Lembur', icon: 'moon-outline', color: '#F3E5F5' },
-              { id: 5, name: 'Slip Gaji', icon: 'cash-outline', color: '#E0F2F1' },
               { id: 6, name: 'Bantuan', icon: 'help-circle-outline', color: '#FFEBEE' },
             ].map((item) => (
               <TouchableOpacity 
                 key={item.id} 
                 style={styles.menuItem}
+                activeOpacity={0.7}
                 onPress={() => {
                   if (item.name === 'Pengajuan') {
                     router.push('/pengajuan'); // Arahkan ke file pengajuan.tsx di root
-                  } else if (item.name === 'Presensi') {
-                    router.push('/(tabs)/presensi'); // Arahkan ke tab presensi
                   }
                 }}
               >
@@ -186,7 +245,7 @@ export default function BerandaScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFB' },
-  scrollContent: { paddingBottom: 30 },
+  scrollContent: { paddingBottom: 100 }, // Increased bottom padding for navigation
   headerSection: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -222,17 +281,108 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor: '#004643',
     borderRadius: 20,
-    elevation: 4,
+    elevation: 8,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    position: 'relative',
+    overflow: 'hidden',
   },
-  statusInfo: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  statusTitle: { color: '#fff', fontSize: 16, fontWeight: 'bold', flex: 1 },
-  limitBadge: { backgroundColor: 'rgba(255,255,255,0.2)', paddingVertical: 4, paddingHorizontal: 8, borderRadius: 6 },
-  limitText: { color: '#fff', fontSize: 10, fontWeight: 'bold' },
-  statusDescription: { color: '#B2D2D0', fontSize: 12, lineHeight: 18 },
+  cardGradientOverlay: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    width: 100,
+    height: 100,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 50,
+    transform: [{ translateX: 30 }, { translateY: -30 }],
+  },
+  iconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  iconContainerSuccess: {
+    backgroundColor: 'rgba(144,238,144,0.2)',
+    borderColor: 'rgba(144,238,144,0.3)',
+  },
+  progressContainer: {
+    marginVertical: 12,
+  },
+  progressBar: {
+    height: 6,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#fff',
+    borderRadius: 3,
+  },
+  progressText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
+    minWidth: 35,
+  },
+  statusBadgeSuccess: {
+    backgroundColor: 'rgba(144,238,144,0.3)',
+    borderColor: 'rgba(144,238,144,0.4)',
+  },
+  statusHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  statusLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  statusTextContainer: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  statusTitle: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 2,
+  },
+  statusDate: {
+    color: '#B2D2D0',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  statusBadge: {
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
+  },
+  badgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
+  },
+  statusDescription: {
+    color: '#B2D2D0',
+    fontSize: 12,
+    lineHeight: 16,
+    marginTop: 4,
+  },
   logContainer: {
     flexDirection: 'row',
     paddingHorizontal: 20,
@@ -242,12 +392,16 @@ const styles = StyleSheet.create({
   logBox: {
     backgroundColor: '#fff',
     width: '48%',
-    padding: 15,
-    borderRadius: 16,
+    padding: 16,
+    borderRadius: 18,
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#F0F0F0',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    borderWidth: 0,
   },
   iconBox: { width: 40, height: 40, borderRadius: 10, justifyContent: 'center', alignItems: 'center', marginRight: 10 },
   logLabel: { fontSize: 10, color: '#888' },
@@ -257,8 +411,20 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 16, fontWeight: 'bold', color: '#333' },
   seeAll: { fontSize: 12, color: '#004643', fontWeight: '600' },
   menuGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
-  menuItem: { width: '30%', alignItems: 'center', marginBottom: 25 },
-  menuIconCircle: { width: 56, height: 56, borderRadius: 16, justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
+  menuItem: { width: '22%', alignItems: 'center', marginBottom: 25 },
+  menuIconCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 10,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
   menuLabel: { fontSize: 11, color: '#444', fontWeight: '500', textAlign: 'center' },
   footer: { marginTop: 20, alignItems: 'center' },
   footerText: { fontSize: 10, color: '#BBB' },

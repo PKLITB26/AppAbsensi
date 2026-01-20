@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, ScrollView, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
-import MapView, { Marker } from 'react-native-maps';
+import UniversalMap, { MapView, Marker } from './UniversalMap';
 
 interface LokasiHari {
   hari: number;
@@ -39,7 +39,6 @@ export default function MultiLokasiComponent({
   });
   const [markerPosition, setMarkerPosition] = useState<{latitude: number, longitude: number} | null>(null);
 
-  // Generate daftar hari berdasarkan tanggal mulai dan selesai
   const generateHariList = () => {
     if (!tanggalMulai || !tanggalSelesai) return [];
     
@@ -83,7 +82,6 @@ export default function MultiLokasiComponent({
     });
   };
 
-  // Initialize lokasi list saat tanggal berubah
   React.useEffect(() => {
     const hariList = generateHariList();
     if (hariList.length > 0 && lokasiList.length === 0) {
@@ -215,7 +213,6 @@ export default function MultiLokasiComponent({
         ))}
       </ScrollView>
 
-      {/* Map Modal */}
       <Modal visible={showMapModal} animationType="slide">
         <View style={styles.mapModalContainer}>
           <View style={styles.mapHeader}>
@@ -254,33 +251,25 @@ export default function MultiLokasiComponent({
             </View>
           </View>
 
-          <MapView
+          <UniversalMap
             style={styles.map}
             region={mapRegion}
             onPress={handleMapPress}
           >
-            {markerPosition && (
+            {markerPosition && Marker && (
               <Marker
                 coordinate={markerPosition}
                 title={tempLokasi.nama_lokasi || 'Lokasi Dinas'}
               />
             )}
-          </MapView>
+          </UniversalMap>
 
-          <View style={styles.mapActions}>
-            <TouchableOpacity 
-              style={styles.cancelBtn}
-              onPress={() => setShowMapModal(false)}
-            >
-              <Text style={styles.cancelBtnText}>Batal</Text>
-            </TouchableOpacity>
-            
+          <View style={styles.confirmSection}>
             <TouchableOpacity 
               style={styles.confirmBtn}
               onPress={confirmLokasi}
             >
-              <Ionicons name="checkmark-circle" size={20} color="#fff" />
-              <Text style={styles.confirmBtnText}>Simpan Lokasi</Text>
+              <Text style={styles.confirmBtnText}>Konfirmasi Lokasi</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -291,172 +280,169 @@ export default function MultiLokasiComponent({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 20
+    flex: 1,
+    padding: 16,
   },
   title: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 4
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#004643',
+    marginBottom: 4,
   },
   subtitle: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#666',
-    marginBottom: 15
+    marginBottom: 16,
   },
   lokasiList: {
-    maxHeight: 300
+    flex: 1,
   },
   lokasiCard: {
     backgroundColor: '#fff',
-    borderRadius: 10,
-    padding: 15,
-    marginBottom: 10,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#E0E0E0'
+    borderColor: '#e9ecef',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   lokasiHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10
+    marginBottom: 12,
   },
   hariInfo: {
-    flex: 1
+    flex: 1,
   },
   hariText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: 'bold',
-    color: '#004643'
+    color: '#004643',
   },
   tanggalText: {
-    fontSize: 12,
-    color: '#666'
+    fontSize: 14,
+    color: '#666',
+    marginTop: 2,
   },
   actionButtons: {
     flexDirection: 'row',
-    gap: 8
+    gap: 8,
   },
   copyBtn: {
     padding: 8,
-    backgroundColor: '#F5F5F5',
-    borderRadius: 6
+    borderRadius: 8,
+    backgroundColor: '#f8f9fa',
+    borderWidth: 1,
+    borderColor: '#dee2e6',
   },
   editBtn: {
     padding: 8,
-    backgroundColor: '#F0F8F7',
-    borderRadius: 6
+    borderRadius: 8,
+    backgroundColor: '#e8f5f3',
+    borderWidth: 1,
+    borderColor: '#004643',
   },
   lokasiContent: {
-    paddingTop: 5
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#f1f3f4',
   },
   namaLokasi: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#333',
-    marginBottom: 4
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#004643',
+    marginBottom: 4,
   },
   alamatLokasi: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#666',
-    marginBottom: 4
+    lineHeight: 20,
+    marginBottom: 4,
   },
   radiusText: {
-    fontSize: 11,
-    color: '#999'
-  },
-  belumDiatur: {
     fontSize: 12,
     color: '#999',
-    fontStyle: 'italic'
+  },
+  belumDiatur: {
+    fontSize: 14,
+    color: '#999',
+    fontStyle: 'italic',
   },
   mapModalContainer: {
     flex: 1,
-    backgroundColor: '#fff'
+    backgroundColor: '#fff',
   },
   mapHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 50,
-    paddingBottom: 15,
+    padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0'
+    borderBottomColor: '#e9ecef',
+    backgroundColor: '#fff',
   },
   mapTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#004643',
-    marginLeft: 15
+    marginLeft: 16,
   },
   inputSection: {
-    padding: 20,
-    backgroundColor: '#F8FAFB'
+    padding: 16,
+    backgroundColor: '#f8f9fa',
   },
   namaLokasiInput: {
     backgroundColor: '#fff',
-    borderRadius: 8,
-    paddingHorizontal: 15,
-    paddingVertical: 12,
-    fontSize: 14,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
-    marginBottom: 15
+    borderColor: '#dee2e6',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    marginBottom: 12,
   },
   radiusContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center'
+    alignItems: 'center',
   },
   radiusLabel: {
     fontSize: 14,
-    color: '#333'
+    color: '#004643',
+    fontWeight: '600',
   },
   radiusButtons: {
     flexDirection: 'row',
-    gap: 10
+    gap: 8,
   },
   radiusBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#F0F8F7',
-    justifyContent: 'center',
-    alignItems: 'center'
+    padding: 8,
+    borderRadius: 6,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#004643',
   },
   map: {
-    flex: 1
-  },
-  mapActions: {
-    flexDirection: 'row',
-    padding: 20,
-    gap: 10
-  },
-  cancelBtn: {
     flex: 1,
-    paddingVertical: 12,
-    borderRadius: 8,
-    backgroundColor: '#F5F5F5',
-    alignItems: 'center'
   },
-  cancelBtnText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#666'
+  confirmSection: {
+    padding: 16,
+    backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderTopColor: '#e9ecef',
   },
   confirmBtn: {
-    flex: 2,
-    flexDirection: 'row',
-    paddingVertical: 12,
-    borderRadius: 8,
     backgroundColor: '#004643',
+    borderRadius: 8,
+    padding: 16,
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8
   },
   confirmBtnText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#fff'
-  }
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
 });

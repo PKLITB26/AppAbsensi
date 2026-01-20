@@ -26,6 +26,10 @@ export default function ProfilAdminScreen() {
   const [profile, setProfile] = useState<AdminProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [editModal, setEditModal] = useState(false);
+  const [logoutModal, setLogoutModal] = useState(false);
+  const [showPasswordLama, setShowPasswordLama] = useState(false);
+  const [showPasswordBaru, setShowPasswordBaru] = useState(false);
+  const [showKonfirmasiPassword, setShowKonfirmasiPassword] = useState(false);
   const [editData, setEditData] = useState({
     email: "",
     passwordLama: "",
@@ -44,41 +48,60 @@ export default function ProfilAdminScreen() {
       // Get user data from AsyncStorage
       const userDataStr = await AsyncStorage.getItem("userData");
       const userData = userDataStr ? JSON.parse(userDataStr) : null;
-      const userId = userData?.id_user || userData?.id;
-
-      console.log("User Data:", userData);
-      console.log("User ID:", userId);
-
-      const url = getApiUrl(API_CONFIG.ENDPOINTS.ADMIN);
-      console.log("URL:", url);
-
-      const response = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: userId || null }),
+      
+      if (!userData) {
+        Alert.alert('Error', 'Silakan login ulang');
+        router.replace('/');
+        return;
+      }
+      
+      // Gunakan data dari AsyncStorage sebagai fallback
+      const fallbackProfile = {
+        id_user: userData.id_user || userData.id,
+        email: userData.email,
+        role: userData.role || 'admin'
+      };
+      
+      setProfile(fallbackProfile);
+      setEditData({
+        email: fallbackProfile.email || "",
+        passwordLama: "",
+        passwordBaru: "",
+        konfirmasiPassword: "",
       });
-      const result = await response.json();
+      
+      // Coba ambil dari server (opsional)
+      try {
+        const userId = userData.id_user || userData.id;
+        const url = getApiUrl(API_CONFIG.ENDPOINTS.ADMIN);
+        console.log("URL:", url);
 
-      console.log("Profile Response:", JSON.stringify(result, null, 2));
-
-      if (result.success && result.user) {
-        console.log("User data:", result.user);
-        setProfile(result.user);
-        setEditData({
-          email: result.user.email || "",
-          passwordLama: "",
-          passwordBaru: "",
-          konfirmasiPassword: "",
+        const response = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ user_id: userId || null }),
         });
-      } else {
-        console.log("Failed to load profile:", result);
-        Alert.alert("Error", result.message || "Gagal memuat profil admin");
+        const result = await response.json();
+
+        console.log("Profile Response:", JSON.stringify(result, null, 2));
+
+        if (result.success && result.user) {
+          console.log("User data from server:", result.user);
+          setProfile(result.user);
+          setEditData({
+            email: result.user.email || "",
+            passwordLama: "",
+            passwordBaru: "",
+            konfirmasiPassword: "",
+          });
+        }
+      } catch (serverError) {
+        console.log("Server error (using fallback):", serverError);
+        // Tetap gunakan data fallback
       }
     } catch (error) {
       console.error("Error fetching profile:", error);
-      const errorMessage =
-        error instanceof Error ? error.message : "Terjadi kesalahan";
-      Alert.alert("Error", "Gagal memuat profil: " + errorMessage);
+      Alert.alert("Error", "Gagal memuat profil admin");
     } finally {
       setLoading(false);
     }
@@ -131,6 +154,18 @@ export default function ProfilAdminScreen() {
     } catch (error) {
       console.error("Update Error:", error);
       Alert.alert("Error", "Gagal update profil");
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await AsyncStorage.removeItem('userData');
+      await AsyncStorage.removeItem('userToken');
+      setLogoutModal(false);
+      router.replace('/');
+    } catch (error) {
+      console.error('Error during logout:', error);
+      Alert.alert('Error', 'Gagal keluar dari akun');
     }
   };
 
@@ -205,7 +240,7 @@ export default function ProfilAdminScreen() {
         {/* TOMBOL LOGOUT */}
         <TouchableOpacity
           style={styles.logoutBtn}
-          onPress={() => router.replace("/")}
+          onPress={() => setLogoutModal(true)}
         >
           <Ionicons name="log-out-outline" size={20} color="#FF4D4D" />
           <Text style={styles.logoutText}>Keluar Akun</Text>
@@ -213,7 +248,7 @@ export default function ProfilAdminScreen() {
       </ScrollView>
 
       {/* Modal Edit */}
-      <Modal visible={editModal} transparent animationType="fade">
+      <Modal visible={editModal} transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Edit Profil Admin</Text>
@@ -231,37 +266,73 @@ export default function ProfilAdminScreen() {
             <Text style={styles.sectionLabel}>Ubah Password (Opsional)</Text>
 
             <Text style={styles.inputLabel}>Password Lama</Text>
-            <TextInput
-              style={styles.input}
-              value={editData.passwordLama}
-              onChangeText={(text) =>
-                setEditData({ ...editData, passwordLama: text })
-              }
-              placeholder="Kosongkan jika tidak ubah password"
-              secureTextEntry
-            />
+            <View style={styles.passwordContainer}>
+              <TextInput
+                style={styles.passwordInput}
+                value={editData.passwordLama}
+                onChangeText={(text) =>
+                  setEditData({ ...editData, passwordLama: text })
+                }
+                placeholder="Kosongkan jika tidak ubah password"
+                secureTextEntry={!showPasswordLama}
+              />
+              <TouchableOpacity 
+                style={styles.eyeButton}
+                onPress={() => setShowPasswordLama(!showPasswordLama)}
+              >
+                <Ionicons 
+                  name={showPasswordLama ? "eye-off-outline" : "eye-outline"} 
+                  size={20} 
+                  color="#666" 
+                />
+              </TouchableOpacity>
+            </View>
 
             <Text style={styles.inputLabel}>Password Baru</Text>
-            <TextInput
-              style={styles.input}
-              value={editData.passwordBaru}
-              onChangeText={(text) =>
-                setEditData({ ...editData, passwordBaru: text })
-              }
-              placeholder="Minimal 6 karakter"
-              secureTextEntry
-            />
+            <View style={styles.passwordContainer}>
+              <TextInput
+                style={styles.passwordInput}
+                value={editData.passwordBaru}
+                onChangeText={(text) =>
+                  setEditData({ ...editData, passwordBaru: text })
+                }
+                placeholder="Minimal 6 karakter"
+                secureTextEntry={!showPasswordBaru}
+              />
+              <TouchableOpacity 
+                style={styles.eyeButton}
+                onPress={() => setShowPasswordBaru(!showPasswordBaru)}
+              >
+                <Ionicons 
+                  name={showPasswordBaru ? "eye-off-outline" : "eye-outline"} 
+                  size={20} 
+                  color="#666" 
+                />
+              </TouchableOpacity>
+            </View>
 
             <Text style={styles.inputLabel}>Konfirmasi Password Baru</Text>
-            <TextInput
-              style={styles.input}
-              value={editData.konfirmasiPassword}
-              onChangeText={(text) =>
-                setEditData({ ...editData, konfirmasiPassword: text })
-              }
-              placeholder="Ulangi password baru"
-              secureTextEntry
-            />
+            <View style={styles.passwordContainer}>
+              <TextInput
+                style={styles.passwordInput}
+                value={editData.konfirmasiPassword}
+                onChangeText={(text) =>
+                  setEditData({ ...editData, konfirmasiPassword: text })
+                }
+                placeholder="Ulangi password baru"
+                secureTextEntry={!showKonfirmasiPassword}
+              />
+              <TouchableOpacity 
+                style={styles.eyeButton}
+                onPress={() => setShowKonfirmasiPassword(!showKonfirmasiPassword)}
+              >
+                <Ionicons 
+                  name={showKonfirmasiPassword ? "eye-off-outline" : "eye-outline"} 
+                  size={20} 
+                  color="#666" 
+                />
+              </TouchableOpacity>
+            </View>
 
             <View style={styles.modalButtons}>
               <TouchableOpacity
@@ -275,6 +346,37 @@ export default function ProfilAdminScreen() {
                 onPress={updateProfile}
               >
                 <Text style={styles.saveBtnText}>Simpan</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal Konfirmasi Logout */}
+      <Modal visible={logoutModal} transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.logoutModalContent}>
+            <View style={styles.logoutModalHeader}>
+              <Ionicons name="log-out-outline" size={32} color="#FF4D4D" />
+              <Text style={styles.logoutModalTitle}>Keluar Akun</Text>
+              <Text style={styles.logoutModalMessage}>
+                Apakah Anda yakin ingin keluar dari akun?
+              </Text>
+            </View>
+            
+            <View style={styles.logoutModalButtons}>
+              <TouchableOpacity 
+                style={styles.logoutCancelBtn}
+                onPress={() => setLogoutModal(false)}
+              >
+                <Text style={styles.logoutCancelText}>Batal</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.logoutConfirmBtn}
+                onPress={handleLogout}
+              >
+                <Text style={styles.logoutConfirmText}>Keluar</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -475,4 +577,16 @@ const styles = StyleSheet.create({
   saveBtn: { backgroundColor: "#004643" },
   cancelBtnText: { textAlign: "center", color: "#666", fontWeight: "500" },
   saveBtnText: { textAlign: "center", color: "#fff", fontWeight: "bold" },
+  logoutModalContent: { backgroundColor: '#fff', borderRadius: 16, padding: 24, width: '85%', maxWidth: 320 },
+  logoutModalHeader: { alignItems: 'center', marginBottom: 24 },
+  logoutModalTitle: { fontSize: 20, fontWeight: 'bold', color: '#333', marginTop: 12, marginBottom: 8 },
+  logoutModalMessage: { fontSize: 16, color: '#666', textAlign: 'center', lineHeight: 22 },
+  logoutModalButtons: { flexDirection: 'row', gap: 12 },
+  logoutCancelBtn: { flex: 1, paddingVertical: 12, borderRadius: 8, backgroundColor: '#F5F5F5', alignItems: 'center' },
+  logoutCancelText: { fontSize: 16, fontWeight: '600', color: '#666' },
+  logoutConfirmBtn: { flex: 1, paddingVertical: 12, borderRadius: 8, backgroundColor: '#FF4D4D', alignItems: 'center' },
+  logoutConfirmText: { fontSize: 16, fontWeight: '600', color: '#fff' },
+  passwordContainer: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#ddd', borderRadius: 8, marginBottom: 15 },
+  passwordInput: { flex: 1, padding: 12, fontSize: 14 },
+  eyeButton: { padding: 12 }
 });

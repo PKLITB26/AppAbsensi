@@ -2,7 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import { Alert, Image, Modal, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { getApiUrl, API_CONFIG } from '../../constants/config';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { PegawaiAPI } from '../../constants/config';
 
 interface UserProfile {
   id_user: number;
@@ -23,7 +24,10 @@ export default function ProfileScreen() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [editModal, setEditModal] = useState(false);
+  const [logoutModal, setLogoutModal] = useState(false);
   const [hasNIP, setHasNIP] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [editData, setEditData] = useState({
     nip: '',
     jenis_kelamin: '',
@@ -31,7 +35,9 @@ export default function ProfileScreen() {
     divisi: '',
     no_telepon: '',
     alamat: '',
-    tanggal_lahir: ''
+    tanggal_lahir: '',
+    password_baru: '',
+    konfirmasi_password: ''
   });
 
   useEffect(() => {
@@ -40,35 +46,76 @@ export default function ProfileScreen() {
 
   const fetchProfile = async () => {
     try {
-      console.log('Fetching profile data...');
-      const response = await fetch(getApiUrl(API_CONFIG.ENDPOINTS.PROFILE), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: 1 })
+      // Ambil user data dari AsyncStorage
+      const userData = await AsyncStorage.getItem('userData');
+      if (!userData) {
+        Alert.alert('Error', 'Silakan login ulang');
+        router.replace('/');
+        return;
+      }
+      
+      const user = JSON.parse(userData);
+      const userId = user.id_user || user.id;
+      if (!userId) {
+        Alert.alert('Error', 'Data login tidak valid');
+        router.replace('/');
+        return;
+      }
+      
+      // Gunakan data dari AsyncStorage sebagai fallback
+      const fallbackProfile = {
+        id_user: userId,
+        nama_lengkap: user.nama_lengkap || user.nama || user.email.split('@')[0],
+        email: user.email,
+        jabatan: user.jabatan || 'Pegawai',
+        nip: user.nip || null,
+        no_telepon: user.no_telepon || null,
+        divisi: user.divisi || null,
+        jenis_kelamin: user.jenis_kelamin || null,
+        alamat: user.alamat || null,
+        tanggal_lahir: user.tanggal_lahir || null,
+        foto_profil: user.foto_profil || null
+      };
+      
+      setProfile(fallbackProfile);
+      setHasNIP(!!fallbackProfile.nip);
+      setEditData({
+        nip: fallbackProfile.nip || '',
+        jenis_kelamin: fallbackProfile.jenis_kelamin || '',
+        jabatan: fallbackProfile.jabatan || '',
+        divisi: fallbackProfile.divisi || '',
+        no_telepon: fallbackProfile.no_telepon || '',
+        alamat: fallbackProfile.alamat || '',
+        tanggal_lahir: fallbackProfile.tanggal_lahir || '',
+        password_baru: '',
+        konfirmasi_password: ''
       });
       
-      console.log('Profile response status:', response.status);
-      const result = await response.json();
-      console.log('Profile API Result:', result);
-      
-      if (result.success) {
-        setProfile(result.data);
-        setHasNIP(result.has_nip);
-        setEditData({
-          nip: result.data.nip || '',
-          jenis_kelamin: result.data.jenis_kelamin || '',
-          jabatan: result.data.jabatan || '',
-          divisi: result.data.divisi || '',
-          no_telepon: result.data.no_telepon || '',
-          alamat: result.data.alamat || '',
-          tanggal_lahir: result.data.tanggal_lahir || ''
-        });
-      } else {
-        console.log('Profile API Error:', result.message);
-        Alert.alert('Error', 'Gagal memuat profil: ' + result.message);
+      // Coba ambil dari server (opsional)
+      try {
+        const result = await PegawaiAPI.getProfile(userId.toString());
+        
+        if (result.success) {
+          setProfile(result.data);
+          setHasNIP(!!result.data.nip);
+          setEditData({
+            nip: result.data.nip || '',
+            jenis_kelamin: result.data.jenis_kelamin || '',
+            jabatan: result.data.jabatan || '',
+            divisi: result.data.divisi || '',
+            no_telepon: result.data.no_telepon || '',
+            alamat: result.data.alamat || '',
+            tanggal_lahir: result.data.tanggal_lahir || '',
+            password_baru: '',
+            konfirmasi_password: ''
+          });
+        }
+      } catch (serverError) {
+        console.log('Server error (using fallback):', serverError);
+        // Tetap gunakan data fallback
       }
     } catch (error) {
-      console.log('Profile Fetch Error:', error);
+      console.log('Profile Error:', error);
       Alert.alert('Error', 'Gagal memuat profil');
     } finally {
       setLoading(false);
@@ -77,32 +124,47 @@ export default function ProfileScreen() {
 
   const updateProfile = async () => {
     try {
-      console.log('Updating profile with data:', editData);
-      const response = await fetch(getApiUrl(API_CONFIG.ENDPOINTS.PROFILE), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_id: 1,
-          action: 'update',
-          no_telepon: editData.no_telepon,
-          alamat: editData.alamat
-        })
+      const userData = await AsyncStorage.getItem('userData');
+      if (!userData) {
+        Alert.alert('Error', 'Silakan login ulang');
+        return;
+      }
+      
+      const user = JSON.parse(userData);
+      const userId = user.id_user || user.id;
+      if (!userId) {
+        Alert.alert('Error', 'Data login tidak valid');
+        return;
+      }
+      
+      const result = await PegawaiAPI.updateProfile({
+        user_id: userId.toString(),
+        nama_lengkap: profile?.nama_lengkap,
+        no_telepon: editData.no_telepon,
+        alamat: editData.alamat
       });
       
-      console.log('Update response status:', response.status);
-      const result = await response.json();
-      console.log('Update API Result:', result);
-      
       if (result.success) {
-        Alert.alert('Sukses', 'Profil berhasil diupdate');
+        Alert.alert('Sukses', result.message);
         setEditModal(false);
         fetchProfile();
       } else {
-        Alert.alert('Error', result.message || 'Gagal update profil');
+        Alert.alert('Error', result.message);
       }
     } catch (error) {
-      console.log('Update Error:', error);
       Alert.alert('Error', 'Gagal update profil');
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await AsyncStorage.removeItem('userData');
+      await AsyncStorage.removeItem('userToken');
+      setLogoutModal(false);
+      router.replace('/');
+    } catch (error) {
+      console.error('Error during logout:', error);
+      Alert.alert('Error', 'Gagal keluar dari akun');
     }
   };
 
@@ -174,17 +236,17 @@ export default function ProfileScreen() {
         </View>
 
         {/* TOMBOL LOGOUT */}
-        <TouchableOpacity style={styles.logoutBtn} onPress={() => router.replace('/')}>
+        <TouchableOpacity style={styles.logoutBtn} onPress={() => setLogoutModal(true)}>
           <Ionicons name="log-out-outline" size={20} color="#FF4D4D" />
           <Text style={styles.logoutText}>Keluar Akun</Text>
         </TouchableOpacity>
 
-        <Text style={styles.versionText}>Hadir.in v1.0.0 (Stable)</Text>
+
 
       </ScrollView>
       
       {/* Modal Edit */}
-      <Modal visible={editModal} transparent animationType="slide">
+      <Modal visible={editModal} transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>{hasNIP ? 'Edit Profil' : 'Lengkapi Profil'}</Text>
@@ -259,6 +321,51 @@ export default function ProfileScreen() {
               numberOfLines={3}
             />
             
+            <View style={styles.divider} />
+            <Text style={styles.sectionLabel}>Ubah Password (Opsional)</Text>
+            
+            <Text style={styles.inputLabel}>Password Baru</Text>
+            <View style={styles.passwordContainer}>
+              <TextInput
+                style={styles.passwordInput}
+                value={editData.password_baru}
+                onChangeText={(text) => setEditData({...editData, password_baru: text})}
+                placeholder="Kosongkan jika tidak ubah password"
+                secureTextEntry={!showPassword}
+              />
+              <TouchableOpacity 
+                style={styles.eyeButton}
+                onPress={() => setShowPassword(!showPassword)}
+              >
+                <Ionicons 
+                  name={showPassword ? "eye-off-outline" : "eye-outline"} 
+                  size={20} 
+                  color="#666" 
+                />
+              </TouchableOpacity>
+            </View>
+            
+            <Text style={styles.inputLabel}>Konfirmasi Password Baru</Text>
+            <View style={styles.passwordContainer}>
+              <TextInput
+                style={styles.passwordInput}
+                value={editData.konfirmasi_password}
+                onChangeText={(text) => setEditData({...editData, konfirmasi_password: text})}
+                placeholder="Ulangi password baru"
+                secureTextEntry={!showConfirmPassword}
+              />
+              <TouchableOpacity 
+                style={styles.eyeButton}
+                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+              >
+                <Ionicons 
+                  name={showConfirmPassword ? "eye-off-outline" : "eye-outline"} 
+                  size={20} 
+                  color="#666" 
+                />
+              </TouchableOpacity>
+            </View>
+            
             <View style={styles.modalButtons}>
               <TouchableOpacity 
                 style={[styles.modalBtn, styles.cancelBtn]}
@@ -271,6 +378,37 @@ export default function ProfileScreen() {
                 onPress={updateProfile}
               >
                 <Text style={styles.saveBtnText}>Simpan</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+      
+      {/* Modal Konfirmasi Logout */}
+      <Modal visible={logoutModal} transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.logoutModalContent}>
+            <View style={styles.logoutModalHeader}>
+              <Ionicons name="log-out-outline" size={32} color="#FF4D4D" />
+              <Text style={styles.logoutModalTitle}>Keluar Akun</Text>
+              <Text style={styles.logoutModalMessage}>
+                Apakah Anda yakin ingin keluar dari akun?
+              </Text>
+            </View>
+            
+            <View style={styles.logoutModalButtons}>
+              <TouchableOpacity 
+                style={styles.logoutCancelBtn}
+                onPress={() => setLogoutModal(false)}
+              >
+                <Text style={styles.logoutCancelText}>Batal</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.logoutConfirmBtn}
+                onPress={handleLogout}
+              >
+                <Text style={styles.logoutConfirmText}>Keluar</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -327,9 +465,8 @@ const styles = StyleSheet.create({
   menuLink: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 15, paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: '#F0F0F0' },
   menuLinkLeft: { flexDirection: 'row', alignItems: 'center' },
   menuLinkText: { marginLeft: 15, fontSize: 14, color: '#333' },
-  logoutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 30, marginBottom: 10 },
+  logoutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 30, marginBottom: 100 },
   logoutText: { marginLeft: 10, color: '#FF4D4D', fontWeight: 'bold', fontSize: 16 },
-  versionText: { textAlign: 'center', color: '#BBB', fontSize: 11, marginBottom: 30 },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
   modalContent: { backgroundColor: '#fff', margin: 20, padding: 20, borderRadius: 15, width: '90%' },
@@ -347,5 +484,19 @@ const styles = StyleSheet.create({
   genderBtn: { flex: 1, padding: 12, borderWidth: 1, borderColor: '#ddd', borderRadius: 8, marginHorizontal: 5, alignItems: 'center' },
   genderBtnActive: { backgroundColor: '#004643', borderColor: '#004643' },
   genderText: { color: '#666' },
-  genderTextActive: { color: '#fff', fontWeight: 'bold' }
+  genderTextActive: { color: '#fff', fontWeight: 'bold' },
+  logoutModalContent: { backgroundColor: '#fff', borderRadius: 16, padding: 24, width: '85%', maxWidth: 320 },
+  logoutModalHeader: { alignItems: 'center', marginBottom: 24 },
+  logoutModalTitle: { fontSize: 20, fontWeight: 'bold', color: '#333', marginTop: 12, marginBottom: 8 },
+  logoutModalMessage: { fontSize: 16, color: '#666', textAlign: 'center', lineHeight: 22 },
+  logoutModalButtons: { flexDirection: 'row', gap: 12 },
+  logoutCancelBtn: { flex: 1, paddingVertical: 12, borderRadius: 8, backgroundColor: '#F5F5F5', alignItems: 'center' },
+  logoutCancelText: { fontSize: 16, fontWeight: '600', color: '#666' },
+  logoutConfirmBtn: { flex: 1, paddingVertical: 12, borderRadius: 8, backgroundColor: '#FF4D4D', alignItems: 'center' },
+  logoutConfirmText: { fontSize: 16, fontWeight: '600', color: '#fff' },
+  divider: { height: 1, backgroundColor: '#E0E0E0', marginVertical: 15 },
+  sectionLabel: { fontSize: 13, fontWeight: '600', color: '#666', marginBottom: 10 },
+  passwordContainer: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#ddd', borderRadius: 8, marginBottom: 15 },
+  passwordInput: { flex: 1, padding: 12, fontSize: 14 },
+  eyeButton: { padding: 12 }
 });

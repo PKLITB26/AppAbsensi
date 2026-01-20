@@ -20,6 +20,7 @@ export default function EditPegawai() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     nama_lengkap: '',
     email: '',
@@ -45,10 +46,11 @@ export default function EditPegawai() {
       const result = await response.json();
       
       if (result.success) {
+        console.log('Pegawai data:', result.data); // Debug log
         setFormData({
           nama_lengkap: result.data.nama_lengkap || '',
           email: result.data.email || '',
-          password: result.data.password || '',
+          password: '', // Kosongkan password untuk reset
           nip: result.data.nip || '',
           no_telepon: result.data.no_telepon || '',
           tanggal_lahir: result.data.tanggal_lahir || '',
@@ -259,14 +261,30 @@ export default function EditPegawai() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Password *</Text>
-              <TextInput
-                style={styles.textInput}
-                value={formData.password}
-                onChangeText={(text) => setFormData({...formData, password: text})}
-                placeholder="Masukkan password"
-                secureTextEntry
-              />
+              <Text style={styles.inputLabel}>Reset Password (Opsional)</Text>
+              <View style={styles.passwordContainer}>
+                <TextInput
+                  style={styles.passwordInput}
+                  value={formData.password}
+                  onChangeText={(text) => setFormData({...formData, password: text})}
+                  placeholder="Masukkan password baru atau kosongkan jika tidak ingin mengubah"
+                  secureTextEntry={!showPassword}
+                />
+                <TouchableOpacity 
+                  style={styles.eyeButton}
+                  onPress={() => {
+                    console.log('Eye button pressed, current showPassword:', showPassword);
+                    setShowPassword(!showPassword);
+                  }}
+                >
+                  <Ionicons 
+                    name={showPassword ? "eye-off-outline" : "eye-outline"} 
+                    size={20} 
+                    color="#666" 
+                  />
+                </TouchableOpacity>
+              </View>
+              <Text style={styles.helperText}>*Kosongkan jika tidak ingin mengubah password</Text>
             </View>
           </View>
         </View>
@@ -450,6 +468,29 @@ const styles = StyleSheet.create({
   genderTextActive: {
     color: '#fff',
     fontWeight: '600',
+  },
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 8,
+    backgroundColor: '#fff',
+  },
+  passwordInput: {
+    flex: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+  },
+  eyeButton: {
+    padding: 12,
+  },
+  helperText: {
+    fontSize: 12,
+    color: '#888',
+    marginTop: 4,
+    fontStyle: 'italic'
   },
   saveButton: {
     backgroundColor: '#004643',

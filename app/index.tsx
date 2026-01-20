@@ -6,14 +6,12 @@ import {
   TextInput, 
   TouchableOpacity, 
   Alert, 
-  ActivityIndicator, 
   KeyboardAvoidingView, 
   Platform 
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getApiUrl, API_CONFIG } from '../constants/config';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -30,45 +28,50 @@ export default function LoginScreen() {
 
     setLoading(true);
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 8000);
-      
-      const response = await fetch(getApiUrl(API_CONFIG.ENDPOINTS.LOGIN), {
+      // Panggil API login yang sebenarnya
+      const response = await fetch('http://10.251.109.30/hadirinapp/auth/api/login.php', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-        signal: controller.signal
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: email,
+          password: password
+        })
       });
 
-      clearTimeout(timeoutId);
       const result = await response.json();
-
+      
       if (result.success) {
-        await AsyncStorage.setItem('userData', JSON.stringify(result.data));
+        // Simpan data user yang sebenarnya dari database
+        const userData = {
+          id_user: result.data.id_user,
+          email: result.data.email,
+          role: result.data.role,
+          nama_lengkap: result.data.nama_lengkap || result.data.nama || 'User',
+          jabatan: result.data.jabatan || '',
+          divisi: result.data.divisi || '',
+          nip: result.data.nip || '',
+          no_telepon: result.data.no_telepon || '',
+          jenis_kelamin: result.data.jenis_kelamin || '',
+          tanggal_lahir: result.data.tanggal_lahir || '',
+          alamat: result.data.alamat || ''
+        };
         
+        await AsyncStorage.setItem('userData', JSON.stringify(userData));
+        
+        // Redirect berdasarkan role dari database
         if (result.data.role === 'admin') {
           router.replace('/admin/dashboard-admin' as any);
         } else {
           router.replace('/(tabs)/beranda');
         }
       } else {
-        Alert.alert("Gagal", result.message);
+        Alert.alert("Login Gagal", result.message || "Email atau password salah");
       }
     } catch (error) {
-      console.log('Login Error:', error);
-      // Langsung masuk tanpa server
-      await AsyncStorage.setItem('userData', JSON.stringify({
-        id: 1,
-        nama: email.includes('admin') ? 'Admin User' : 'Demo User',
-        email: email || 'demo@company.com',
-        role: email.includes('admin') ? 'admin' : 'user'
-      }));
-      
-      if (email.includes('admin')) {
-        router.replace('/admin/dashboard-admin' as any);
-      } else {
-        router.replace('/(tabs)/beranda');
-      }
+      console.error('Login error:', error);
+      Alert.alert("Error", "Tidak dapat terhubung ke server");
     } finally {
       setLoading(false);
     }
@@ -127,8 +130,6 @@ export default function LoginScreen() {
             </TouchableOpacity>
           </View>
         </View>
-
-
       </View>
     </KeyboardAvoidingView>
   );
@@ -199,6 +200,5 @@ const styles = StyleSheet.create({
     color: '#004643',
     fontWeight: '600',
     textDecorationLine: 'underline'
-  },
-
+  }
 });

@@ -96,7 +96,7 @@ export default function LokasiKantorScreen() {
         </View>
       </View>
 
-      <ScrollView style={styles.content}>
+      <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
         <View style={styles.infoCard}>
           <Ionicons name="information-circle" size={20} color="#004643" />
           <Text style={styles.infoText}>
@@ -107,8 +107,17 @@ export default function LokasiKantorScreen() {
         {/* Lokasi Kantor Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Ionicons name="business" size={20} color="#004643" />
-            <Text style={styles.sectionTitle}>Lokasi Kantor</Text>
+            <View style={styles.sectionLeft}>
+              <Ionicons name="business" size={20} color="#004643" />
+              <Text style={styles.sectionTitle}>Lokasi Kantor Tetap</Text>
+            </View>
+            <TouchableOpacity 
+              style={styles.editBtn}
+              onPress={() => Alert.alert('Info', 'Fitur edit lokasi kantor akan segera tersedia')}
+            >
+              <Ionicons name="settings-outline" size={16} color="#004643" />
+              <Text style={styles.editBtnText}>Kelola</Text>
+            </TouchableOpacity>
           </View>
           
           {lokasiKantor.map((lokasi) => (
@@ -125,20 +134,16 @@ export default function LokasiKantorScreen() {
           ))}
         </View>
 
+        {/* Visual Separator */}
+        <View style={styles.separator} />
+
         {/* Lokasi Dinas Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <View style={styles.sectionLeft}>
-              <Ionicons name="location" size={20} color="#004643" />
+              <Ionicons name="location" size={20} color="#FF6B35" />
               <Text style={styles.sectionTitle}>Lokasi Dinas</Text>
             </View>
-            <TouchableOpacity 
-              style={styles.addBtn}
-              onPress={() => router.push('/pengaturan/tambah-lokasi')}
-            >
-              <Ionicons name="add" size={16} color="#004643" />
-              <Text style={styles.addBtnText}>Tambah</Text>
-            </TouchableOpacity>
           </View>
           
           {lokasiDinas.map((lokasi) => (
@@ -164,11 +169,26 @@ export default function LokasiKantorScreen() {
             <View style={styles.emptyState}>
               <Ionicons name="location-outline" size={40} color="#CCC" />
               <Text style={styles.emptyText}>Belum ada lokasi dinas</Text>
-              <Text style={styles.emptySubtext}>Tap tombol Tambah untuk menambah lokasi</Text>
+              <Text style={styles.emptySubtext}>Gunakan tombol di bawah untuk menambah lokasi</Text>
             </View>
           )}
         </View>
       </ScrollView>
+
+      {/* Sticky Footer Button */}
+      <View style={styles.stickyFooter}>
+        <TouchableOpacity 
+          style={styles.addLocationBtn}
+          onPress={() => router.push('/pengaturan/tambah-lokasi')}
+        >
+          <Ionicons name="add-circle" size={20} color="#004643" />
+          <View style={styles.addLocationContent}>
+            <Text style={styles.addLocationTitle}>Tambah Lokasi Baru</Text>
+            <Text style={styles.addLocationSubtitle}>Tambah lokasi kantor atau dinas sesuai kebutuhan</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={16} color="#004643" />
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 }
@@ -201,9 +221,17 @@ const styles = StyleSheet.create({
     fontWeight: 'bold', 
     color: '#004643' 
   },
+  headerAddBtn: {
+    padding: 10,
+    borderRadius: 10,
+    backgroundColor: '#F0F8F7'
+  },
   content: {
     flex: 1,
     padding: 20
+  },
+  scrollContent: {
+    paddingBottom: 80
   },
   infoCard: {
     flexDirection: 'row',
@@ -220,7 +248,7 @@ const styles = StyleSheet.create({
     marginLeft: 10
   },
   section: {
-    marginBottom: 25
+    marginBottom: 5
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -310,5 +338,61 @@ const styles = StyleSheet.create({
     color: '#CCC',
     marginTop: 5,
     textAlign: 'center'
+  },
+  addLocationBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F0F8F7',
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#E0F2E0',
+    borderStyle: 'dashed'
+  },
+  addLocationContent: {
+    flex: 1,
+    marginLeft: 10
+  },
+  addLocationTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#004643',
+    marginBottom: 1
+  },
+  addLocationSubtitle: {
+    fontSize: 11,
+    color: '#006B47'
+  },
+  separator: {
+    height: 1,
+    backgroundColor: '#E0E0E0',
+    marginVertical: 15,
+    marginHorizontal: 10
+  },
+  editBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F0F8F7',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8
+  },
+  editBtnText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#004643',
+    marginLeft: 4
+  },
+  stickyFooter: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(248, 250, 251, 0.98)',
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0'
   }
 });

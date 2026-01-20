@@ -590,7 +590,7 @@ export default function TrackingAdminScreen() {
 
       <FlatList
         data={filteredData}
-        keyExtractor={(item) => item.id_presensi.toString()}
+        keyExtractor={(item, index) => item?.id_presensi?.toString() || index.toString()}
         ListHeaderComponent={renderHeader}
         stickyHeaderIndices={[0]}
         renderItem={renderPresensiItem}

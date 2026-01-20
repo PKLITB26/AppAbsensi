@@ -72,7 +72,7 @@ export default function RiwayatScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFB' },
+  container: { flex: 1, backgroundColor: '#F8FAFB', paddingBottom: 100 },
   header: { padding: 20, backgroundColor: '#fff' },
   title: { fontSize: 18, fontWeight: 'bold', marginBottom: 15 },
   filterRow: { flexDirection: 'row', justifyContent: 'space-between' },
