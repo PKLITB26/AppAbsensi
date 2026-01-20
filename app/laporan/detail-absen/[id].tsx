@@ -19,23 +19,21 @@ const statusConfig = {
   'Sakit': { color: '#E91E63', icon: 'medical' },
   'Cuti': { color: '#9C27B0', icon: 'calendar' },
   'Pulang Cepat': { color: '#795548', icon: 'exit' },
-  'Dinas Luar/ Perjalanan Dinas': { color: '#607D8B', icon: 'airplane' },
-  'Mangkir/ Alpha': { color: '#424242', icon: 'ban' },
   'Libur': { color: '#F44336', icon: 'calendar' }
 };
-
-const API_BASE_URL = 'http://192.168.1.8/hadirinapp';
 
 import { API_CONFIG, getApiUrl } from '../../../constants/config';
 
 export default function DetailAbsenPegawai() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
-  const [pegawai, setPegawai] = useState({ nama: '', nip: '' });
+  const [pegawai, setPegawai] = useState({ nama: '', nip: '', user_id: '' });
   const [absenData, setAbsenData] = useState<AbsenDetail[]>([]);
   const [hariLibur, setHariLibur] = useState<{tanggal: string, nama_libur: string}[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [detailAbsen, setDetailAbsen] = useState<any>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(1);
   const [selectedYear, setSelectedYear] = useState(2026);
   const [showMonthPicker, setShowMonthPicker] = useState(false);
@@ -61,21 +59,96 @@ export default function DetailAbsenPegawai() {
     setLoading(true);
     
     try {
-      const response = await fetch(`${getApiUrl(API_CONFIG.ENDPOINTS.DETAIL_ABSEN)}?id=${id}&bulan=${selectedMonth}&tahun=${selectedYear}`);
+      const response = await fetch(`${getApiUrl(API_CONFIG.ENDPOINTS.DETAIL_ABSEN_PEGAWAI)}?id=${id}&bulan=${selectedMonth}&tahun=${selectedYear}`);
       const data = await response.json();
       
       if (data.success) {
-        setPegawai(data.pegawai);
+        setPegawai({ 
+          nama: data.pegawai.nama_lengkap, 
+          nip: data.pegawai.nip,
+          user_id: data.pegawai.id_user 
+        });
         setAbsenData(data.absen);
       } else {
         console.error('Error:', data.message);
       }
     } catch (error) {
       console.error('Network error:', error);
-      setPegawai({ nama: 'Error', nip: '-' });
+      setPegawai({ nama: 'Error', nip: '-', user_id: '' });
       setAbsenData([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const showDetailForDate = (item: AbsenDetail) => {
+    const date = new Date(item.tanggal);
+    const dayOfWeek = date.getDay();
+    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+    const liburInfo = hariLibur.find(h => h.tanggal === item.tanggal);
+    
+    if (liburInfo) {
+      const mockLiburData = {
+        tanggal: item.tanggal,
+        status: 'Libur',
+        keterangan: liburInfo.nama_libur,
+        isLibur: true
+      };
+      setDetailAbsen(mockLiburData);
+      setShowDetailModal(true);
+    }
+    else if (isWeekend && !item.jam_masuk) {
+      let keteranganLibur = 'Hari Libur';
+      if (dayOfWeek === 0) {
+        keteranganLibur = 'Hari Minggu';
+      } else if (dayOfWeek === 6) {
+        keteranganLibur = 'Hari Sabtu';
+      }
+      
+      const mockLiburData = {
+        tanggal: item.tanggal,
+        status: 'Libur',
+        keterangan: keteranganLibur,
+        isLibur: true
+      };
+      setDetailAbsen(mockLiburData);
+      setShowDetailModal(true);
+    } else if (item.jam_masuk) {
+      fetchDetailAbsenHarian(item.tanggal, pegawai.user_id);
+    } else {
+      const mockTidakHadirData = {
+        tanggal: item.tanggal,
+        status: 'Tidak Hadir',
+        jam_masuk: null,
+        jam_pulang: null,
+        lokasi_masuk: '-',
+        lokasi_pulang: '-',
+        lat_masuk: null,
+        long_masuk: null,
+        lat_pulang: null,
+        long_pulang: null,
+        alasan_pulang_cepat: null,
+        foto_masuk: null,
+        foto_pulang: null
+      };
+      setDetailAbsen(mockTidakHadirData);
+      setShowDetailModal(true);
+    }
+  };
+
+  const fetchDetailAbsenHarian = async (tanggal: string, user_id: string) => {
+    try {
+      const response = await fetch(`${getApiUrl(API_CONFIG.ENDPOINTS.DETAIL_ABSEN)}?date=${tanggal}&user_id=${user_id}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        setDetailAbsen(data.data);
+        setShowDetailModal(true);
+      } else {
+        console.error('Detail absen not found:', data.message);
+      }
+    } catch (error) {
+      console.error('Error fetching detail absen:', error);
     }
   };
 
@@ -137,28 +210,58 @@ export default function DetailAbsenPegawai() {
     const dayOfWeek = date.getDay();
     const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
     const liburInfo = hariLibur.find(h => h.tanggal === item.tanggal);
-    const isLiburOrWeekend = liburInfo || isWeekend;
     
     let displayStatus = item.status;
     let displayKeterangan = item.keterangan;
     
-    if (isLiburOrWeekend) {
+    // Gabung Mangkir/Alpha ke Tidak Hadir
+    if (displayStatus === 'Mangkir/ Alpha' || displayStatus === 'Mangkir' || displayStatus === 'Alpha') {
+      displayStatus = 'Tidak Hadir';
+    }
+    
+    // Gabung Dinas ke Hadir
+    if (displayStatus === 'Dinas Luar/ Perjalanan Dinas' || displayStatus === 'Dinas Luar' || displayStatus === 'Perjalanan Dinas') {
+      displayStatus = 'Hadir';
+    }
+    
+    // Prioritas: Jika ada hari libur merah, selalu tampilkan sebagai libur
+    if (liburInfo) {
       displayStatus = 'Libur';
-      if (liburInfo) {
-        displayKeterangan = liburInfo.nama_libur;
-      } else if (dayOfWeek === 0) {
+      displayKeterangan = liburInfo.nama_libur;
+    }
+    // Jika weekend dan tidak ada absensi
+    else if (isWeekend && (!item.status || item.status === 'Tidak Hadir') && !item.jam_masuk) {
+      displayStatus = 'Libur';
+      if (dayOfWeek === 0) {
         displayKeterangan = 'Hari Minggu';
       } else if (dayOfWeek === 6) {
         displayKeterangan = 'Hari Sabtu';
       }
     }
     
+    // Normalisasi status - kapitalisasi huruf pertama
+    if (displayStatus && typeof displayStatus === 'string') {
+      displayStatus = displayStatus.charAt(0).toUpperCase() + displayStatus.slice(1).toLowerCase();
+    }
+    
     const config = statusConfig[displayStatus as keyof typeof statusConfig] || statusConfig['Tidak Hadir'];
+    
+    // Debug: log untuk melihat status yang tidak cocok
+    if (!statusConfig[displayStatus as keyof typeof statusConfig]) {
+      console.log('Status tidak ditemukan:', displayStatus, 'Original:', item.status);
+    }
+    
+    // Cek jika hadir tapi dinas untuk warna keterangan khusus
+    const isDinas = displayStatus === 'Hadir' && 
+      (displayKeterangan.toLowerCase().includes('dinas') || 
+       item.status === 'Dinas Luar/ Perjalanan Dinas' ||
+       item.status === 'Dinas Luar' ||
+       item.status === 'Perjalanan Dinas');
     
     return (
       <TouchableOpacity 
-        style={[styles.absenCard, isLiburOrWeekend && styles.liburCard]}
-        onPress={() => setSelectedDate(selectedDate === item.tanggal ? null : item.tanggal)}
+        style={[styles.absenCard, (liburInfo || (isWeekend && !item.jam_masuk)) && styles.liburCard]}
+        onPress={() => showDetailForDate(item)}
       >
         <View style={styles.dateSection}>
           <Text style={styles.dayText}>{dateInfo.day}</Text>
@@ -172,7 +275,7 @@ export default function DetailAbsenPegawai() {
           </View>
           <View style={styles.statusInfo}>
             <Text style={[styles.statusText, { color: config.color }]}>{displayStatus}</Text>
-            <Text style={styles.keteranganText}>{displayKeterangan}</Text>
+            <Text style={[styles.keteranganText, { color: isDinas ? '#607D8B' : '#666' }]}>{displayKeterangan}</Text>
           </View>
         </View>
         
@@ -298,6 +401,121 @@ export default function DetailAbsenPegawai() {
             >
               <Text style={styles.confirmText}>Pilih</Text>
             </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+      
+      {/* Detail Absen Modal */}
+      <Modal
+        visible={showDetailModal}
+        transparent={true}
+        animationType="none"
+        onRequestClose={() => setShowDetailModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.detailModal}>
+            <View style={styles.detailHeader}>
+              <Text style={styles.detailTitle}>Detail Absensi</Text>
+              <TouchableOpacity onPress={() => setShowDetailModal(false)}>
+                <Ionicons name="close" size={24} color="#fff" />
+              </TouchableOpacity>
+            </View>
+            
+            {detailAbsen && (
+              <View style={styles.detailContent}>
+                <Text style={styles.detailDate}>{detailAbsen.tanggal}</Text>
+                
+                {detailAbsen.isLibur ? (
+                  <View style={styles.liburContent}>
+                    <View style={styles.liburIcon}>
+                      <Ionicons name="calendar" size={48} color="#F44336" />
+                    </View>
+                    <Text style={styles.liburStatus}>Hari Libur</Text>
+                    <Text style={styles.liburKeterangan}>{detailAbsen.keterangan}</Text>
+                  </View>
+                ) : (
+                  <>
+                    <View style={styles.detailSection}>
+                      <Text style={styles.sectionTitle}>Waktu Kehadiran</Text>
+                      <View style={styles.timeRow}>
+                        <View style={styles.timeItem}>
+                          <Ionicons name="log-in" size={16} color="#4CAF50" />
+                          <Text style={styles.timeLabel}>Masuk</Text>
+                          <Text style={styles.timeValue}>{detailAbsen.jam_masuk || '-'}</Text>
+                        </View>
+                        <View style={styles.timeItem}>
+                          <Ionicons name="log-out" size={16} color="#FF5722" />
+                          <Text style={styles.timeLabel}>Pulang</Text>
+                          <Text style={styles.timeValue}>{detailAbsen.jam_pulang || '-'}</Text>
+                        </View>
+                      </View>
+                    </View>
+                    
+                    <View style={styles.detailSection}>
+                      <Text style={styles.sectionTitle}>Lokasi</Text>
+                      <View style={styles.locationRow}>
+                        <Ionicons name="location" size={16} color="#2196F3" />
+                        <View style={styles.locationInfo}>
+                          <Text style={styles.locationText}>Masuk: {detailAbsen.lokasi_masuk || '-'}</Text>
+                          <Text style={styles.locationText}>Pulang: {detailAbsen.lokasi_pulang || '-'}</Text>
+                          <Text style={styles.coordText}>
+                            {detailAbsen.lat_masuk && detailAbsen.long_masuk 
+                              ? `${detailAbsen.lat_masuk}, ${detailAbsen.long_masuk}` 
+                              : '-'}
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+                    
+                    {detailAbsen.jam_pulang && (
+                      <View style={styles.detailSection}>
+                        <Text style={styles.sectionTitle}>Alasan Pulang Cepat</Text>
+                        <Text style={styles.reasonText}>
+                          {detailAbsen.alasan_pulang_cepat && detailAbsen.alasan_pulang_cepat.trim() !== '' 
+                            ? detailAbsen.alasan_pulang_cepat 
+                            : '-'
+                          }
+                        </Text>
+                      </View>
+                    )}
+                    
+                    <View style={styles.detailSection}>
+                      <Text style={styles.sectionTitle}>Foto Absensi</Text>
+                      <View style={styles.photoRow}>
+                        <View style={styles.photoItem}>
+                          <Text style={styles.photoLabel}>Foto Masuk</Text>
+                          {detailAbsen.foto_masuk ? (
+                            <View style={styles.photoPlaceholder}>
+                              <Ionicons name="image" size={24} color="#666" />
+                              <Text style={styles.photoText}>Ada foto</Text>
+                            </View>
+                          ) : (
+                            <View style={styles.photoPlaceholder}>
+                              <Ionicons name="image-outline" size={24} color="#ccc" />
+                              <Text style={styles.noPhotoText}>Tidak ada foto</Text>
+                            </View>
+                          )}
+                        </View>
+                        <View style={styles.photoItem}>
+                          <Text style={styles.photoLabel}>Foto Pulang</Text>
+                          {detailAbsen.foto_pulang ? (
+                            <View style={styles.photoPlaceholder}>
+                              <Ionicons name="image" size={24} color="#666" />
+                              <Text style={styles.photoText}>Ada foto</Text>
+                            </View>
+                          ) : (
+                            <View style={styles.photoPlaceholder}>
+                              <Ionicons name="image-outline" size={24} color="#ccc" />
+                              <Text style={styles.noPhotoText}>Tidak ada foto</Text>
+                            </View>
+                          )}
+                        </View>
+                      </View>
+                    </View>
+                  </>
+                )}
+              </View>
+            )}
           </View>
         </View>
       </Modal>
@@ -526,5 +744,167 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFEBEE',
     borderLeftWidth: 4,
     borderLeftColor: '#F44336',
+  },
+  detailModal: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 0,
+    width: '90%',
+    maxHeight: '85%',
+    overflow: 'hidden',
+  },
+  detailHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: '#004643',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+  },
+  detailTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  detailContent: {
+    padding: 20,
+  },
+  detailDate: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#004643',
+    textAlign: 'center',
+    marginBottom: 20,
+    paddingVertical: 12,
+    backgroundColor: '#E6F0EF',
+    borderRadius: 8,
+  },
+  detailSection: {
+    marginBottom: 20,
+  },
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#004643',
+    marginBottom: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  timeRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  timeItem: {
+    flex: 1,
+    backgroundColor: '#F8FAFB',
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  timeLabel: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginTop: 4,
+    fontWeight: '500',
+  },
+  timeValue: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#111827',
+    marginTop: 2,
+  },
+  locationRow: {
+    backgroundColor: '#F8FAFB',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  locationInfo: {
+    gap: 8,
+  },
+  locationText: {
+    fontSize: 14,
+    color: '#374151',
+    lineHeight: 20,
+  },
+  coordText: {
+    fontSize: 12,
+    color: '#6B7280',
+    fontStyle: 'italic',
+    marginTop: 4,
+  },
+  reasonText: {
+    fontSize: 14,
+    color: '#92400E',
+    backgroundColor: '#FEF3C7',
+    padding: 16,
+    borderRadius: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: '#F59E0B',
+    lineHeight: 20,
+  },
+  photoRow: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  photoItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  photoLabel: {
+    fontSize: 12,
+    color: '#6B7280',
+    fontWeight: '500',
+    marginBottom: 8,
+  },
+  photoPlaceholder: {
+    width: '100%',
+    height: 80,
+    backgroundColor: '#F9FAFB',
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+    borderStyle: 'dashed',
+  },
+  photoText: {
+    fontSize: 11,
+    color: '#6B7280',
+    marginTop: 4,
+  },
+  noPhotoText: {
+    fontSize: 11,
+    color: '#9CA3AF',
+    marginTop: 4,
+  },
+  liburContent: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  liburIcon: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: '#FEE2E2',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  liburStatus: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#DC2626',
+    marginBottom: 8,
+  },
+  liburKeterangan: {
+    fontSize: 16,
+    color: '#6B7280',
+    textAlign: 'center',
   },
 });

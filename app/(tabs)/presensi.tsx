@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, SafeAreaView, Alert, TextInput, Modal } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { StyleSheet, View, Text, TouchableOpacity, SafeAreaView, Alert, Modal, Dimensions, Animated } from 'react-native';
 import MapView, { Marker, Circle } from 'react-native-maps';
 import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
@@ -7,30 +7,33 @@ import { Ionicons } from '@expo/vector-icons';
 import { PegawaiAPI, API_CONFIG } from '../../constants/config';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+const { height: screenHeight, width: screenWidth } = Dimensions.get('window');
+
 export default function PresensiScreen() {
   const [location, setLocation] = useState<any>(null);
   const [distance, setDistance] = useState<number>(0);
   const [availableLocations, setAvailableLocations] = useState<any[]>([]);
   const [nearestLocation, setNearestLocation] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [isDinas, setIsDinas] = useState<boolean>(false);
-  const [dinasLocation, setDinasLocation] = useState<any>(null);
   const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [hasCheckedIn, setHasCheckedIn] = useState(false);
   const [checkInTime, setCheckInTime] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [workEndTime, setWorkEndTime] = useState<string>('17:00');
-  const [showEarlyLeaveInput, setShowEarlyLeaveInput] = useState(false);
-  const [earlyLeaveReason, setEarlyLeaveReason] = useState('');
+  const [pendingAttendanceType, setPendingAttendanceType] = useState<'masuk' | 'pulang' | null>(null);
+  
+  // State untuk collapsible panel
+  const [panelHeight, setPanelHeight] = useState(screenHeight * 0.35);
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const panelAnimation = useRef(new Animated.Value(screenHeight * 0.35)).current;
+  const minHeight = 120;
+  const maxHeight = screenHeight * 0.6;
 
   useEffect(() => {
-    checkDinasStatus();
     fetchLocations();
     getCurrentLocation();
     checkTodayAttendance();
     
-    // Update waktu setiap detik
     const timer = setInterval(() => {
       setCurrentTime(new Date());
     }, 1000);
@@ -38,10 +41,6 @@ export default function PresensiScreen() {
     return () => clearInterval(timer);
   }, []);
 
-  // Untuk testing - uncomment baris ini untuk simulasi sudah check-in
-  // setHasCheckedIn(true);
-  // setCheckInTime('08:15:30');
-  
   const checkTodayAttendance = async () => {
     try {
       const userData = await AsyncStorage.getItem('userData');
@@ -57,89 +56,21 @@ export default function PresensiScreen() {
       if (data.success && data.has_checked_in) {
         setHasCheckedIn(true);
         setCheckInTime(data.check_in_time);
-        setWorkEndTime(data.work_end_time || '17:00');
       }
     } catch (error) {
       console.error('Error checking attendance:', error);
     }
   };
 
-  const checkDinasStatus = async () => {
-    try {
-      const userData = await AsyncStorage.getItem('userData');
-      if (!userData) return;
-      
-      const user = JSON.parse(userData);
-      const userId = user.id_user || user.id;
-      
-      // Cek status dinas hari ini
-      const response = await fetch(`${API_CONFIG.BASE_URL}/check-dinas.php?user_id=${userId}`);
-      const responseText = await response.text();
-      
-      // Cek apakah response adalah JSON yang valid
-      let data;
-      try {
-        data = JSON.parse(responseText);
-      } catch (parseError) {
-        console.log('Response bukan JSON valid:', responseText);
-        // Set default tidak dinas jika API error
-        setIsDinas(false);
-        setDinasLocation(null);
-        return;
-      }
-      
-      if (data.success && data.is_dinas) {
-        setIsDinas(true);
-        setDinasLocation(data.lokasi_dinas);
-      } else {
-        setIsDinas(false);
-        setDinasLocation(null);
-      }
-    } catch (error) {
-      console.error('Error checking dinas status:', error);
-      // Set default tidak dinas jika ada error
-      setIsDinas(false);
-      setDinasLocation(null);
-    }
-  };
-
   const fetchLocations = async () => {
     try {
-      // Fetch lokasi dari API debug yang sudah dibuat
       const response = await fetch(`${API_CONFIG.BASE_URL}/debug-lokasi.php`);
       const data = await response.json();
       
       if (data.lokasi_kantor) {
-        let activeLocations = data.lokasi_kantor.filter((loc: any) => 
-          loc.status === 'aktif' && loc.is_active === 1
+        const activeLocations = data.lokasi_kantor.filter((loc: any) => 
+          loc.status === 'aktif' && loc.is_active === 1 && loc.jenis_lokasi === 'tetap'
         );
-        
-        // Jika sedang dinas, tambahkan lokasi dinas dari database dinas
-        if (isDinas && dinasLocation) {
-          // Filter hanya lokasi kantor tetap
-          activeLocations = activeLocations.filter((loc: any) => 
-            loc.jenis_lokasi === 'tetap'
-          );
-          
-          // Tambahkan lokasi dinas dari tabel dinas
-          const dinasLoc = {
-            id: dinasLocation.id,
-            nama_lokasi: dinasLocation.nama_lokasi,
-            alamat: dinasLocation.alamat,
-            latitude: dinasLocation.latitude.toString(),
-            longitude: dinasLocation.longitude.toString(),
-            radius: dinasLocation.radius,
-            jenis_lokasi: 'dinas',
-            status: 'aktif',
-            is_active: 1
-          };
-          activeLocations.push(dinasLoc);
-        } else {
-          // Jika tidak dinas, hanya tampilkan lokasi tetap
-          activeLocations = activeLocations.filter((loc: any) => 
-            loc.jenis_lokasi === 'tetap'
-          );
-        }
         
         setAvailableLocations(activeLocations);
       }
@@ -159,7 +90,6 @@ export default function PresensiScreen() {
       let currLocation = await Location.getCurrentPositionAsync({});
       setLocation(currLocation.coords);
       
-      // Hitung jarak ke semua lokasi setelah mendapat koordinat
       if (availableLocations.length > 0) {
         calculateDistances(currLocation.coords);
       }
@@ -190,23 +120,14 @@ export default function PresensiScreen() {
     setNearestLocation(closest);
   };
 
-  // Update distances when location changes
   useEffect(() => {
     if (location && availableLocations.length > 0) {
       calculateDistances(location);
     }
   }, [location, availableLocations]);
 
-  // Re-fetch locations when dinas status changes
-  useEffect(() => {
-    if (isDinas !== null) {
-      fetchLocations();
-    }
-  }, [isDinas, dinasLocation]);
-
-  // Fungsi Hitung Jarak (Meter)
   const getDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
-    const R = 6371e3; // Radius bumi dalam meter
+    const R = 6371e3;
     const φ1 = lat1 * Math.PI / 180;
     const φ2 = lat2 * Math.PI / 180;
     const Δφ = (lat2 - lat1) * Math.PI / 180;
@@ -217,447 +138,620 @@ export default function PresensiScreen() {
               Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
-    return R * c; // Hasil dalam meter
+    return R * c;
   };
 
-  // Logika validasi lokasi berdasarkan status dinas
   const validateLocation = () => {
-    if (!nearestLocation) return { valid: false, message: "Lokasi tidak terdeteksi" };
+    if (!nearestLocation) return { valid: false, message: "Lokasi tidak dapat dideteksi" };
     
     const isInRange = distance <= nearestLocation.radius;
     
-    if (isDinas) {
-      // Jika sedang dinas, HANYA boleh absen di lokasi dinas
-      if (!dinasLocation) {
-        return { valid: false, message: "Lokasi dinas belum ditentukan" };
-      }
-      if (nearestLocation.jenis_lokasi !== 'dinas') {
-        return { valid: false, message: "Anda sedang dinas, harus absen di lokasi dinas yang ditentukan!" };
-      }
-      if (!isInRange) {
-        return { valid: false, message: "Anda berada di luar radius lokasi dinas" };
-      }
-    } else {
-      // Jika tidak dinas, tidak boleh absen di lokasi dinas
-      if (nearestLocation.jenis_lokasi === 'dinas') {
-        return { valid: false, message: "Anda tidak sedang dinas, tidak bisa absen di lokasi dinas" };
-      }
-      if (!isInRange) {
-        return { valid: false, message: "Anda berada di luar radius lokasi kantor" };
-      }
+    if (!isInRange) {
+      return { valid: false, message: `Anda berada di luar area kantor (${Math.round(distance)}m dari lokasi)` };
     }
     
     return { valid: true, message: "Lokasi valid" };
   };
 
-  const locationValidation = validateLocation();
-  const isOutOfRange = !locationValidation.valid;
-
-  const isWorkTimeOver = () => {
-    const now = currentTime;
-    const [endHour, endMinute] = workEndTime.split(':').map(Number);
-    const endTime = new Date();
-    endTime.setHours(endHour, endMinute, 0, 0);
-    return now >= endTime;
-  };
-
-  const getButtonText = () => {
-    const currentTimeStr = currentTime.toTimeString().split(' ')[0];
+  const togglePanel = () => {
+    const newHeight = isCollapsed ? screenHeight * 0.35 : minHeight;
+    setIsCollapsed(!isCollapsed);
     
-    if (isProcessing) return "MEMPROSES...";
-    if (isOutOfRange) return "TIDAK BISA ABSEN";
-    if (!hasCheckedIn) return `ABSEN MASUK\n${currentTimeStr}`;
-    if (isWorkTimeOver()) return `ABSEN PULANG\n${currentTimeStr}`;
-    return `PULANG CEPAT\n${currentTimeStr}`;
+    Animated.spring(panelAnimation, {
+      toValue: newHeight,
+      useNativeDriver: false,
+      tension: 100,
+      friction: 8,
+    }).start();
+    
+    setPanelHeight(newHeight);
   };
 
-  const handleAbsen = async () => {
-    if (isOutOfRange) {
-      Alert.alert("Gagal", locationValidation.message);
+  const handleAbsenMasuk = async () => {
+    const validation = validateLocation();
+    if (!validation.valid) {
+      Alert.alert('Lokasi Tidak Valid', validation.message);
       return;
     }
     
-    if (!hasCheckedIn) {
-      await takeSelfie('masuk');
-    } else {
-      await takeSelfie('pulang');
-    }
+    setPendingAttendanceType('masuk');
+    await takePhotoWithLocation();
   };
 
-  const takeSelfie = async (type: string = 'masuk') => {
+  const handleAbsenPulang = async () => {
+    const validation = validateLocation();
+    if (!validation.valid) {
+      Alert.alert('Lokasi Tidak Valid', validation.message);
+      return;
+    }
+    
+    setPendingAttendanceType('pulang');
+    await takePhotoWithLocation();
+  };
+
+  const takePhotoWithLocation = async () => {
     try {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Error', 'Izin kamera diperlukan untuk absen');
+        Alert.alert('Error', 'Izin kamera diperlukan');
         return;
-      }
-
-      // Ambil lokasi terbaru sebelum foto
-      let currentLocation = location;
-      try {
-        const freshLocation = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.High
-        });
-        currentLocation = freshLocation.coords;
-        setLocation(currentLocation);
-      } catch (locError) {
-        console.log('Menggunakan lokasi terakhir:', locError);
       }
 
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: false,
-        aspect: [1, 1],
+        allowsEditing: true,
+        aspect: [4, 3],
         quality: 0.8,
-        cameraType: ImagePicker.CameraType.front,
-        exif: true, // Simpan metadata EXIF termasuk lokasi
       });
 
-      if (!result.canceled && result.assets[0]) {
-        const photoData = {
-          uri: result.assets[0].uri,
-          location: currentLocation,
-          timestamp: new Date().toISOString(),
-          distance: distance,
-          nearestLocation: nearestLocation?.nama_lokasi
-        };
-        
-        setCapturedPhoto(JSON.stringify(photoData));
-        
-        // Jika pulang dan belum waktunya, tampilkan form alasan
-        if (type === 'pulang' && !isWorkTimeOver()) {
-          setShowEarlyLeaveInput(true);
-        } else {
-          const currentValidation = validateLocation();
-          if (!currentValidation.valid) {
-            Alert.alert('Error', 'Lokasi tidak valid saat mengambil foto: ' + currentValidation.message);
-            return;
-          }
-          showConfirmation(JSON.stringify(photoData), type);
-        }
+      if (!result.canceled) {
+        setCapturedPhoto(result.assets[0].uri);
+      } else {
+        setPendingAttendanceType(null);
       }
     } catch (error) {
+      console.error('Error taking photo:', error);
       Alert.alert('Error', 'Gagal mengambil foto');
+      setPendingAttendanceType(null);
     }
   };
 
-  const showConfirmation = (photoUri: string, type: string) => {
-    let message = "Foto selfie sudah diambil. Pastikan wajah Anda terlihat jelas dan lokasi sudah sesuai.";
+  const confirmAttendance = async () => {
+    if (!pendingAttendanceType || !capturedPhoto) return;
     
-    if (type === 'pulang_cepat') {
-      message += `\n\nAlasan pulang cepat: ${earlyLeaveReason}`;
-    }
-    
-    Alert.alert(
-      "Konfirmasi Absen",
-      message + " Lanjutkan absen?",
-      [
-        {
-          text: "Ulangi Foto",
-          style: "cancel",
-          onPress: () => {
-            setCapturedPhoto(null);
-            takeSelfie(type);
-          }
-        },
-        {
-          text: "Konfirmasi Absen",
-          onPress: () => submitAbsen(photoUri, type)
-        }
-      ]
-    );
-  };
-
-  const submitAbsen = async (photoData: string, type: string = 'masuk') => {
     setIsProcessing(true);
     
     try {
       const userData = await AsyncStorage.getItem('userData');
       if (!userData) {
-        Alert.alert('Error', 'Silakan login ulang');
+        Alert.alert('Error', 'Data user tidak ditemukan');
         return;
       }
       
       const user = JSON.parse(userData);
       const userId = user.id_user || user.id;
-      if (!userId) {
-        Alert.alert('Error', 'Data login tidak valid');
-        return;
-      }
       
-      // Parse photo data yang mengandung lokasi
-      let parsedPhotoData;
-      try {
-        parsedPhotoData = JSON.parse(photoData);
-      } catch {
-        // Fallback jika photoData adalah string URI biasa
-        parsedPhotoData = {
-          uri: photoData,
-          location: location,
-          timestamp: new Date().toISOString(),
-          distance: distance,
-          nearestLocation: nearestLocation?.nama_lokasi
-        };
-      }
+      const formData = new FormData();
+      formData.append('user_id', userId.toString());
+      formData.append('type', pendingAttendanceType);
+      formData.append('latitude', location.latitude.toString());
+      formData.append('longitude', location.longitude.toString());
+      formData.append('lokasi_id', nearestLocation.id.toString());
       
-      let result;
+      formData.append('foto', {
+        uri: capturedPhoto,
+        type: 'image/jpeg',
+        name: `${pendingAttendanceType}_${userId}_${Date.now()}.jpg`,
+      } as any);
       
-      if (isDinas && dinasLocation) {
-        // Absen dinas
-        const dinasData = {
-          id_dinas: dinasLocation.id,
-          id_user: userId,
-          tanggal_absen: new Date().toISOString().split('T')[0],
-          [type === 'masuk' ? 'jam_masuk' : 'jam_pulang']: new Date().toTimeString().split(' ')[0],
-          [type === 'masuk' ? 'latitude_masuk' : 'latitude_pulang']: parsedPhotoData.location?.latitude || 0,
-          [type === 'masuk' ? 'longitude_masuk' : 'longitude_pulang']: parsedPhotoData.location?.longitude || 0,
-          [type === 'masuk' ? 'foto_masuk' : 'foto_pulang']: parsedPhotoData.uri,
-          status: 'hadir',
-          keterangan: type === 'pulang_cepat' ? earlyLeaveReason : `Absen ${type} dinas di ${parsedPhotoData.nearestLocation}`,
-          photo_metadata: JSON.stringify({
-            timestamp: parsedPhotoData.timestamp,
-            distance: parsedPhotoData.distance,
-            location_name: parsedPhotoData.nearestLocation
-          })
-        };
-        
-        const response = await fetch(`${API_CONFIG.BASE_URL}/submit-absen-dinas.php`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(dinasData)
-        });
-        result = await response.json();
-      } else {
-        // Absen normal
-        const presensiData = {
-          id_user: userId,
-          tanggal: new Date().toISOString().split('T')[0],
-          [type === 'masuk' ? 'jam_masuk' : 'jam_pulang']: new Date().toTimeString().split(' ')[0],
-          [type === 'masuk' ? 'lat_absen' : 'lat_pulang']: parsedPhotoData.location?.latitude || 0,
-          [type === 'masuk' ? 'long_absen' : 'long_pulang']: parsedPhotoData.location?.longitude || 0,
-          [type === 'masuk' ? 'foto_selfie' : 'foto_pulang']: parsedPhotoData.uri,
-          status: type === 'pulang_cepat' ? 'Pulang Cepat' : 'Hadir',
-          alasan_luar_lokasi: type === 'pulang_cepat' ? earlyLeaveReason : parsedPhotoData.nearestLocation || 'Lokasi kantor',
-          photo_metadata: JSON.stringify({
-            timestamp: parsedPhotoData.timestamp,
-            distance: parsedPhotoData.distance,
-            location_name: parsedPhotoData.nearestLocation
-          })
-        };
-        
-        result = await PegawaiAPI.submitPresensi(presensiData);
-      }
+      const response = await fetch(`${API_CONFIG.BASE_URL}/submit-presensi.php`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      
+      const result = await response.json();
       
       if (result.success) {
-        let message = "";
-        if (type === 'masuk') {
-          message = isDinas ? "Absen masuk dinas berhasil!" : "Absen masuk berhasil!";
-          setHasCheckedIn(true);
-          setCheckInTime(new Date().toTimeString().split(' ')[0]);
-        } else if (type === 'pulang_cepat') {
-          message = "Absen pulang cepat berhasil!";
-        } else {
-          message = "Absen pulang berhasil!";
-        }
-        
-        message += `\n\nLokasi foto: ${parsedPhotoData.nearestLocation}\nJarak: ${Math.round(parsedPhotoData.distance)}m`;
-        
-        Alert.alert("Berhasil", message);
+        Alert.alert('Berhasil', `Absensi ${pendingAttendanceType} berhasil dicatat`);
         setCapturedPhoto(null);
-        setEarlyLeaveReason('');
+        setPendingAttendanceType(null);
         
-        if (type !== 'masuk') {
-          setHasCheckedIn(false);
+        if (pendingAttendanceType === 'masuk') {
+          setHasCheckedIn(true);
+          setCheckInTime(new Date().toLocaleTimeString('id-ID'));
         }
       } else {
-        Alert.alert("Gagal", result.message);
+        Alert.alert('Error', result.message || 'Gagal mencatat absensi');
       }
     } catch (error) {
-      Alert.alert("Error", "Gagal menyimpan presensi");
+      console.error('Error submitting attendance:', error);
+      Alert.alert('Error', 'Terjadi kesalahan saat mengirim data');
     } finally {
       setIsProcessing(false);
     }
   };
 
+  const formatTime = (date: Date) => {
+    return date.toLocaleTimeString('id-ID', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
+  };
+
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString('id-ID', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <Text>Memuat data lokasi...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Presensi Kehadiran</Text>
-        <Text style={styles.headerSubtitle}>
-          {isDinas ? 
-            `Status: Sedang Dinas - ${dinasLocation?.nama_lokasi || 'Lokasi Dinas'}` :
-            'Status: Kerja Normal'}
-        </Text>
-        
-        <Text style={styles.timeInfo}>
-          {hasCheckedIn ? 
-            `Masuk: ${checkInTime} | Pulang: ${workEndTime}` :
-            `Jam Kerja: 08:00 - ${workEndTime}`
-          }
-        </Text>
-        <Text style={styles.locationInfo}>
-          {nearestLocation ? 
-            `Terdeteksi: ${nearestLocation.nama_lokasi} (${nearestLocation.jenis_lokasi})` : 
-            'Mencari lokasi...'}
-        </Text>
-      </View>
-
-      <View style={styles.mapWrapper}>
-        <MapView
-          style={styles.map}
-          region={{
-            latitude: location ? location.latitude : (nearestLocation ? parseFloat(nearestLocation.latitude) : -6.8915),
-            longitude: location ? location.longitude : (nearestLocation ? parseFloat(nearestLocation.longitude) : 107.6107),
-            latitudeDelta: 0.01,
-            longitudeDelta: 0.01,
-          }}
-        >
-          {location && <Marker coordinate={location} title="Lokasi Anda" pinColor="blue" />}
-          
-          {availableLocations.map((loc, index) => (
-            <React.Fragment key={index}>
-              <Marker 
-                coordinate={{
-                  latitude: parseFloat(loc.latitude),
-                  longitude: parseFloat(loc.longitude)
-                }} 
-                title={loc.nama_lokasi}
-                description={`${loc.jenis_lokasi} - Radius: ${loc.radius}m`}
-                pinColor={loc.jenis_lokasi === 'tetap' ? 'red' : loc.jenis_lokasi === 'dinas' ? 'purple' : 'orange'}
-              />
-              <Circle 
-                center={{
-                  latitude: parseFloat(loc.latitude),
-                  longitude: parseFloat(loc.longitude)
-                }} 
-                radius={loc.radius} 
-                fillColor={loc.jenis_lokasi === 'tetap' ? 'rgba(0, 70, 67, 0.2)' : loc.jenis_lokasi === 'dinas' ? 'rgba(128, 0, 128, 0.2)' : 'rgba(255, 165, 0, 0.2)'} 
-                strokeColor={loc.jenis_lokasi === 'tetap' ? '#004643' : loc.jenis_lokasi === 'dinas' ? '#800080' : '#FFA500'} 
-              />
-            </React.Fragment>
-          ))}
-        </MapView>
-      </View>
-
-      <View style={styles.bottomCard}>
-        <View style={styles.infoRow}>
-          <Ionicons name="navigate-circle" size={24} color={isOutOfRange ? "red" : "green"} />
-          <View style={{ marginLeft: 10 }}>
-            <Text style={styles.distText}>
-              Jarak: {Math.round(distance)} meter dari {nearestLocation?.nama_lokasi || 'lokasi terdekat'}
-            </Text>
-            <Text style={styles.statusText}>
-              {isOutOfRange ? locationValidation.message : `Lokasi sesuai - ${nearestLocation?.nama_lokasi}`}
-            </Text>
-          </View>
-        </View>
-
-        {isOutOfRange && (
-          <View style={styles.warningBox}>
-            <Ionicons name="warning" size={20} color="red" />
-            <Text style={styles.warningText}>{locationValidation.message}</Text>
-          </View>
-        )}
-        
-        <TouchableOpacity 
-          style={[styles.absenBtn, (isOutOfRange || isProcessing) && styles.absenBtnDisabled]}
-          onPress={handleAbsen}
-          disabled={isOutOfRange || isProcessing}
-        >
-          <View style={styles.btnContent}>
-            <Ionicons name="camera" size={16} color="#fff" style={styles.btnIcon} />
-            <View style={styles.btnTextContainer}>
-              <Text style={styles.absenBtnText}>
-                {isProcessing ? "MEMPROSES..." : 
-                 isOutOfRange ? "TIDAK BISA ABSEN" : 
-                 !hasCheckedIn ? "ABSEN MASUK" : "ABSEN PULANG"}
-              </Text>
-              <Text style={styles.timeText}>
-                {currentTime.toTimeString().split(' ')[0]}
-              </Text>
+      {/* Warning Overlay on Map */}
+      {(() => {
+        const validation = validateLocation();
+        return !validation.valid ? (
+          <View style={styles.mapWarningOverlay}>
+            <View style={styles.mapWarningContainer}>
+              <Ionicons name="warning" size={20} color="#fff" />
+              <Text style={styles.mapWarningText}>{validation.message}</Text>
             </View>
           </View>
-        </TouchableOpacity>
-      </View>
-      
-      <Modal visible={showEarlyLeaveInput} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Alasan Pulang Cepat</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="Masukkan alasan pulang cepat..."
-              value={earlyLeaveReason}
-              onChangeText={setEarlyLeaveReason}
-              multiline
-              numberOfLines={3}
+        ) : null;
+      })()}
+
+      <View style={[styles.mapContainer, { height: screenHeight - panelHeight - 90 }]}>
+        {location && (
+          <MapView
+            style={styles.map}
+            initialRegion={{
+              latitude: location.latitude,
+              longitude: location.longitude,
+              latitudeDelta: 0.01,
+              longitudeDelta: 0.01,
+            }}
+            showsUserLocation={true}
+            showsMyLocationButton={true}
+          >
+            <Marker
+              coordinate={{
+                latitude: location.latitude,
+                longitude: location.longitude,
+              }}
+              title="Lokasi Anda"
+              pinColor="blue"
             />
+            
+            {availableLocations.map((loc) => (
+              <React.Fragment key={loc.id}>
+                <Marker
+                  coordinate={{
+                    latitude: parseFloat(loc.latitude),
+                    longitude: parseFloat(loc.longitude),
+                  }}
+                  title={loc.nama_lokasi}
+                  description={`${loc.alamat} (${loc.jenis_lokasi})`}
+                  pinColor="red"
+                />
+                <Circle
+                  center={{
+                    latitude: parseFloat(loc.latitude),
+                    longitude: parseFloat(loc.longitude),
+                  }}
+                  radius={loc.radius}
+                  strokeColor="#FF0000"
+                  fillColor="rgba(255,0,0,0.2)"
+                />
+              </React.Fragment>
+            ))}
+          </MapView>
+        )}
+      </View>
+
+      <Animated.View style={[styles.panel, { height: panelAnimation }]}>
+        <TouchableOpacity 
+          style={styles.handleContainer}
+          onPress={togglePanel}
+          activeOpacity={0.7}
+        >
+          <View style={styles.handle} />
+        </TouchableOpacity>
+
+        <View style={styles.panelContent}>
+          <View style={styles.headerInfo}>
+            <Text style={styles.dateText}>{formatDate(currentTime)}</Text>
+            <Text style={styles.timeText}>{formatTime(currentTime)}</Text>
+          </View>
+
+          {!isCollapsed && (
+            <>
+              <View style={styles.statusContainer}>
+                <View style={styles.statusItem}>
+                  <Ionicons name="location" size={16} color="#666" />
+                  <View style={styles.locationDetails}>
+                    <Text style={styles.locationName}>
+                      {nearestLocation ? nearestLocation.nama_lokasi : 'Lokasi tidak terdeteksi'}
+                    </Text>
+                    {nearestLocation && (
+                      <Text style={styles.locationAddress}>
+                        {nearestLocation.alamat}
+                      </Text>
+                    )}
+                  </View>
+                </View>
+                
+                <View style={styles.statusItem}>
+                  <Ionicons 
+                    name={distance <= (nearestLocation?.radius || 0) ? "checkmark-circle" : "close-circle"} 
+                    size={16} 
+                    color={distance <= (nearestLocation?.radius || 0) ? "#4CAF50" : "#F44336"} 
+                  />
+                  <Text style={[styles.statusText, {
+                    color: distance <= (nearestLocation?.radius || 0) ? "#4CAF50" : "#F44336"
+                  }]}>
+                    Jarak: {Math.round(distance)}m
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.actionContainer}>
+                {!hasCheckedIn ? (
+                  <TouchableOpacity 
+                    style={[styles.mainButton, styles.checkInButton]}
+                    onPress={handleAbsenMasuk}
+                    disabled={isProcessing}
+                  >
+                    <Ionicons 
+                      name="camera" 
+                      size={20} 
+                      color="#fff"
+                      style={styles.buttonIcon}
+                    />
+                    <Text style={[styles.mainButtonText, styles.checkInButtonText]}>
+                      {isProcessing ? 'Memproses...' : 'Absen Masuk'}
+                    </Text>
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity 
+                    style={[styles.mainButton, styles.checkOutButton]}
+                    onPress={handleAbsenPulang}
+                    disabled={isProcessing}
+                  >
+                    <Ionicons 
+                      name="camera" 
+                      size={20} 
+                      color="#fff"
+                      style={styles.buttonIcon}
+                    />
+                    <Text style={[styles.mainButtonText, styles.checkOutButtonText]}>
+                      {isProcessing ? 'Memproses...' : 'Absen Pulang'}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              {hasCheckedIn && checkInTime && (
+                <View style={styles.checkInInfo}>
+                  <Text style={styles.checkInText}>Masuk: {checkInTime}</Text>
+                </View>
+              )}
+            </>
+          )}
+        </View>
+      </Animated.View>
+
+      <Modal
+        visible={capturedPhoto !== null}
+        transparent={true}
+        animationType="slide"
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.confirmationModal}>
+            <Text style={styles.modalTitle}>Konfirmasi Absensi</Text>
+            
+            {capturedPhoto && (
+              <View style={styles.photoContainer}>
+                <Ionicons name="camera" size={48} color="#4CAF50" />
+                <Text style={styles.photoLabel}>Foto berhasil diambil</Text>
+                <View style={styles.locationInfo}>
+                  <Ionicons name="location" size={16} color="#4CAF50" />
+                  <Text style={styles.locationText}>
+                    {nearestLocation?.nama_lokasi || 'Lokasi terdeteksi'}
+                  </Text>
+                </View>
+                <Text style={styles.distanceText}>
+                  Jarak: {Math.round(distance)}m
+                </Text>
+              </View>
+            )}
+            
             <View style={styles.modalButtons}>
               <TouchableOpacity 
-                style={[styles.modalBtn, styles.cancelBtn]} 
+                style={styles.cancelButton}
                 onPress={() => {
-                  setShowEarlyLeaveInput(false);
-                  setEarlyLeaveReason('');
                   setCapturedPhoto(null);
+                  setPendingAttendanceType(null);
                 }}
               >
-                <Text style={styles.cancelBtnText}>Batal</Text>
+                <Text style={styles.cancelButtonText}>Batal</Text>
               </TouchableOpacity>
               <TouchableOpacity 
-                style={[styles.modalBtn, styles.submitBtn]} 
-                onPress={() => {
-                  if (!earlyLeaveReason.trim()) {
-                    Alert.alert('Error', 'Silakan isi alasan pulang cepat');
-                    return;
-                  }
-                  setShowEarlyLeaveInput(false);
-                  if (capturedPhoto) {
-                    showConfirmation(capturedPhoto, 'pulang_cepat');
-                  }
-                }}
+                style={styles.confirmButton}
+                onPress={confirmAttendance}
+                disabled={isProcessing}
               >
-                <Text style={styles.submitBtnText}>Konfirmasi</Text>
+                <Text style={styles.confirmButtonText}>
+                  {isProcessing ? 'Menyimpan...' : 'Konfirmasi'}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
       </Modal>
-      
-
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFB' },
-  header: { padding: 20, backgroundColor: '#fff' },
-  headerTitle: { fontSize: 20, fontWeight: 'bold' },
-  headerSubtitle: { fontSize: 13, color: '#004643', fontWeight: '500' },
-  locationInfo: { fontSize: 12, color: '#666', marginTop: 5 },
-  timeInfo: { fontSize: 11, color: '#007ACC', marginTop: 3, fontWeight: '500' },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
-  modalContent: { backgroundColor: '#fff', padding: 20, borderRadius: 15, width: '90%', maxWidth: 400 },
-  modalTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 15, textAlign: 'center' },
-  textInput: { borderWidth: 1, borderColor: '#ddd', borderRadius: 8, padding: 12, minHeight: 80, textAlignVertical: 'top' },
-  modalButtons: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 15 },
-  modalBtn: { flex: 1, padding: 12, borderRadius: 8, marginHorizontal: 5 },
-  cancelBtn: { backgroundColor: '#f0f0f0' },
-  submitBtn: { backgroundColor: '#004643' },
-  cancelBtnText: { textAlign: 'center', color: '#666', fontWeight: '500' },
-  submitBtnText: { textAlign: 'center', color: '#fff', fontWeight: '500' },
-  warningBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF3CD', padding: 10, borderRadius: 8, marginBottom: 15 },
-  warningText: { marginLeft: 8, color: '#856404', fontSize: 12 },
-  mapWrapper: { flex: 1, marginHorizontal: 20, borderRadius: 20, overflow: 'hidden' },
-  map: { width: '100%', height: '100%' },
-  bottomCard: { padding: 25, backgroundColor: '#fff', borderTopLeftRadius: 30, borderTopRightRadius: 30, elevation: 10 },
-  infoRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
-  distText: { fontWeight: 'bold', fontSize: 14 },
-  statusText: { fontSize: 12, color: '#777' },
-  absenBtn: { backgroundColor: '#004643', paddingVertical: 12, paddingHorizontal: 20, borderRadius: 8, width: '100%' },
-  absenBtnDisabled: { backgroundColor: '#CCC' },
-  btnContent: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start' },
-  btnIcon: { marginRight: 12 },
-  btnTextContainer: { flex: 1 },
-  absenBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 14 },
-  timeText: { color: '#fff', fontSize: 11, marginTop: 2, opacity: 0.9 },
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  mapContainer: {
+    flex: 1,
+  },
+  map: {
+    flex: 1,
+  },
+  panel: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'white',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: -2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  handleContainer: {
+    alignItems: 'center',
+    paddingVertical: 12,
+    justifyContent: 'center',
+  },
+  handle: {
+    width: 50,
+    height: 5,
+    backgroundColor: '#ddd',
+    borderRadius: 3,
+  },
+  panelContent: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingBottom: 30,
+  },
+  headerInfo: {
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  dateText: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 4,
+  },
+  timeText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  statusContainer: {
+    marginBottom: 6,
+  },
+  statusItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  statusText: {
+    marginLeft: 8,
+    fontSize: 14,
+    color: '#666',
+  },
+  locationDetails: {
+    flex: 1,
+    marginLeft: 8,
+  },
+  locationName: {
+    fontSize: 14,
+    color: '#333',
+    fontWeight: '500',
+  },
+  locationAddress: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 2,
+  },
+  actionContainer: {
+    marginTop: 0,
+    marginBottom: 8,
+  },
+  mapWarningOverlay: {
+    position: 'absolute',
+    top: 60,
+    left: 16,
+    right: 16,
+    zIndex: 1000,
+  },
+  mapWarningContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F44336',
+    padding: 12,
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  mapWarningText: {
+    marginLeft: 8,
+    fontSize: 14,
+    color: '#fff',
+    fontWeight: '500',
+    flex: 1,
+  },
+  mainButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    marginVertical: 2,
+  },
+  buttonIcon: {
+    marginRight: 8,
+  },
+  mainButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  checkInButton: {
+    backgroundColor: '#4CAF50',
+  },
+  checkInButtonText: {
+    color: '#fff',
+  },
+  checkOutButton: {
+    backgroundColor: '#F44336',
+  },
+  checkOutButtonText: {
+    color: '#fff',
+  },
+  disabledButton: {
+    backgroundColor: '#F5F5F5',
+  },
+  disabledButtonText: {
+    color: '#9E9E9E',
+  },
+  checkInInfo: {
+    alignItems: 'center',
+    padding: 10,
+    backgroundColor: '#E8F5E8',
+    borderRadius: 8,
+  },
+  checkInText: {
+    color: '#4CAF50',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  confirmationModal: {
+    backgroundColor: 'white',
+    padding: 24,
+    borderRadius: 16,
+    width: '90%',
+    maxWidth: 400,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  photoContainer: {
+    alignItems: 'center',
+    marginVertical: 20,
+    padding: 16,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 12,
+  },
+  photoLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#4CAF50',
+    marginTop: 8,
+    marginBottom: 12,
+  },
+  locationInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  locationText: {
+    marginLeft: 8,
+    fontSize: 14,
+    color: '#333',
+    fontWeight: '500',
+  },
+  distanceText: {
+    fontSize: 14,
+    color: '#666',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  cancelButton: {
+    flex: 1,
+    padding: 14,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 10,
+    marginRight: 12,
+  },
+  cancelButtonText: {
+    textAlign: 'center',
+    color: '#666',
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  confirmButton: {
+    flex: 1,
+    padding: 14,
+    backgroundColor: '#4CAF50',
+    borderRadius: 10,
+  },
+  confirmButtonText: {
+    textAlign: 'center',
+    color: 'white',
+    fontWeight: '600',
+    fontSize: 16,
+  },
 });

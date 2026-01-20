@@ -39,6 +39,7 @@ export const API_CONFIG = {
     LAPORAN: '/admin/laporan/api/laporan.php',
     DETAIL_LAPORAN: '/admin/laporan/api/detail-laporan.php',
     DETAIL_ABSEN: '/admin/laporan/api/detail-absen.php',
+    DETAIL_ABSEN_PEGAWAI: '/admin/laporan/api/detail-absen-pegawai.php',
     EXPORT_PDF: '/admin/laporan/api/export-pdf.php',
     
     // Admin - Kelola Dinas
@@ -509,7 +510,7 @@ export const KelolaDinasAPI = {
   
   createDinas: async (data: any) => {
     try {
-      const response = await fetchWithRetry(getApiUrl(API_CONFIG.ENDPOINTS.DINAS_AKTIF), {
+      const response = await fetchWithRetry(getApiUrl(API_CONFIG.ENDPOINTS.CREATE_DINAS), {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',

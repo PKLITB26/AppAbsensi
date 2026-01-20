@@ -7,6 +7,7 @@ import { PengaturanAPI } from '../../constants/config';
 interface JamKerjaHari {
   hari: string;
   jam_masuk: string;
+  batas_absen: string;
   jam_pulang: string;
   is_kerja: boolean;
 }
@@ -17,15 +18,16 @@ export default function JamKerjaScreen() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editIndex, setEditIndex] = useState(-1);
   const [editJamMasuk, setEditJamMasuk] = useState('');
+  const [editBatasAbsen, setEditBatasAbsen] = useState('');
   const [editJamPulang, setEditJamPulang] = useState('');
   const [jamKerjaList, setJamKerjaList] = useState<JamKerjaHari[]>([
-    { hari: 'Senin', jam_masuk: '08:00', jam_pulang: '17:00', is_kerja: true },
-    { hari: 'Selasa', jam_masuk: '08:00', jam_pulang: '17:00', is_kerja: true },
-    { hari: 'Rabu', jam_masuk: '08:00', jam_pulang: '17:00', is_kerja: true },
-    { hari: 'Kamis', jam_masuk: '08:00', jam_pulang: '17:00', is_kerja: true },
-    { hari: 'Jumat', jam_masuk: '08:00', jam_pulang: '16:30', is_kerja: true },
-    { hari: 'Sabtu', jam_masuk: '08:00', jam_pulang: '12:00', is_kerja: false },
-    { hari: 'Minggu', jam_masuk: '08:00', jam_pulang: '17:00', is_kerja: false }
+    { hari: 'Senin', jam_masuk: '08:00', batas_absen: '08:30', jam_pulang: '17:00', is_kerja: true },
+    { hari: 'Selasa', jam_masuk: '08:00', batas_absen: '08:30', jam_pulang: '17:00', is_kerja: true },
+    { hari: 'Rabu', jam_masuk: '08:00', batas_absen: '08:30', jam_pulang: '17:00', is_kerja: true },
+    { hari: 'Kamis', jam_masuk: '08:00', batas_absen: '08:30', jam_pulang: '17:00', is_kerja: true },
+    { hari: 'Jumat', jam_masuk: '08:00', batas_absen: '08:30', jam_pulang: '16:30', is_kerja: true },
+    { hari: 'Sabtu', jam_masuk: '08:00', batas_absen: '08:30', jam_pulang: '12:00', is_kerja: false },
+    { hari: 'Minggu', jam_masuk: '08:00', batas_absen: '08:30', jam_pulang: '17:00', is_kerja: false }
   ]);
 
   useEffect(() => {
@@ -55,17 +57,19 @@ export default function JamKerjaScreen() {
   const handleEditJam = (item: JamKerjaHari, index: number) => {
     setEditIndex(index);
     setEditJamMasuk(item.jam_masuk);
+    setEditBatasAbsen(item.batas_absen);
     setEditJamPulang(item.jam_pulang);
     setShowEditModal(true);
   };
 
   const handleSaveEdit = () => {
-    if (!editJamMasuk || !editJamPulang) {
-      Alert.alert('Error', 'Jam masuk dan pulang harus diisi');
+    if (!editJamMasuk || !editBatasAbsen || !editJamPulang) {
+      Alert.alert('Error', 'Semua jam harus diisi');
       return;
     }
     const updated = [...jamKerjaList];
     updated[editIndex].jam_masuk = editJamMasuk;
+    updated[editIndex].batas_absen = editBatasAbsen;
     updated[editIndex].jam_pulang = editJamPulang;
     setJamKerjaList(updated);
     setShowEditModal(false);
@@ -136,6 +140,11 @@ export default function JamKerjaScreen() {
                 <Text style={styles.hariJam}>
                   {item.is_kerja ? `${item.jam_masuk} - ${item.jam_pulang}` : 'Libur'}
                 </Text>
+                {item.is_kerja && (
+                  <Text style={styles.hariBatas}>
+                    Batas absen: {item.batas_absen}
+                  </Text>
+                )}
               </View>
               
               <View style={styles.hariRight}>
@@ -196,6 +205,21 @@ export default function JamKerjaScreen() {
                   placeholder="08:00"
                   value={editJamMasuk}
                   onChangeText={(text) => setEditJamMasuk(formatJam(text))}
+                  keyboardType="numeric"
+                  maxLength={5}
+                />
+              </View>
+            </View>
+
+            <View style={styles.modalInputGroup}>
+              <Text style={styles.modalLabel}>Batas Absen</Text>
+              <View style={styles.modalInputWrapper}>
+                <Ionicons name="time-outline" size={20} color="#666" />
+                <TextInput
+                  style={styles.modalInput}
+                  placeholder="08:30"
+                  value={editBatasAbsen}
+                  onChangeText={(text) => setEditBatasAbsen(formatJam(text))}
                   keyboardType="numeric"
                   maxLength={5}
                 />
@@ -318,6 +342,11 @@ const styles = StyleSheet.create({
   hariJam: {
     fontSize: 14,
     color: '#666'
+  },
+  hariBatas: {
+    fontSize: 12,
+    color: '#999',
+    marginTop: 2
   },
   hariRight: {
     flexDirection: 'row',
