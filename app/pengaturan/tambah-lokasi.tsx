@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { PengaturanAPI } from '../../constants/config';
 import * as Location from 'expo-location';
 import MapView, { Marker } from 'react-native-maps';
+import { NetworkDiagnostic } from '../../components/NetworkDiagnostic';
 
 export default function TambahLokasiScreen() {
   const router = useRouter();
@@ -325,6 +326,16 @@ export default function TambahLokasiScreen() {
 
     try {
       setLoading(true);
+      
+      console.log('Attempting to save location:', {
+        nama_lokasi: formData.namaLokasi.trim(),
+        alamat: formData.alamat.trim(),
+        latitude: formData.latitude,
+        longitude: formData.longitude,
+        radius: parseInt(formData.radius),
+        jenis_lokasi: formData.jenis
+      });
+      
       const response = await PengaturanAPI.saveLokasiKantor({
         nama_lokasi: formData.namaLokasi.trim(),
         alamat: formData.alamat.trim(),
@@ -334,6 +345,8 @@ export default function TambahLokasiScreen() {
         jenis_lokasi: formData.jenis
       });
 
+      console.log('Save location response:', response);
+
       if (response.success) {
         Alert.alert('Sukses', 'Lokasi berhasil disimpan', [
           { text: 'OK', onPress: () => router.back() }
@@ -341,8 +354,28 @@ export default function TambahLokasiScreen() {
       } else {
         Alert.alert('Info', response.message || 'Gagal menyimpan lokasi');
       }
-    } catch (error) {
-      Alert.alert('Info', 'Terjadi kesalahan saat menyimpan');
+    } catch (error: any) {
+      console.error('Error in handleSave:', error);
+      
+      let errorMessage = 'Terjadi kesalahan saat menyimpan';
+      
+      if (error.message) {
+        if (error.message.includes('terhubung ke server')) {
+          errorMessage = 'Tidak dapat terhubung ke server.\n\nSolusi:\n1. Pastikan HP dan komputer di WiFi yang sama\n2. Periksa apakah XAMPP/server backend berjalan\n3. Coba restart aplikasi';
+        } else if (error.message.includes('timeout')) {
+          errorMessage = 'Koneksi timeout. Periksa koneksi internet dan coba lagi.';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      Alert.alert('Kesalahan Koneksi', errorMessage, [
+        { text: 'OK' },
+        { 
+          text: 'Coba Lagi', 
+          onPress: () => handleSave() 
+        }
+      ]);
     } finally {
       setLoading(false);
     }
@@ -365,6 +398,9 @@ export default function TambahLokasiScreen() {
       </View>
 
       <ScrollView style={styles.content}>
+        {/* Network Diagnostic */}
+        <NetworkDiagnostic />
+        
         {/* Info Card */}
         <View style={styles.infoCard}>
           <Ionicons name="information-circle" size={20} color="#004643" />
@@ -885,7 +921,8 @@ const styles = StyleSheet.create({
     color: '#004643'
   },
   map: {
-    flex: 1
+    flex: 1,
+    minHeight: 400
   },
   mapActions: {
     position: 'absolute',

@@ -260,651 +260,550 @@ export default function DetailAbsenPegawai() {
     
     return (
       <TouchableOpacity 
-        style={[styles.absenCard, (liburInfo || (isWeekend && !item.jam_masuk)) && styles.liburCard]}
+        style={styles.absenItem} 
         onPress={() => showDetailForDate(item)}
+        activeOpacity={0.7}
       >
         <View style={styles.dateSection}>
           <Text style={styles.dayText}>{dateInfo.day}</Text>
           <Text style={styles.dateText}>{dateInfo.date}</Text>
-          <Text style={styles.monthText}>{dateInfo.month}</Text>
+          <Text style={styles.monthTextSmall}>{dateInfo.month}</Text>
         </View>
         
         <View style={styles.statusSection}>
-          <View style={[styles.statusIndicator, { backgroundColor: config.color }]}>
-            <Ionicons name={config.icon as any} size={16} color="#fff" />
+          <View style={styles.statusHeader}>
+            <View style={[styles.statusBadge, { backgroundColor: config.color }]}>
+              <Ionicons name={config.icon as any} size={16} color="white" />
+              <Text style={styles.statusText}>{displayStatus}</Text>
+            </View>
           </View>
-          <View style={styles.statusInfo}>
-            <Text style={[styles.statusText, { color: config.color }]}>{displayStatus}</Text>
-            <Text style={[styles.keteranganText, { color: isDinas ? '#607D8B' : '#666' }]}>{displayKeterangan}</Text>
-          </View>
-        </View>
-        
-        <View style={styles.timeSection}>
-          {item.jam_masuk && item.jam_keluar ? (
-            <>
-              <Text style={styles.timeText}>{item.jam_masuk}</Text>
-              <Text style={styles.timeSeparator}>-</Text>
-              <Text style={styles.timeText}>{item.jam_keluar}</Text>
-            </>
-          ) : (
-            <Text style={styles.noTimeText}>-</Text>
+          
+          <Text style={[
+            styles.keteranganText,
+            isDinas && { color: '#2196F3', fontWeight: '600' }
+          ]}>
+            {displayKeterangan || '-'}
+          </Text>
+          
+          {item.jam_masuk && (
+            <View style={styles.timeInfo}>
+              <Text style={styles.timeText}>
+                Masuk: {item.jam_masuk} | Keluar: {item.jam_keluar || 'Belum'}
+              </Text>
+            </View>
           )}
         </View>
+        
+        <Ionicons name="chevron-forward" size={20} color="#666" />
       </TouchableOpacity>
     );
   };
 
-  const filteredData = selectedDate 
-    ? absenData.filter(item => item.tanggal === selectedDate)
-    : absenData;
-
-  return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <TouchableOpacity 
-            style={styles.backBtn}
-            onPress={() => router.back()}
-          >
-            <Ionicons name="arrow-back" size={24} color="#004643" />
-          </TouchableOpacity>
-          <View>
-            <Text style={styles.headerTitle}>{pegawai.nama}</Text>
-            <Text style={styles.headerSubtitle}>NIP: {pegawai.nip}</Text>
-          </View>
-        </View>
-        <TouchableOpacity style={styles.exportBtn}>
-          <Ionicons name="download-outline" size={18} color="#004643" />
-        </TouchableOpacity>
-      </View>
-
-      {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#004643" />
-          <Text style={styles.loadingText}>Memuat data absen...</Text>
-        </View>
-      ) : (
-        <View style={styles.content}>
-          <TouchableOpacity 
-            style={styles.monthYearBtn}
-            onPress={() => setShowMonthPicker(true)}
-          >
-            <Ionicons name="calendar-outline" size={16} color="#004643" />
-            <Text style={styles.monthYearText}>{getMonthName(selectedMonth)} {selectedYear}</Text>
-            <Ionicons name="chevron-down" size={16} color="#004643" />
-          </TouchableOpacity>
-          
-          <FlatList
-            data={filteredData}
-            keyExtractor={(item) => item.tanggal}
-            renderItem={renderAbsenItem}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.listContent}
-          />
-        </View>
-      )}
-      
-      {/* Month/Year Picker Modal */}
+  const renderMonthPicker = () => {
+    const { months, years } = generateMonthYearOptions();
+    
+    return (
       <Modal
         visible={showMonthPicker}
         transparent={true}
-        animationType="none"
+        animationType="slide"
         onRequestClose={() => setShowMonthPicker(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.calendarModal}>
-            <View style={styles.calendarHeader}>
-              <Text style={styles.calendarTitle}>Pilih Bulan & Tahun</Text>
+          <View style={styles.monthPickerContainer}>
+            <View style={styles.monthPickerHeader}>
+              <Text style={styles.monthPickerTitle}>Pilih Bulan & Tahun</Text>
               <TouchableOpacity onPress={() => setShowMonthPicker(false)}>
                 <Ionicons name="close" size={24} color="#666" />
               </TouchableOpacity>
             </View>
             
-            <View style={styles.monthYearPicker}>
-              <View style={styles.monthGrid}>
-                {generateMonthYearOptions().months.map((month) => (
-                  <TouchableOpacity
-                    key={month.value}
-                    style={[styles.monthItem, selectedMonth === month.value && styles.selectedMonth]}
-                    onPress={() => setSelectedMonth(month.value)}
-                  >
-                    <Text style={[styles.monthTextPicker, selectedMonth === month.value && styles.selectedMonthText]}>
-                      {month.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+            <View style={styles.pickerRow}>
+              <View style={styles.pickerColumn}>
+                <Text style={styles.pickerLabel}>Bulan</Text>
+                <FlatList
+                  data={months}
+                  keyExtractor={(item) => item.value.toString()}
+                  renderItem={({ item }) => (
+                    <TouchableOpacity
+                      style={[
+                        styles.pickerItem,
+                        selectedMonth === item.value && styles.selectedPickerItem
+                      ]}
+                      onPress={() => setSelectedMonth(item.value)}
+                    >
+                      <Text style={[
+                        styles.pickerItemText,
+                        selectedMonth === item.value && styles.selectedPickerItemText
+                      ]}>
+                        {item.label}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                  showsVerticalScrollIndicator={false}
+                  style={styles.pickerList}
+                />
               </View>
               
-              <View style={styles.yearPicker}>
-                <Text style={styles.yearLabel}>Tahun</Text>
-                <View style={styles.yearControls}>
-                  <TouchableOpacity 
-                    style={styles.yearBtn}
-                    onPress={() => setSelectedYear(selectedYear - 1)}
-                  >
-                    <Ionicons name="chevron-back" size={20} color="#004643" />
-                  </TouchableOpacity>
-                  <Text style={styles.yearText}>{selectedYear}</Text>
-                  <TouchableOpacity 
-                    style={styles.yearBtn}
-                    onPress={() => setSelectedYear(selectedYear + 1)}
-                  >
-                    <Ionicons name="chevron-forward" size={20} color="#004643" />
-                  </TouchableOpacity>
-                </View>
+              <View style={styles.pickerColumn}>
+                <Text style={styles.pickerLabel}>Tahun</Text>
+                <FlatList
+                  data={years}
+                  keyExtractor={(item) => item.toString()}
+                  renderItem={({ item }) => (
+                    <TouchableOpacity
+                      style={[
+                        styles.pickerItem,
+                        selectedYear === item && styles.selectedPickerItem
+                      ]}
+                      onPress={() => setSelectedYear(item)}
+                    >
+                      <Text style={[
+                        styles.pickerItemText,
+                        selectedYear === item && styles.selectedPickerItemText
+                      ]}>
+                        {item}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                  showsVerticalScrollIndicator={false}
+                  style={styles.pickerList}
+                />
               </View>
             </View>
             
-            <TouchableOpacity 
-              style={styles.confirmBtn}
+            <TouchableOpacity
+              style={styles.confirmButton}
               onPress={() => setShowMonthPicker(false)}
             >
-              <Text style={styles.confirmText}>Pilih</Text>
+              <Text style={styles.confirmButtonText}>Konfirmasi</Text>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
+    );
+  };
+
+  const renderDetailModal = () => {
+    if (!detailAbsen) return null;
+    
+    const formatDetailDate = (dateString: string) => {
+      const date = new Date(dateString);
+      const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+      const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
       
-      {/* Detail Absen Modal */}
+      return `${days[date.getDay()]}, ${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
+    };
+    
+    return (
       <Modal
         visible={showDetailModal}
         transparent={true}
-        animationType="none"
+        animationType="slide"
         onRequestClose={() => setShowDetailModal(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.detailModal}>
-            <View style={styles.detailHeader}>
-              <Text style={styles.detailTitle}>Detail Absensi</Text>
+          <View style={styles.detailModalContainer}>
+            <View style={styles.detailModalHeader}>
+              <Text style={styles.detailModalTitle}>Detail Absensi</Text>
               <TouchableOpacity onPress={() => setShowDetailModal(false)}>
-                <Ionicons name="close" size={24} color="#fff" />
+                <Ionicons name="close" size={24} color="#666" />
               </TouchableOpacity>
             </View>
             
-            {detailAbsen && (
-              <View style={styles.detailContent}>
-                <Text style={styles.detailDate}>{detailAbsen.tanggal}</Text>
-                
-                {detailAbsen.isLibur ? (
-                  <View style={styles.liburContent}>
-                    <View style={styles.liburIcon}>
-                      <Ionicons name="calendar" size={48} color="#F44336" />
-                    </View>
-                    <Text style={styles.liburStatus}>Hari Libur</Text>
-                    <Text style={styles.liburKeterangan}>{detailAbsen.keterangan}</Text>
-                  </View>
-                ) : (
-                  <>
-                    <View style={styles.detailSection}>
-                      <Text style={styles.sectionTitle}>Waktu Kehadiran</Text>
-                      <View style={styles.timeRow}>
-                        <View style={styles.timeItem}>
-                          <Ionicons name="log-in" size={16} color="#4CAF50" />
-                          <Text style={styles.timeLabel}>Masuk</Text>
-                          <Text style={styles.timeValue}>{detailAbsen.jam_masuk || '-'}</Text>
-                        </View>
-                        <View style={styles.timeItem}>
-                          <Ionicons name="log-out" size={16} color="#FF5722" />
-                          <Text style={styles.timeLabel}>Pulang</Text>
-                          <Text style={styles.timeValue}>{detailAbsen.jam_pulang || '-'}</Text>
-                        </View>
-                      </View>
-                    </View>
-                    
-                    <View style={styles.detailSection}>
-                      <Text style={styles.sectionTitle}>Lokasi</Text>
-                      <View style={styles.locationRow}>
-                        <Ionicons name="location" size={16} color="#2196F3" />
-                        <View style={styles.locationInfo}>
-                          <Text style={styles.locationText}>Masuk: {detailAbsen.lokasi_masuk || '-'}</Text>
-                          <Text style={styles.locationText}>Pulang: {detailAbsen.lokasi_pulang || '-'}</Text>
-                          <Text style={styles.coordText}>
-                            {detailAbsen.lat_masuk && detailAbsen.long_masuk 
-                              ? `${detailAbsen.lat_masuk}, ${detailAbsen.long_masuk}` 
-                              : '-'}
-                          </Text>
-                        </View>
-                      </View>
-                    </View>
-                    
-                    {detailAbsen.jam_pulang && (
-                      <View style={styles.detailSection}>
-                        <Text style={styles.sectionTitle}>Alasan Pulang Cepat</Text>
-                        <Text style={styles.reasonText}>
-                          {detailAbsen.alasan_pulang_cepat && detailAbsen.alasan_pulang_cepat.trim() !== '' 
-                            ? detailAbsen.alasan_pulang_cepat 
-                            : '-'
-                          }
-                        </Text>
-                      </View>
-                    )}
-                    
-                    <View style={styles.detailSection}>
-                      <Text style={styles.sectionTitle}>Foto Absensi</Text>
-                      <View style={styles.photoRow}>
-                        <View style={styles.photoItem}>
-                          <Text style={styles.photoLabel}>Foto Masuk</Text>
-                          {detailAbsen.foto_masuk ? (
-                            <View style={styles.photoPlaceholder}>
-                              <Ionicons name="image" size={24} color="#666" />
-                              <Text style={styles.photoText}>Ada foto</Text>
-                            </View>
-                          ) : (
-                            <View style={styles.photoPlaceholder}>
-                              <Ionicons name="image-outline" size={24} color="#ccc" />
-                              <Text style={styles.noPhotoText}>Tidak ada foto</Text>
-                            </View>
-                          )}
-                        </View>
-                        <View style={styles.photoItem}>
-                          <Text style={styles.photoLabel}>Foto Pulang</Text>
-                          {detailAbsen.foto_pulang ? (
-                            <View style={styles.photoPlaceholder}>
-                              <Ionicons name="image" size={24} color="#666" />
-                              <Text style={styles.photoText}>Ada foto</Text>
-                            </View>
-                          ) : (
-                            <View style={styles.photoPlaceholder}>
-                              <Ionicons name="image-outline" size={24} color="#ccc" />
-                              <Text style={styles.noPhotoText}>Tidak ada foto</Text>
-                            </View>
-                          )}
-                        </View>
-                      </View>
-                    </View>
-                  </>
-                )}
+            <View style={styles.detailContent}>
+              <Text style={styles.detailDate}>{formatDetailDate(detailAbsen.tanggal)}</Text>
+              
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Status:</Text>
+                <View style={[
+                  styles.detailStatusBadge, 
+                  { backgroundColor: statusConfig[detailAbsen.status as keyof typeof statusConfig]?.color || '#9E9E9E' }
+                ]}>
+                  <Text style={styles.detailStatusText}>{detailAbsen.status}</Text>
+                </View>
               </View>
-            )}
+              
+              {detailAbsen.isLibur ? (
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Keterangan:</Text>
+                  <Text style={styles.detailValue}>{detailAbsen.keterangan}</Text>
+                </View>
+              ) : (
+                <>
+                  {detailAbsen.jam_masuk && (
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>Jam Masuk:</Text>
+                      <Text style={styles.detailValue}>{detailAbsen.jam_masuk}</Text>
+                    </View>
+                  )}
+                  
+                  {detailAbsen.jam_pulang && (
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>Jam Pulang:</Text>
+                      <Text style={styles.detailValue}>{detailAbsen.jam_pulang}</Text>
+                    </View>
+                  )}
+                  
+                  {detailAbsen.lokasi_masuk && (
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>Lokasi Masuk:</Text>
+                      <Text style={styles.detailValue}>{detailAbsen.lokasi_masuk}</Text>
+                    </View>
+                  )}
+                  
+                  {detailAbsen.lokasi_pulang && (
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>Lokasi Pulang:</Text>
+                      <Text style={styles.detailValue}>{detailAbsen.lokasi_pulang}</Text>
+                    </View>
+                  )}
+                  
+                  {detailAbsen.alasan_pulang_cepat && (
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>Alasan Pulang Cepat:</Text>
+                      <Text style={styles.detailValue}>{detailAbsen.alasan_pulang_cepat}</Text>
+                    </View>
+                  )}
+                </>
+              )}
+            </View>
           </View>
         </View>
       </Modal>
+    );
+  };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color="#333" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Detail Absensi</Text>
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#007AFF" />
+          <Text style={styles.loadingText}>Memuat data...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={24} color="#333" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Detail Absensi</Text>
+      </View>
+
+      <View style={styles.pegawaiInfo}>
+        <Text style={styles.pegawaiNama}>{pegawai.nama}</Text>
+        <Text style={styles.pegawaiNip}>NIP: {pegawai.nip}</Text>
+      </View>
+
+      <View style={styles.monthNavigation}>
+        <TouchableOpacity onPress={() => navigateMonth('prev')} style={styles.navButton}>
+          <Ionicons name="chevron-back" size={20} color="#007AFF" />
+        </TouchableOpacity>
+        
+        <TouchableOpacity onPress={() => setShowMonthPicker(true)} style={styles.monthButton}>
+          <Text style={styles.monthText}>{getMonthName(selectedMonth)} {selectedYear}</Text>
+          <Ionicons name="chevron-down" size={16} color="#007AFF" />
+        </TouchableOpacity>
+        
+        <TouchableOpacity onPress={() => navigateMonth('next')} style={styles.navButton}>
+          <Ionicons name="chevron-forward" size={20} color="#007AFF" />
+        </TouchableOpacity>
+      </View>
+
+      <FlatList
+        data={absenData}
+        keyExtractor={(item, index) => `${item.tanggal}-${index}`}
+        renderItem={renderAbsenItem}
+        contentContainerStyle={styles.listContainer}
+        showsVerticalScrollIndicator={false}
+      />
+      
+      {renderMonthPicker()}
+      {renderDetailModal()}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFB' },
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 50,
-    paddingBottom: 20,
-    backgroundColor: '#fff',
-    elevation: 2,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: 'white',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
   },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  backBtn: {
-    padding: 10,
-    marginRight: 15,
-    borderRadius: 10,
-    backgroundColor: '#F5F5F5',
+  backButton: {
+    marginRight: 16,
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#004643',
+    fontWeight: '600',
+    color: '#333',
   },
-  headerSubtitle: {
-    fontSize: 12,
+  pegawaiInfo: {
+    backgroundColor: 'white',
+    padding: 16,
+    marginBottom: 8,
+  },
+  pegawaiNama: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 4,
+  },
+  pegawaiNip: {
+    fontSize: 14,
     color: '#666',
   },
-  exportBtn: {
-    padding: 10,
-    borderRadius: 10,
-    backgroundColor: '#E6F0EF',
-  },
-  content: { flex: 1, padding: 20 },
-  monthYearBtn: {
+  monthNavigation: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
-    padding: 12,
-    borderRadius: 10,
-    marginBottom: 20,
-    elevation: 2,
-    gap: 8,
-  },
-  monthYearText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#004643',
-    flex: 1,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  calendarModal: {
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    padding: 20,
-    width: '90%',
-  },
-  monthYearPicker: {
-    gap: 20,
-  },
-  monthGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  monthItem: {
-    width: '30%',
-    padding: 12,
-    borderRadius: 8,
-    backgroundColor: '#F5F5F5',
-    alignItems: 'center',
-  },
-  selectedMonth: {
-    backgroundColor: '#004643',
-  },
-  monthTextPicker: {
-    fontSize: 12,
-    color: '#333',
-    fontWeight: '500',
-  },
-  selectedMonthText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-  yearPicker: {
-    alignItems: 'center',
-    gap: 10,
-  },
-  yearLabel: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#004643',
-  },
-  yearControls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 20,
-  },
-  yearBtn: {
-    padding: 8,
-    borderRadius: 8,
-    backgroundColor: '#F5F5F5',
-  },
-  yearText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#004643',
-    minWidth: 60,
-    textAlign: 'center',
-  },
-  confirmBtn: {
-    backgroundColor: '#004643',
-    padding: 15,
-    borderRadius: 10,
-    marginTop: 20,
-  },
-  confirmText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  calendarHeader: {
-    flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
+    backgroundColor: 'white',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginBottom: 8,
   },
-  calendarTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#004643',
+  navButton: {
+    padding: 8,
   },
-  listContent: { paddingBottom: 20 },
-  absenCard: {
-    backgroundColor: '#fff',
+  monthButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: '#f0f8ff',
+    borderRadius: 8,
+  },
+  monthText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#007AFF',
+    marginRight: 4,
+  },
+  listContainer: {
+    padding: 16,
+  },
+  absenItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'white',
     padding: 16,
     marginBottom: 8,
     borderRadius: 12,
-    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   dateSection: {
     alignItems: 'center',
-    width: 50,
     marginRight: 16,
+    minWidth: 60,
   },
   dayText: {
-    fontSize: 10,
+    fontSize: 12,
     color: '#666',
-    fontWeight: 'bold',
-  },
-  dateText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  monthText: {
-    fontSize: 10,
-    color: '#666',
-  },
-  statusSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    marginRight: 16,
-  },
-  statusIndicator: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  statusInfo: { flex: 1 },
-  statusText: {
-    fontSize: 14,
-    fontWeight: 'bold',
     marginBottom: 2,
   },
-  keteranganText: {
-    fontSize: 11,
-    color: '#666',
-  },
-  timeSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    minWidth: 80,
-  },
-  timeText: {
-    fontSize: 12,
+  dateText: {
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#333',
   },
-  timeSeparator: {
+  monthTextSmall: {
     fontSize: 12,
     color: '#666',
-    marginHorizontal: 4,
+    marginTop: 2,
   },
-  noTimeText: {
+  statusSection: {
+    flex: 1,
+    marginRight: 8,
+  },
+  statusHeader: {
+    marginBottom: 4,
+  },
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+  },
+  statusText: {
+    color: 'white',
     fontSize: 12,
-    color: '#999',
-    fontStyle: 'italic',
+    fontWeight: '600',
+    marginLeft: 4,
   },
-  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  loadingText: { marginTop: 10, color: '#666' },
-  liburCard: {
-    backgroundColor: '#FFEBEE',
-    borderLeftWidth: 4,
-    borderLeftColor: '#F44336',
+  keteranganText: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 4,
   },
-  detailModal: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 0,
+  timeInfo: {
+    marginTop: 4,
+  },
+  timeText: {
+    fontSize: 11,
+    color: '#888',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 8,
+    fontSize: 14,
+    color: '#666',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  monthPickerContainer: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 20,
     width: '90%',
-    maxHeight: '85%',
-    overflow: 'hidden',
+    maxHeight: '80%',
   },
-  detailHeader: {
+  monthPickerHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#004643',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    marginBottom: 20,
   },
-  detailTitle: {
+  monthPickerTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#fff',
+    fontWeight: '600',
+    color: '#333',
+  },
+  pickerRow: {
+    flexDirection: 'row',
+    gap: 20,
+  },
+  pickerColumn: {
+    flex: 1,
+  },
+  pickerLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  pickerList: {
+    maxHeight: 200,
+  },
+  pickerItem: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    marginBottom: 4,
+  },
+  selectedPickerItem: {
+    backgroundColor: '#007AFF',
+  },
+  pickerItemText: {
+    fontSize: 14,
+    color: '#333',
+    textAlign: 'center',
+  },
+  selectedPickerItemText: {
+    color: 'white',
+    fontWeight: '600',
+  },
+  confirmButton: {
+    backgroundColor: '#007AFF',
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginTop: 20,
+  },
+  confirmButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  detailModalContainer: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 20,
+    width: '90%',
+    maxHeight: '80%',
+  },
+  detailModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  detailModalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
   },
   detailContent: {
-    padding: 20,
+    gap: 16,
   },
   detailDate: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#004643',
-    textAlign: 'center',
-    marginBottom: 20,
-    paddingVertical: 12,
-    backgroundColor: '#E6F0EF',
-    borderRadius: 8,
-  },
-  detailSection: {
-    marginBottom: 20,
-  },
-  sectionTitle: {
-    fontSize: 14,
     fontWeight: '600',
-    color: '#004643',
-    marginBottom: 12,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  timeRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  timeItem: {
-    flex: 1,
-    backgroundColor: '#F8FAFB',
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  timeLabel: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginTop: 4,
-    fontWeight: '500',
-  },
-  timeValue: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#111827',
-    marginTop: 2,
-  },
-  locationRow: {
-    backgroundColor: '#F8FAFB',
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  locationInfo: {
-    gap: 8,
-  },
-  locationText: {
-    fontSize: 14,
-    color: '#374151',
-    lineHeight: 20,
-  },
-  coordText: {
-    fontSize: 12,
-    color: '#6B7280',
-    fontStyle: 'italic',
-    marginTop: 4,
-  },
-  reasonText: {
-    fontSize: 14,
-    color: '#92400E',
-    backgroundColor: '#FEF3C7',
-    padding: 16,
-    borderRadius: 12,
-    borderLeftWidth: 4,
-    borderLeftColor: '#F59E0B',
-    lineHeight: 20,
-  },
-  photoRow: {
-    flexDirection: 'row',
-    gap: 16,
-  },
-  photoItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  photoLabel: {
-    fontSize: 12,
-    color: '#6B7280',
-    fontWeight: '500',
-    marginBottom: 8,
-  },
-  photoPlaceholder: {
-    width: '100%',
-    height: 80,
-    backgroundColor: '#F9FAFB',
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#E5E7EB',
-    borderStyle: 'dashed',
-  },
-  photoText: {
-    fontSize: 11,
-    color: '#6B7280',
-    marginTop: 4,
-  },
-  noPhotoText: {
-    fontSize: 11,
-    color: '#9CA3AF',
-    marginTop: 4,
-  },
-  liburContent: {
-    alignItems: 'center',
-    paddingVertical: 40,
-  },
-  liburIcon: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: '#FEE2E2',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  liburStatus: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#DC2626',
-    marginBottom: 8,
-  },
-  liburKeterangan: {
-    fontSize: 16,
-    color: '#6B7280',
+    color: '#007AFF',
     textAlign: 'center',
+    marginBottom: 8,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  detailLabel: {
+    fontSize: 14,
+    color: '#666',
+    flex: 1,
+  },
+  detailValue: {
+    fontSize: 14,
+    color: '#333',
+    fontWeight: '500',
+    flex: 2,
+    textAlign: 'right',
+  },
+  detailStatusBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  detailStatusText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '600',
   },
 });

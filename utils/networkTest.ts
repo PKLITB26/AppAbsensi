@@ -1,102 +1,63 @@
-// Utility untuk test koneksi dan debugging network issues
+// Network testing utility for HadirinApp
 import { API_CONFIG } from '../constants/config';
 
-export const testServerConnection = async () => {
-  const results = {
-    primaryUrl: { success: false, error: '', responseTime: 0 },
-    fallbackUrl: { success: false, error: '', responseTime: 0 },
-    recommendations: []
-  };
+export const NetworkTest = {
+  // Test basic connectivity
+  testConnection: async () => {
+    const results = {
+      localhost: false,
+      currentIP: false,
+      serverReachable: false,
+      details: [] as string[]
+    };
 
-  // Test Primary URL
-  try {
-    const startTime = Date.now();
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000);
-    
-    const response = await fetch(`${API_CONFIG.BASE_URL}/test-connection.php`, {
-      method: 'GET',
-      signal: controller.signal,
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      }
-    });
-    
-    clearTimeout(timeoutId);
-    results.primaryUrl.responseTime = Date.now() - startTime;
-    
-    if (response.ok) {
-      results.primaryUrl.success = true;
-    } else {
-      results.primaryUrl.error = `HTTP ${response.status}: ${response.statusText}`;
+    // Test localhost
+    try {
+      const response = await fetch('http://localhost/hadirinapp/test-connection.php', {
+        method: 'GET',
+        signal: AbortSignal.timeout(5000)
+      });
+      results.localhost = response.ok;
+      results.details.push(`Localhost: ${response.ok ? 'OK' : 'Failed'}`);
+    } catch (error) {
+      results.details.push(`Localhost: Failed - ${(error as Error).message}`);
     }
-  } catch (error) {
-    results.primaryUrl.error = error.message || 'Unknown error';
-  }
 
-  // Test Fallback URL
-  try {
-    const startTime = Date.now();
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000);
-    
-    const response = await fetch(`${API_CONFIG.FALLBACK_URL}/test-connection.php`, {
-      method: 'GET',
-      signal: controller.signal,
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      }
-    });
-    
-    clearTimeout(timeoutId);
-    results.fallbackUrl.responseTime = Date.now() - startTime;
-    
-    if (response.ok) {
-      results.fallbackUrl.success = true;
-    } else {
-      results.fallbackUrl.error = `HTTP ${response.status}: ${response.statusText}`;
+    // Test current IP
+    try {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/test-connection.php`, {
+        method: 'GET',
+        signal: AbortSignal.timeout(5000)
+      });
+      results.currentIP = response.ok;
+      results.details.push(`Current IP (192.168.1.8): ${response.ok ? 'OK' : 'Failed'}`);
+    } catch (error) {
+      results.details.push(`Current IP: Failed - ${(error as Error).message}`);
     }
-  } catch (error) {
-    results.fallbackUrl.error = error.message || 'Unknown error';
-  }
 
-  // Generate recommendations
-  if (!results.primaryUrl.success && !results.fallbackUrl.success) {
-    results.recommendations.push('Tidak ada koneksi ke server. Periksa:');
-    results.recommendations.push('1. Koneksi internet Anda');
-    results.recommendations.push('2. Server mungkin sedang maintenance');
-    results.recommendations.push('3. Firewall atau proxy blocking');
-  } else if (!results.primaryUrl.success && results.fallbackUrl.success) {
-    results.recommendations.push('Server utama bermasalah, gunakan localhost');
-  } else if (results.primaryUrl.responseTime > 5000) {
-    results.recommendations.push('Koneksi lambat, periksa jaringan');
-  }
+    // Test server reachability
+    try {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/admin/pengaturan/api/lokasi-kantor.php`, {
+        method: 'GET',
+        signal: AbortSignal.timeout(10000)
+      });
+      results.serverReachable = response.ok;
+      results.details.push(`Server API: ${response.ok ? 'OK' : `Failed (${response.status})`}`);
+    } catch (error) {
+      results.details.push(`Server API: Failed - ${(error as Error).message}`);
+    }
 
-  return results;
-};
+    return results;
+  },
 
-export const getNetworkErrorMessage = (error: any): string => {
-  if (error.name === 'AbortError') {
-    return 'Koneksi timeout - Server tidak merespons dalam waktu yang ditentukan';
+  // Get network suggestions
+  getSuggestions: () => {
+    return [
+      '1. Pastikan HP dan komputer terhubung ke WiFi yang sama',
+      '2. Periksa apakah XAMPP/server backend sudah berjalan',
+      '3. Coba akses http://192.168.1.8/hadirinapp di browser HP',
+      '4. Pastikan firewall tidak memblokir port 80',
+      '5. Restart router WiFi jika masih bermasalah'
+    ];
   }
-  
-  if (error.message?.includes('Network request failed')) {
-    return 'Gagal terhubung ke server - Periksa koneksi internet';
-  }
-  
-  if (error.message?.includes('22')) {
-    return 'Error 22: Masalah koneksi jaringan - Coba lagi dalam beberapa saat';
-  }
-  
-  if (error.message?.includes('ECONNREFUSED')) {
-    return 'Server menolak koneksi - Server mungkin sedang offline';
-  }
-  
-  if (error.message?.includes('ETIMEDOUT')) {
-    return 'Koneksi timeout - Jaringan terlalu lambat atau server sibuk';
-  }
-  
-  return `Error koneksi: ${error.message || 'Unknown error'}`;
 };

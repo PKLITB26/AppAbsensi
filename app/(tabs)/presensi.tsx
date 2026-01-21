@@ -146,6 +146,9 @@ export default function PresensiScreen() {
     
     const isInRange = distance <= nearestLocation.radius;
     
+    if (nearestLocation.jenis_lokasi !== 'tetap') {
+      return { valid: false, message: "Silakan absen di lokasi kantor yang telah ditentukan" };
+    }
     if (!isInRange) {
       return { valid: false, message: `Anda berada di luar area kantor (${Math.round(distance)}m dari lokasi)` };
     }
@@ -168,25 +171,13 @@ export default function PresensiScreen() {
   };
 
   const handleAbsenMasuk = async () => {
-    const validation = validateLocation();
-    if (!validation.valid) {
-      Alert.alert('Lokasi Tidak Valid', validation.message);
-      return;
-    }
-    
-    setPendingAttendanceType('masuk');
     await takePhotoWithLocation();
+    setPendingAttendanceType('masuk');
   };
 
   const handleAbsenPulang = async () => {
-    const validation = validateLocation();
-    if (!validation.valid) {
-      Alert.alert('Lokasi Tidak Valid', validation.message);
-      return;
-    }
-    
-    setPendingAttendanceType('pulang');
     await takePhotoWithLocation();
+    setPendingAttendanceType('pulang');
   };
 
   const takePhotoWithLocation = async () => {
@@ -411,39 +402,60 @@ export default function PresensiScreen() {
               </View>
 
               <View style={styles.actionContainer}>
-                {!hasCheckedIn ? (
-                  <TouchableOpacity 
-                    style={[styles.mainButton, styles.checkInButton]}
-                    onPress={handleAbsenMasuk}
-                    disabled={isProcessing}
-                  >
-                    <Ionicons 
-                      name="camera" 
-                      size={20} 
-                      color="#fff"
-                      style={styles.buttonIcon}
-                    />
-                    <Text style={[styles.mainButtonText, styles.checkInButtonText]}>
-                      {isProcessing ? 'Memproses...' : 'Absen Masuk'}
-                    </Text>
-                  </TouchableOpacity>
-                ) : (
-                  <TouchableOpacity 
-                    style={[styles.mainButton, styles.checkOutButton]}
-                    onPress={handleAbsenPulang}
-                    disabled={isProcessing}
-                  >
-                    <Ionicons 
-                      name="camera" 
-                      size={20} 
-                      color="#fff"
-                      style={styles.buttonIcon}
-                    />
-                    <Text style={[styles.mainButtonText, styles.checkOutButtonText]}>
-                      {isProcessing ? 'Memproses...' : 'Absen Pulang'}
-                    </Text>
-                  </TouchableOpacity>
-                )}
+                {(() => {
+                  const validation = validateLocation();
+                  const isValidLocation = validation.valid;
+                  
+                  return (
+                    <>
+                      {!hasCheckedIn ? (
+                        <TouchableOpacity 
+                          style={[
+                            styles.mainButton,
+                            isValidLocation ? styles.checkInButton : styles.disabledButton
+                          ]}
+                          onPress={isValidLocation ? handleAbsenMasuk : undefined}
+                          disabled={isProcessing || !isValidLocation}
+                        >
+                          <Ionicons 
+                            name="camera" 
+                            size={20} 
+                            color={isValidLocation ? "#fff" : "#9E9E9E"}
+                          />
+                          <Text style={[
+                            styles.mainButtonText,
+                            isValidLocation ? styles.checkInButtonText : styles.disabledButtonText
+                          ]}>
+                            {isProcessing ? 'Memproses...' : 
+                             isValidLocation ? 'Absen Masuk' : 'Tidak Bisa Absen'}
+                          </Text>
+                        </TouchableOpacity>
+                      ) : (
+                        <TouchableOpacity 
+                          style={[
+                            styles.mainButton,
+                            isValidLocation ? styles.checkOutButton : styles.disabledButton
+                          ]}
+                          onPress={isValidLocation ? handleAbsenPulang : undefined}
+                          disabled={isProcessing || !isValidLocation}
+                        >
+                          <Ionicons 
+                            name="camera" 
+                            size={20} 
+                            color={isValidLocation ? "#fff" : "#9E9E9E"}
+                          />
+                          <Text style={[
+                            styles.mainButtonText,
+                            isValidLocation ? styles.checkOutButtonText : styles.disabledButtonText
+                          ]}>
+                            {isProcessing ? 'Memproses...' : 
+                             isValidLocation ? 'Absen Pulang' : 'Tidak Bisa Absen'}
+                          </Text>
+                        </TouchableOpacity>
+                      )}
+                    </>
+                  );
+                })()}
               </View>
 
               {hasCheckedIn && checkInTime && (

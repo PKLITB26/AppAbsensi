@@ -28,19 +28,9 @@ export default function LoginScreen() {
 
     setLoading(true);
     try {
-      // Panggil API login yang sebenarnya
-      const response = await fetch('http://10.251.109.30/hadirinapp/auth/api/login.php', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: email,
-          password: password
-        })
-      });
-
-      const result = await response.json();
+      // Import dan gunakan API config
+      const { AuthAPI } = require('../constants/config');
+      const result = await AuthAPI.login(email, password);
       
       if (result.success) {
         // Simpan data user yang sebenarnya dari database

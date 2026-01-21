@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, StatusBar, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, StatusBar, ScrollView, TouchableOpacity, Alert, Modal, TextInput, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { PengaturanAPI } from '../../constants/config';
@@ -9,6 +9,16 @@ export default function LokasiKantorScreen() {
   const [loading, setLoading] = useState(false);
   const [lokasiKantor, setLokasiKantor] = useState<any[]>([]);
   const [lokasiDinas, setLokasiDinas] = useState<any[]>([]);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingLokasi, setEditingLokasi] = useState<any>(null);
+  const [editNama, setEditNama] = useState('');
+  const [editAlamat, setEditAlamat] = useState('');
+  const [editLatitude, setEditLatitude] = useState<number | null>(null);
+  const [editLongitude, setEditLongitude] = useState<number | null>(null);
+  const [editRadius, setEditRadius] = useState('');
+  const [showMapModal, setShowMapModal] = useState(false);
+  const [markerPosition, setMarkerPosition] = useState<{latitude: number, longitude: number} | null>(null);
+  const [showMenu, setShowMenu] = useState<number | null>(null);
 
   useEffect(() => {
     fetchLokasiData();
@@ -80,6 +90,56 @@ export default function LokasiKantorScreen() {
     );
   };
 
+  const editLokasi = (lokasi: any) => {
+    setEditingLokasi(lokasi);
+    setEditNama(lokasi.nama_lokasi);
+    setEditAlamat(lokasi.alamat);
+    setEditLatitude(lokasi.latitude);
+    setEditLongitude(lokasi.longitude);
+    setEditRadius(lokasi.radius?.toString() || '100');
+    setShowEditModal(true);
+  };
+
+  const saveEditLokasi = async () => {
+    if (!editNama.trim() || !editAlamat.trim()) {
+      Alert.alert('Error', 'Nama lokasi dan alamat harus diisi');
+      return;
+    }
+
+    if (!editLatitude || !editLongitude) {
+      Alert.alert('Error', 'Lokasi harus dipilih di peta');
+      return;
+    }
+
+    if (!editRadius || parseInt(editRadius) < 10 || parseInt(editRadius) > 1000) {
+      Alert.alert('Error', 'Radius harus antara 10-1000 meter');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await PengaturanAPI.updateLokasi(editingLokasi.id, {
+        nama_lokasi: editNama,
+        alamat: editAlamat,
+        latitude: editLatitude,
+        longitude: editLongitude,
+        radius: parseInt(editRadius)
+      });
+      
+      if (response.success) {
+        Alert.alert('Sukses', 'Lokasi berhasil diupdate');
+        setShowEditModal(false);
+        fetchLokasiData();
+      } else {
+        Alert.alert('Error', response.message || 'Gagal mengupdate lokasi');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Terjadi kesalahan saat mengupdate lokasi');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
@@ -94,12 +154,6 @@ export default function LokasiKantorScreen() {
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Lokasi Kantor</Text>
         </View>
-        <TouchableOpacity 
-          style={styles.headerAddBtn}
-          onPress={() => router.push('/pengaturan/tambah-lokasi')}
-        >
-          <Ionicons name="add" size={24} color="#004643" />
-        </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.content}>
@@ -115,15 +169,8 @@ export default function LokasiKantorScreen() {
           <View style={styles.sectionHeader}>
             <View style={styles.sectionLeft}>
               <Ionicons name="business" size={20} color="#004643" />
-              <Text style={styles.sectionTitle}>Lokasi Kantor Tetap</Text>
+              <Text style={styles.sectionTitle}>Lokasi Kantor</Text>
             </View>
-            <TouchableOpacity 
-              style={styles.editBtn}
-              onPress={() => Alert.alert('Info', 'Fitur edit lokasi kantor akan segera tersedia')}
-            >
-              <Ionicons name="settings-outline" size={16} color="#004643" />
-              <Text style={styles.editBtnText}>Kelola</Text>
-            </TouchableOpacity>
           </View>
           
           {lokasiKantor.map((lokasi) => (
@@ -135,6 +182,20 @@ export default function LokasiKantorScreen() {
                   <Ionicons name="business-outline" size={12} color="#004643" />
                   <Text style={styles.lokasiTypeText}>Kantor Tetap</Text>
                 </View>
+              </View>
+              <View style={styles.actionButtons}>
+                <TouchableOpacity 
+                  style={styles.editBtn}
+                  onPress={() => router.push(`/pengaturan/edit-lokasi?id=${lokasi.id}`)}
+                >
+                  <Ionicons name="create-outline" size={15} color="#FF9800" />
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={styles.deleteBtn}
+                  onPress={() => deleteLokasi(lokasi.id)}
+                >
+                  <Ionicons name="trash-outline" size={15} color="#F44336" />
+                </TouchableOpacity>
               </View>
             </View>
           ))}
@@ -162,12 +223,20 @@ export default function LokasiKantorScreen() {
                   <Text style={[styles.lokasiTypeText, {color: '#FF6B35'}]}>Lokasi Dinas</Text>
                 </View>
               </View>
-              <TouchableOpacity 
-                style={styles.deleteBtn}
-                onPress={() => deleteLokasi(lokasi.id)}
-              >
-                <Ionicons name="trash-outline" size={16} color="#F44336" />
-              </TouchableOpacity>
+              <View style={styles.actionButtons}>
+                <TouchableOpacity 
+                  style={styles.editBtn}
+                  onPress={() => router.push(`/pengaturan/edit-lokasi?id=${lokasi.id}`)}
+                >
+                  <Ionicons name="create-outline" size={15} color="#FF9800" />
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={styles.deleteBtn}
+                  onPress={() => deleteLokasi(lokasi.id)}
+                >
+                  <Ionicons name="trash-outline" size={15} color="#F44336" />
+                </TouchableOpacity>
+              </View>
             </View>
           ))}
           
@@ -180,6 +249,116 @@ export default function LokasiKantorScreen() {
           )}
         </View>
       </ScrollView>
+      
+      <TouchableOpacity 
+        style={styles.floatingAddBtn}
+        onPress={() => router.push('/pengaturan/tambah-lokasi')}
+      >
+        <Ionicons name="add" size={28} color="#fff" />
+      </TouchableOpacity>
+
+      <Modal
+        visible={showEditModal}
+        transparent={true}
+        onRequestClose={() => setShowEditModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Edit Lokasi</Text>
+            </View>
+            
+            <ScrollView style={styles.modalForm}>
+              <View style={styles.formGroup}>
+                <Text style={styles.label}>Nama Lokasi *</Text>
+                <View style={styles.inputWrapper}>
+                  <Ionicons name="business-outline" size={20} color="#666" />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Masukkan nama lokasi"
+                    value={editNama}
+                    onChangeText={setEditNama}
+                    placeholderTextColor="#999"
+                  />
+                </View>
+              </View>
+              
+              <View style={styles.formGroup}>
+                <Text style={styles.label}>Alamat Lengkap *</Text>
+                <View style={styles.inputWrapper}>
+                  <Ionicons name="location-outline" size={20} color="#666" />
+                  <TextInput
+                    style={[styles.input, styles.textArea]}
+                    placeholder="Masukkan alamat lengkap"
+                    value={editAlamat}
+                    onChangeText={setEditAlamat}
+                    placeholderTextColor="#999"
+                    multiline={true}
+                    numberOfLines={3}
+                  />
+                </View>
+              </View>
+              
+              <View style={styles.formGroup}>
+                <TouchableOpacity 
+                  style={styles.mapBtn} 
+                  onPress={() => setShowMapModal(true)}
+                >
+                  <Ionicons name="map-outline" size={20} color="#004643" />
+                  <Text style={styles.mapBtnText}>
+                    {editLatitude ? 'Lokasi Dipilih' : 'Pilih Lokasi di Peta'}
+                  </Text>
+                  {editLatitude && (
+                    <Ionicons name="checkmark-circle" size={16} color="#4CAF50" />
+                  )}
+                </TouchableOpacity>
+                {editLatitude && editLongitude && (
+                  <Text style={styles.coordText}>
+                    {editLatitude.toFixed(6)}, {editLongitude.toFixed(6)}
+                  </Text>
+                )}
+              </View>
+              
+              <View style={styles.formGroup}>
+                <Text style={styles.label}>Radius Absensi (meter) *</Text>
+                <View style={styles.inputWrapper}>
+                  <Ionicons name="radio-outline" size={20} color="#666" />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="10-1000"
+                    value={editRadius}
+                    onChangeText={(text) => {
+                      const numericValue = text.replace(/[^0-9]/g, '');
+                      if (numericValue === '' || numericValue.length <= 4) {
+                        setEditRadius(numericValue);
+                      }
+                    }}
+                    keyboardType="numeric"
+                    maxLength={4}
+                  />
+                  <Text style={styles.unitText}>m</Text>
+                </View>
+              </View>
+            </ScrollView>
+            
+            <View style={styles.modalButtons}>
+              <TouchableOpacity 
+                style={styles.cancelBtn}
+                onPress={() => setShowEditModal(false)}
+              >
+                <Text style={styles.cancelBtnText}>Batal</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.saveBtn}
+                onPress={saveEditLokasi}
+                disabled={loading}
+              >
+                <Text style={styles.saveBtnText}>Simpan</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -212,10 +391,148 @@ const styles = StyleSheet.create({
     fontWeight: 'bold', 
     color: '#004643' 
   },
-  headerAddBtn: {
-    padding: 10,
+  floatingAddBtn: {
+    position: 'absolute',
+    bottom: 30,
+    right: 20,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#004643',
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 0,
+    width: '90%',
+    maxHeight: '80%'
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0'
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#004643'
+  },
+  modalForm: {
+    maxHeight: 300,
+    paddingHorizontal: 20
+  },
+  formGroup: {
+    marginBottom: 20,
+    marginTop: 20
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F9F9F9',
     borderRadius: 10,
-    backgroundColor: '#F0F8F7'
+    paddingHorizontal: 15,
+    borderWidth: 1,
+    borderColor: '#E0E0E0'
+  },
+  input: {
+    flex: 1,
+    fontSize: 14,
+    color: '#333',
+    paddingVertical: 12,
+    marginLeft: 10
+  },
+  textArea: {
+    textAlignVertical: 'top',
+    paddingTop: 12,
+    minHeight: 80
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    padding: 20,
+    gap: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0'
+  },
+  cancelBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    backgroundColor: '#F5F5F5',
+    alignItems: 'center'
+  },
+  cancelBtnText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666'
+  },
+  saveBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    backgroundColor: '#004643',
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 6
+  },
+  saveBtnText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#fff'
+  },
+  mapBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F0F8F7',
+    padding: 15,
+    borderRadius: 10,
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 1
+  },
+  mapBtnText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#004643',
+    marginLeft: 8,
+    flex: 1
+  },
+  coordText: {
+    fontSize: 11,
+    color: '#666',
+    marginTop: 5,
+    fontFamily: 'monospace'
+  },
+  unitText: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '500',
+    marginLeft: 8
   },
   content: {
     flex: 1,
@@ -310,6 +627,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: '#FFF5F5'
   },
+  actionButtons: { flexDirection: 'row', gap: 5 },
+  editBtn: { padding: 6, borderRadius: 6, backgroundColor: '#FFF3E0' },
   emptyState: {
     alignItems: 'center',
     paddingVertical: 40,

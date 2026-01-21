@@ -52,7 +52,8 @@
         {
           "locationAlwaysAndWhenInUsePermission": "HadirinApp memerlukan akses lokasi untuk mencatat kehadiran Anda."
         }
-      ]
+      ],
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true
