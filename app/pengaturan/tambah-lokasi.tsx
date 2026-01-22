@@ -661,13 +661,14 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingBottom: 120
+    paddingBottom: 120,
+    paddingTop: 12
   },
   infoCard: {
     backgroundColor: '#F0F8F7',
     padding: 16,
     borderRadius: 12,
-    marginBottom: 24,
+    marginBottom: 16,
     marginHorizontal: 20,
     flexDirection: 'row',
     alignItems: 'flex-start'
@@ -682,7 +683,7 @@ const styles = StyleSheet.create({
     lineHeight: 16
   },
   formGroup: {
-    marginBottom: 20,
+    marginBottom: 16,
     marginHorizontal: 20
   },
   label: {

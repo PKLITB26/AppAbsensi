@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, StatusBar, FlatList, TouchableOpacity, ActivityIndicator, TextInput, ScrollView, Modal, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { Calendar } from 'react-native-calendars';
 import { API_CONFIG, getApiUrl } from '../../constants/config';
 
 interface LemburData {
@@ -66,86 +67,61 @@ export default function LaporanDetailLemburScreen() {
     }
   };
 
+  const handleDateSelect = (day: any) => {
+    const date = new Date(day.dateString);
+    setSelectedDate(date);
+    setSelectedDateFilter('tanggal_tertentu');
+    setShowCalendar(false);
+  };
+
   const renderCalendarModal = () => {
-    const currentMonth = selectedDate.getMonth();
-    const currentYear = selectedDate.getFullYear();
-    const firstDay = new Date(currentYear, currentMonth, 1);
-    const lastDay = new Date(currentYear, currentMonth + 1, 0);
-    const daysInMonth = lastDay.getDate();
-    const startingDayOfWeek = firstDay.getDay();
-
-    const days = [];
+    const selectedDateString = selectedDate.toISOString().split('T')[0];
     
-    for (let i = 0; i < startingDayOfWeek; i++) {
-      days.push(<View key={`empty-${i}`} style={styles.calendarDay} />);
-    }
-    
-    for (let day = 1; day <= daysInMonth; day++) {
-      const date = new Date(currentYear, currentMonth, day);
-      const isSelected = selectedDate.toDateString() === date.toDateString();
-      const isToday = new Date().toDateString() === date.toDateString();
-      
-      days.push(
-        <TouchableOpacity
-          key={day}
-          style={[
-            styles.calendarDay,
-            isSelected && styles.selectedDay,
-            isToday && styles.todayDay
-          ]}
-          onPress={() => {
-            setSelectedDate(date);
-            setSelectedDateFilter('tanggal_tertentu');
-            setShowCalendar(false);
-          }}
-        >
-          <Text style={[
-            styles.calendarDayText,
-            isSelected && styles.selectedDayText,
-            isToday && styles.todayDayText
-          ]}>
-            {day}
-          </Text>
-        </TouchableOpacity>
-      );
-    }
-
     return (
-      <Modal visible={showCalendar} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={styles.calendarModal}>
+      <Modal visible={showCalendar} transparent>
+        <View style={styles.calendarModalOverlay}>
+          <View style={styles.calendarModalContainer}>
             <View style={styles.calendarHeader}>
-              <TouchableOpacity
-                onPress={() => setSelectedDate(new Date(currentYear, currentMonth - 1, 1))}
-              >
-                <Ionicons name="chevron-back" size={24} color="#004643" />
-              </TouchableOpacity>
-              <Text style={styles.calendarTitle}>
-                {selectedDate.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}
-              </Text>
-              <TouchableOpacity
-                onPress={() => setSelectedDate(new Date(currentYear, currentMonth + 1, 1))}
-              >
-                <Ionicons name="chevron-forward" size={24} color="#004643" />
+              <Text style={styles.calendarTitle}>Pilih Tanggal</Text>
+              <TouchableOpacity onPress={() => setShowCalendar(false)}>
+                <Ionicons name="close" size={24} color="#666" />
               </TouchableOpacity>
             </View>
-            
-            <View style={styles.weekDays}>
-              {['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'].map(day => (
-                <Text key={day} style={styles.weekDayText}>{day}</Text>
-              ))}
-            </View>
-            
-            <View style={styles.calendarGrid}>
-              {days}
-            </View>
-            
-            <TouchableOpacity
-              style={styles.closeCalendarBtn}
-              onPress={() => setShowCalendar(false)}
-            >
-              <Text style={styles.closeCalendarText}>Tutup</Text>
-            </TouchableOpacity>
+            <Calendar
+              onDayPress={handleDateSelect}
+              markedDates={{
+                [selectedDateString]: {
+                  selected: true,
+                  selectedColor: '#004643'
+                }
+              }}
+              maxDate={new Date().toISOString().split('T')[0]}
+              theme={{
+                backgroundColor: '#ffffff',
+                calendarBackground: '#ffffff',
+                textSectionTitleColor: '#004643',
+                selectedDayBackgroundColor: '#004643',
+                selectedDayTextColor: '#ffffff',
+                todayTextColor: '#004643',
+                dayTextColor: '#2d4150',
+                textDisabledColor: '#d9e1e8',
+                dotColor: '#004643',
+                selectedDotColor: '#ffffff',
+                arrowColor: '#004643',
+                disabledArrowColor: '#d9e1e8',
+                monthTextColor: '#004643',
+                indicatorColor: '#004643',
+                textDayFontFamily: 'System',
+                textMonthFontFamily: 'System',
+                textDayHeaderFontFamily: 'System',
+                textDayFontWeight: '400',
+                textMonthFontWeight: 'bold',
+                textDayHeaderFontWeight: '600',
+                textDayFontSize: 16,
+                textMonthFontSize: 18,
+                textDayHeaderFontSize: 14
+              }}
+            />
           </View>
         </View>
       </Modal>
@@ -417,7 +393,7 @@ const styles = StyleSheet.create({
   },
   content: { flex: 1 },
   searchContainer: {
-    paddingHorizontal: 15,
+    paddingHorizontal: 20,
     paddingVertical: 8,
     backgroundColor: '#F8FAFB'
   },
@@ -595,85 +571,30 @@ const styles = StyleSheet.create({
   },
   
   // Calendar Modal Styles
-  modalOverlay: {
+  calendarModalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center'
   },
-  calendarModal: {
+  calendarModalContainer: {
     backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 20,
-    margin: 20,
+    borderRadius: 15,
     width: '90%',
-    maxWidth: 350
+    maxWidth: 400
   },
   calendarHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0'
   },
   calendarTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333'
-  },
-  weekDays: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: 10
-  },
-  weekDayText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#666',
-    textAlign: 'center',
-    width: 40
-  },
-  calendarGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-around'
-  },
-  calendarDay: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 5
-  },
-  selectedDay: {
-    backgroundColor: '#004643',
-    borderRadius: 20
-  },
-  todayDay: {
-    borderWidth: 2,
-    borderColor: '#004643',
-    borderRadius: 20
-  },
-  calendarDayText: {
-    fontSize: 14,
-    color: '#333'
-  },
-  selectedDayText: {
-    color: '#fff',
-    fontWeight: 'bold'
-  },
-  todayDayText: {
-    color: '#004643',
-    fontWeight: 'bold'
-  },
-  closeCalendarBtn: {
-    backgroundColor: '#004643',
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 20
-  },
-  closeCalendarText: {
-    color: '#fff',
-    fontWeight: 'bold'
+    color: '#004643'
   },
 });

@@ -15,7 +15,13 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { Calendar } from 'react-native-calendars';
 import { API_CONFIG, getApiUrl, PengaturanAPI } from "../../constants/config";
+
+interface JamKerjaHari {
+  hari: string;
+  is_kerja: boolean;
+}
 
 interface HariLibur {
   id: number;
@@ -56,9 +62,9 @@ export default function TrackingAdminScreen() {
   const [monthlyStats, setMonthlyStats] = useState<{ [key: string]: number }>(
     {},
   );
-  const [calendarDate, setCalendarDate] = useState(new Date());
-  const [showMonthPicker, setShowMonthPicker] = useState(false);
   const [hariLibur, setHariLibur] = useState<HariLibur[]>([]);
+  const [jamKerja, setJamKerja] = useState<JamKerjaHari[]>([]);
+  const [currentCalendarDate, setCurrentCalendarDate] = useState(new Date());
 
   const statusOptions = [
     "Hadir",
@@ -74,19 +80,15 @@ export default function TrackingAdminScreen() {
   useFocusEffect(
     useCallback(() => {
       fetchHariLibur();
+      fetchJamKerja();
     }, []),
   );
 
   useEffect(() => {
     fetchPresensiData();
-    fetchMonthlyStats();
     fetchHariLibur();
+    fetchJamKerja();
   }, [selectedDate]);
-
-  useEffect(() => {
-    fetchMonthlyStats();
-    fetchHariLibur();
-  }, [calendarDate]);
 
   useEffect(() => {
     filterData();
@@ -142,30 +144,45 @@ export default function TrackingAdminScreen() {
     }
   };
 
-  const fetchMonthlyStats = async () => {
-    try {
-      const currentMonth = calendarDate.toISOString().substring(0, 7);
-      const response = await fetch(
-        `${getApiUrl(API_CONFIG.ENDPOINTS.TRACKING)}?month=${currentMonth}`,
-      );
-      const result = await response.json();
 
-      if (result.success) {
-        const stats: { [key: string]: number } = {};
-        result.data.forEach((item: any) => {
-          const date = item.tanggal;
-          stats[date] = (stats[date] || 0) + 1;
-        });
-        setMonthlyStats(stats);
+
+  const fetchJamKerja = async () => {
+    try {
+      const response = await PengaturanAPI.getJamKerja();
+      if (response.success && response.data) {
+        setJamKerja(response.data);
       }
     } catch (error) {
-      console.log("Error fetching monthly stats:", error);
-      // Fallback stats
-      setMonthlyStats({
-        [selectedDate]: 5,
-        [`${selectedDate.substring(0, 8)}15`]: 3,
-      });
+      console.log("Error fetching jam kerja:", error);
     }
+  };
+
+  const isWeekend = (dateString: string) => {
+    if (jamKerja.length === 0) return false;
+    const date = new Date(dateString);
+    const dayIndex = date.getDay();
+    const hariMap = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    const namaHari = hariMap[dayIndex];
+    const jamKerjaHari = jamKerja.find(jk => jk.hari === namaHari);
+    return jamKerjaHari ? !jamKerjaHari.is_kerja : false;
+  };
+
+  const generateWeekendDates = (year: number, month: number) => {
+    const weekendDates: any = {};
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    
+    for (let day = 1; day <= daysInMonth; day++) {
+      const testDate = new Date(year, month, day);
+      const dateString = testDate.toISOString().split('T')[0];
+      if (isWeekend(dateString)) {
+        weekendDates[dateString] = {
+          marked: true,
+          dotColor: '#F44336',
+          textColor: '#F44336'
+        };
+      }
+    }
+    return weekendDates;
   };
 
   const filterData = () => {
@@ -262,30 +279,9 @@ export default function TrackingAdminScreen() {
     });
   };
 
-  const navigateMonth = (direction: "prev" | "next") => {
-    const newDate = new Date(calendarDate);
-    if (direction === "prev") {
-      newDate.setMonth(newDate.getMonth() - 1);
-    } else {
-      newDate.setMonth(newDate.getMonth() + 1);
-    }
-    setCalendarDate(newDate);
-  };
 
-  const navigateYear = (direction: "prev" | "next") => {
-    const newDate = new Date(calendarDate);
-    if (direction === "prev") {
-      newDate.setFullYear(newDate.getFullYear() - 1);
-    } else {
-      newDate.setFullYear(newDate.getFullYear() + 1);
-    }
-    setCalendarDate(newDate);
-  };
 
-  const isWeekend = (date: Date) => {
-    const day = date.getDay();
-    return day === 0 || day === 6;
-  };
+
 
   const isHoliday = (dateString: string) => {
     const result = hariLibur.some((h) => h.tanggal === dateString);
@@ -299,62 +295,7 @@ export default function TrackingAdminScreen() {
     return hariLibur.find((h) => h.tanggal === dateString);
   };
 
-  const generateCalendarDays = () => {
-    const year = calendarDate.getFullYear();
-    const month = calendarDate.getMonth();
 
-    console.log(`\n=== GENERATING CALENDAR: ${year}-${month + 1} ===`);
-    console.log(
-      "Hari libur yang tersedia:",
-      hariLibur.map((h) => h.tanggal).join(", "),
-    );
-
-    const firstDay = new Date(year, month, 1);
-    const startDate = new Date(firstDay);
-    const dayOfWeek = firstDay.getDay();
-    startDate.setDate(firstDay.getDate() - dayOfWeek);
-
-    const days = [];
-    const today = new Date();
-    const todayString = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-
-    for (let i = 0; i < 42; i++) {
-      const currentDate = new Date(startDate);
-      currentDate.setDate(startDate.getDate() + i);
-
-      const dateString = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, "0")}-${String(currentDate.getDate()).padStart(2, "0")}`;
-      const isCurrentMonth = currentDate.getMonth() === month;
-      const isToday = dateString === todayString;
-      const isSelected = dateString === selectedDate;
-      const attendanceCount = monthlyStats[dateString] || 0;
-      const isPast = currentDate <= today;
-      const isWeekend =
-        currentDate.getDay() === 0 || currentDate.getDay() === 6;
-      const isHoliday = hariLibur.some((h) => h.tanggal === dateString);
-      const holidayInfo = getHolidayInfo(dateString);
-
-      if (isCurrentMonth && isHoliday) {
-        console.log(
-          `✓ MATCH: ${dateString} adalah hari libur: ${holidayInfo?.nama_libur}`,
-        );
-      }
-
-      days.push({
-        date: dateString,
-        day: currentDate.getDate(),
-        isCurrentMonth,
-        isToday,
-        isSelected,
-        attendanceCount,
-        isPast,
-        isWeekend,
-        isHoliday,
-        holidayInfo,
-      });
-    }
-
-    return days;
-  };
 
   const renderHeader = () => (
     <View style={styles.stickyHeader}>
@@ -365,10 +306,7 @@ export default function TrackingAdminScreen() {
         </Text>
         <TouchableOpacity
           style={styles.calendarBtn}
-          onPress={() => {
-            setCalendarDate(new Date(selectedDate));
-            setShowCalendarModal(true);
-          }}
+          onPress={() => setShowCalendarModal(true)}
         >
           <Ionicons name="calendar-outline" size={16} color="#004643" />
           <Text style={styles.calendarBtnText}>Pilih Tanggal</Text>
@@ -714,172 +652,69 @@ export default function TrackingAdminScreen() {
 
       {/* Calendar Modal */}
       {showCalendarModal && (
-        <View style={styles.calendarOverlay}>
-          <View style={styles.calendarModalContent}>
-            <View style={styles.calendarHeader}>
-              <TouchableOpacity
-                onPress={() => navigateMonth("prev")}
-                style={styles.navButton}
-              >
-                <Ionicons name="chevron-back" size={24} color="#004643" />
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={() => setShowMonthPicker(!showMonthPicker)}
-                style={styles.monthYearButton}
-              >
-                <Text style={styles.calendarTitle}>
-                  {calendarDate.toLocaleDateString("id-ID", {
-                    month: "long",
-                    year: "numeric",
-                  })}
-                </Text>
-                <Ionicons name="chevron-down" size={16} color="#004643" />
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={() => navigateMonth("next")}
-                style={styles.navButton}
-              >
-                <Ionicons name="chevron-forward" size={24} color="#004643" />
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={() => setShowCalendarModal(false)}
-                style={styles.closeButton}
-              >
-                <Ionicons name="close" size={24} color="#666" />
-              </TouchableOpacity>
+        <Modal visible={showCalendarModal} transparent>
+          <View style={styles.calendarModalOverlay}>
+            <View style={styles.calendarModalContainer}>
+              <View style={styles.calendarHeader}>
+                <Text style={styles.calendarTitle}>Pilih Tanggal</Text>
+                <TouchableOpacity onPress={() => setShowCalendarModal(false)}>
+                  <Ionicons name="close" size={24} color="#666" />
+                </TouchableOpacity>
+              </View>
+              <Calendar
+                onDayPress={(day) => {
+                  setSelectedDate(day.dateString);
+                  setShowCalendarModal(false);
+                }}
+                onMonthChange={(month) => {
+                  setCurrentCalendarDate(new Date(month.year, month.month - 1, 1));
+                }}
+                markedDates={{
+                  [selectedDate]: {
+                    selected: true,
+                    selectedColor: '#004643'
+                  },
+                  ...hariLibur.reduce((acc, holiday) => {
+                    acc[holiday.tanggal] = {
+                      ...acc[holiday.tanggal],
+                      marked: true,
+                      dotColor: '#F44336',
+                      textColor: '#F44336'
+                    };
+                    return acc;
+                  }, {} as any),
+                  ...generateWeekendDates(currentCalendarDate.getFullYear(), currentCalendarDate.getMonth())
+                }}
+                maxDate={new Date().toISOString().split('T')[0]}
+                theme={{
+                  backgroundColor: '#ffffff',
+                  calendarBackground: '#ffffff',
+                  textSectionTitleColor: '#004643',
+                  selectedDayBackgroundColor: '#004643',
+                  selectedDayTextColor: '#ffffff',
+                  todayTextColor: '#004643',
+                  dayTextColor: '#2d4150',
+                  textDisabledColor: '#d9e1e8',
+                  dotColor: '#F44336',
+                  selectedDotColor: '#ffffff',
+                  arrowColor: '#004643',
+                  disabledArrowColor: '#d9e1e8',
+                  monthTextColor: '#004643',
+                  indicatorColor: '#004643',
+                  textDayFontFamily: 'System',
+                  textMonthFontFamily: 'System',
+                  textDayHeaderFontFamily: 'System',
+                  textDayFontWeight: '400',
+                  textMonthFontWeight: 'bold',
+                  textDayHeaderFontWeight: '600',
+                  textDayFontSize: 16,
+                  textMonthFontSize: 18,
+                  textDayHeaderFontSize: 14
+                }}
+              />
             </View>
-
-            {showMonthPicker ? (
-              <View style={styles.pickerGrid}>
-                {Array.from({ length: 12 }, (_, i) => {
-                  const monthDate = new Date(calendarDate.getFullYear(), i, 1);
-                  return (
-                    <TouchableOpacity
-                      key={i}
-                      style={styles.pickerItem}
-                      onPress={() => {
-                        const newDate = new Date(calendarDate);
-                        newDate.setMonth(i);
-                        setCalendarDate(newDate);
-                        setShowMonthPicker(false);
-                      }}
-                    >
-                      <Text style={styles.pickerText}>
-                        {monthDate.toLocaleDateString("id-ID", {
-                          month: "short",
-                        })}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-
-                <View style={styles.yearSelector}>
-                  <TouchableOpacity
-                    onPress={() => navigateYear("prev")}
-                    style={styles.yearNavBtn}
-                  >
-                    <Ionicons name="chevron-back" size={20} color="#004643" />
-                  </TouchableOpacity>
-                  <Text style={styles.yearText}>
-                    {calendarDate.getFullYear()}
-                  </Text>
-                  <TouchableOpacity
-                    onPress={() => navigateYear("next")}
-                    style={styles.yearNavBtn}
-                  >
-                    <Ionicons
-                      name="chevron-forward"
-                      size={20}
-                      color="#004643"
-                    />
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ) : (
-              <View style={styles.calendarBody}>
-                <View style={styles.calendarWeekHeader}>
-                  {["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"].map(
-                    (day) => (
-                      <Text key={day} style={styles.calendarWeekDay}>
-                        {day}
-                      </Text>
-                    ),
-                  )}
-                </View>
-
-                <View style={styles.calendarGrid}>
-                  {generateCalendarDays().map((dayInfo, index) => {
-                    const isWE = dayInfo.isWeekend;
-                    const isHol = dayInfo.isHoliday;
-
-                    // Debug log untuk tanggal yang match
-                    if (isHol && dayInfo.isCurrentMonth) {
-                      console.log(
-                        `Rendering tanggal ${dayInfo.date} dengan style merah`,
-                      );
-                    }
-
-                    return (
-                      <TouchableOpacity
-                        key={index}
-                        style={[
-                          styles.calendarDay,
-                          !dayInfo.isCurrentMonth && styles.calendarDayInactive,
-                          (isWE || isHol) &&
-                            dayInfo.isCurrentMonth &&
-                            styles.calendarDayHoliday,
-                          dayInfo.isToday && styles.calendarDayToday,
-                          dayInfo.isSelected && styles.calendarDaySelected,
-                        ]}
-                        onPress={() => {
-                          if (dayInfo.isPast && dayInfo.isCurrentMonth) {
-                            setSelectedDate(dayInfo.date);
-                            setShowCalendarModal(false);
-                          } else if (dayInfo.holidayInfo) {
-                            Alert.alert(
-                              dayInfo.holidayInfo.nama_libur,
-                              `Jenis: ${dayInfo.holidayInfo.jenis}\nTanggal: ${new Date(dayInfo.holidayInfo.tanggal).toLocaleDateString("id-ID")}`,
-                            );
-                          }
-                        }}
-                      >
-                        <Text
-                          style={[
-                            styles.calendarDayText,
-                            !dayInfo.isCurrentMonth &&
-                              styles.calendarDayTextInactive,
-                            (isWE || isHol) &&
-                              dayInfo.isCurrentMonth &&
-                              styles.calendarDayTextHoliday,
-                            dayInfo.isToday && styles.calendarDayTextToday,
-                            dayInfo.isSelected &&
-                              styles.calendarDayTextSelected,
-                          ]}
-                        >
-                          {dayInfo.day}
-                        </Text>
-                        {isHol && dayInfo.isCurrentMonth && (
-                          <View style={styles.holidayDot} />
-                        )}
-                        {dayInfo.attendanceCount > 0 &&
-                          dayInfo.isCurrentMonth && (
-                            <View style={styles.attendanceBadge}>
-                              <Text style={styles.attendanceBadgeText}>
-                                {dayInfo.attendanceCount}
-                              </Text>
-                            </View>
-                          )}
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              </View>
-            )}
           </View>
-        </View>
+        </Modal>
       )}
     </SafeAreaView>
   );
@@ -1165,178 +1000,33 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     flex: 1,
   },
-  calendarOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 1000,
+  calendarModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center'
   },
-  calendarModalContent: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 20,
-    width: "90%",
-    maxWidth: 350,
+  calendarModalContainer: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 15,
+    borderTopRightRadius: 15,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+    width: '90%',
+    maxWidth: 400
   },
   calendarHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  navButton: {
-    padding: 8,
-    borderRadius: 8,
-    backgroundColor: "#F8F9FA",
-  },
-  closeButton: {
-    padding: 8,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0'
   },
   calendarTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#004643",
-  },
-  monthYearButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    backgroundColor: "#F8F9FA",
-    borderRadius: 8,
-    gap: 4,
-  },
-  calendarBody: {
-    gap: 10,
-  },
-  pickerGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    justifyContent: "space-between",
-  },
-  pickerItem: {
-    width: "30%",
-    paddingVertical: 12,
-    backgroundColor: "#F8F9FA",
-    borderRadius: 8,
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  pickerText: {
-    fontSize: 14,
-    color: "#004643",
-    fontWeight: "600",
-  },
-  yearSelector: {
-    width: "100%",
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#E6F0EF",
-    borderRadius: 8,
-    paddingVertical: 12,
-    marginTop: 8,
-    gap: 20,
-  },
-  yearNavBtn: {
-    padding: 4,
-  },
-  yearText: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#004643",
-  },
-  calendarWeekHeader: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    marginBottom: 10,
-  },
-  calendarWeekDay: {
-    fontSize: 12,
-    fontWeight: "bold",
-    color: "#666",
-    textAlign: "center",
-    width: 40,
-  },
-  calendarGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-  },
-  calendarDay: {
-    width: "14.28%",
-    aspectRatio: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    borderRadius: 8,
-    marginBottom: 4,
-    position: "relative",
-  },
-  calendarDayInactive: {
-    opacity: 0.3,
-  },
-  calendarDaySelected: {
-    backgroundColor: "#004643",
-  },
-  calendarDayToday: {
-    borderWidth: 2,
-    borderColor: "#004643",
-  },
-  calendarDayFuture: {
-    opacity: 0.3,
-  },
-  calendarDayHoliday: {
-    backgroundColor: "#FFEBEE",
-  },
-  calendarDayText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#333",
-  },
-  calendarDayTextInactive: {
-    color: "#999",
-  },
-  calendarDayTextSelected: {
-    color: "#fff",
-  },
-  calendarDayTextToday: {
-    color: "#333",
-    fontWeight: "bold",
-  },
-  calendarDayTextFuture: {
-    color: "#ccc",
-  },
-  calendarDayTextHoliday: {
-    color: "#F44336",
-    fontWeight: "bold",
-  },
-  holidayDot: {
-    position: "absolute",
-    bottom: 2,
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: "#F44336",
-  },
-  attendanceBadge: {
-    position: "absolute",
-    top: 2,
-    right: 2,
-    backgroundColor: "#4CAF50",
-    borderRadius: 8,
-    minWidth: 16,
-    height: 16,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  attendanceBadgeText: {
-    fontSize: 9,
-    color: "#fff",
-    fontWeight: "bold",
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#004643'
   },
 });

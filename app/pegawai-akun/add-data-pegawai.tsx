@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import { Calendar } from 'react-native-calendars';
 import { getApiUrl, API_CONFIG } from '../../constants/config';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -24,8 +24,8 @@ export default function AddDataPegawaiForm() {
     tanggal_lahir: ''
   });
   const [loading, setLoading] = useState(false);
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [selectedDate, setSelectedDate] = useState('');
   const [existingEmails, setExistingEmails] = useState<string[]>([]);
   
   // New states for improvements
@@ -33,10 +33,6 @@ export default function AddDataPegawaiForm() {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const totalSteps = 4;
-
-
-
-
 
   const generateEmail = (nama: string) => {
     if (!nama.trim()) return '';
@@ -261,17 +257,16 @@ export default function AddDataPegawaiForm() {
     return `${day}/${month}/${year}`;
   };
 
-  const handleDateChange = (event: any, date?: Date) => {
-    setShowDatePicker(Platform.OS === 'ios');
-    if (date) {
-      setSelectedDate(date);
-      const formattedDate = formatDate(date);
-      setFormData({...formData, tanggal_lahir: formattedDate});
-    }
+  const handleDateSelect = (day: any) => {
+    const date = new Date(day.dateString);
+    const formattedDate = formatDate(date);
+    setSelectedDate(day.dateString);
+    setFormData({...formData, tanggal_lahir: formattedDate});
+    setShowCalendar(false);
   };
 
-  const showDatePickerModal = () => {
-    setShowDatePicker(true);
+  const showCalendarModal = () => {
+    setShowCalendar(true);
   };
 
   const formatTanggal = (text: string) => {
@@ -283,8 +278,6 @@ export default function AddDataPegawaiForm() {
     }
     return cleaned;
   };
-
-
 
   const handleSubmit = async () => {
     // Validate hanya field penting yang wajib diisi
@@ -555,7 +548,7 @@ export default function AddDataPegawaiForm() {
                   keyboardType="numeric"
                   maxLength={10}
                 />
-                <TouchableOpacity onPress={showDatePickerModal} style={styles.calendarButton}>
+                <TouchableOpacity onPress={showCalendarModal} style={styles.calendarButton}>
                   <Ionicons name="calendar" size={20} color="#004643" />
                 </TouchableOpacity>
               </View>
@@ -563,17 +556,53 @@ export default function AddDataPegawaiForm() {
             <Text style={styles.helperText}>*Bisa diisi nanti di profil pegawai</Text>
           </View>
 
-          {showDatePicker && (
-            <DateTimePicker
-              value={selectedDate}
-              mode="date"
-              display="default"
-              onChange={handleDateChange}
-              maximumDate={new Date()}
-              accentColor="#004643"
-              textColor="#004643"
-            />
-          )}
+          <Modal visible={showCalendar} transparent>
+            <View style={styles.calendarModalOverlay}>
+              <View style={styles.calendarModalContainer}>
+                <View style={styles.calendarHeader}>
+                  <Text style={styles.calendarTitle}>Pilih Tanggal Lahir</Text>
+                  <TouchableOpacity onPress={() => setShowCalendar(false)}>
+                    <Ionicons name="close" size={24} color="#666" />
+                  </TouchableOpacity>
+                </View>
+                <Calendar
+                  onDayPress={handleDateSelect}
+                  markedDates={{
+                    [selectedDate]: {
+                      selected: true,
+                      selectedColor: '#004643'
+                    }
+                  }}
+                  maxDate={new Date().toISOString().split('T')[0]}
+                  theme={{
+                    backgroundColor: '#ffffff',
+                    calendarBackground: '#ffffff',
+                    textSectionTitleColor: '#004643',
+                    selectedDayBackgroundColor: '#004643',
+                    selectedDayTextColor: '#ffffff',
+                    todayTextColor: '#004643',
+                    dayTextColor: '#2d4150',
+                    textDisabledColor: '#d9e1e8',
+                    dotColor: '#004643',
+                    selectedDotColor: '#ffffff',
+                    arrowColor: '#004643',
+                    disabledArrowColor: '#d9e1e8',
+                    monthTextColor: '#004643',
+                    indicatorColor: '#004643',
+                    textDayFontFamily: 'System',
+                    textMonthFontFamily: 'System',
+                    textDayHeaderFontFamily: 'System',
+                    textDayFontWeight: '400',
+                    textMonthFontWeight: 'bold',
+                    textDayHeaderFontWeight: '600',
+                    textDayFontSize: 16,
+                    textMonthFontSize: 18,
+                    textDayHeaderFontSize: 14
+                  }}
+                />
+              </View>
+            </View>
+          </Modal>
 
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Email *</Text>
@@ -617,8 +646,6 @@ export default function AddDataPegawaiForm() {
             )}
             <Text style={styles.helperText}>*Password wajib diisi untuk akun login</Text>
           </View>
-
-
 
         </View>
       </ScrollView>
@@ -859,7 +886,6 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontStyle: 'italic'
   },
-
   stickyFooter: {
     position: 'absolute',
     bottom: 0,
@@ -878,8 +904,6 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     backgroundColor: '#F0F8F0'
   },
-  
-  // New styles for improvements
   progressContainer: {
     position: 'absolute',
     top: 90,
@@ -902,7 +926,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#004643',
     borderRadius: 2
   },
-  
   inputError: {
     borderColor: '#F44336',
     borderWidth: 2
@@ -913,7 +936,6 @@ const styles = StyleSheet.create({
     marginTop: 4,
     marginLeft: 4
   },
-  
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -990,5 +1012,31 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#fff'
+  },
+  calendarModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  calendarModalContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 15,
+    width: '90%',
+    maxWidth: 400
+  },
+  calendarHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0'
+  },
+  calendarTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#004643'
   }
 });

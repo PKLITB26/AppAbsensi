@@ -1,14 +1,6 @@
 // Konfigurasi API untuk HadirinApp
 export const API_CONFIG = {
-  BASE_URL: 'http://192.168.1.8/hadirinapp', // IP dari ipconfig
-  FALLBACK_URL: 'http://localhost/hadirinapp', // Localhost sebagai fallback
-  ALTERNATIVE_IPS: [
-    'http://192.168.1.8/hadirinapp',
-    'http://192.168.0.8/hadirinapp', // Common alternative subnet
-    'http://10.0.0.8/hadirinapp',    // Another common subnet
-    'http://localhost/hadirinapp'     // Final fallback
-  ],
-  TEST_URL: 'http://192.168.1.8', // Test basic connection
+  BASE_URL: 'http://10.251.109.41/hadirinapp',
   
   // Endpoint APIcls
   ENDPOINTS: {
@@ -69,126 +61,46 @@ export const API_CONFIG = {
   }
 };
 
-// Helper function untuk membuat URL lengkap dengan retry
+// Helper function untuk membuat URL lengkap
 export const getApiUrl = (endpoint: string) => {
   return `${API_CONFIG.BASE_URL}${endpoint}`;
 };
 
-// Network connectivity check
-export const checkNetworkConnectivity = async () => {
-  try {
-    // Test dengan endpoint sederhana
-    const response = await fetch(getApiUrl(API_CONFIG.ENDPOINTS.TEST_CONNECTION), {
-      method: 'GET',
-      headers: { 'Accept': 'application/json' },
-      signal: AbortSignal.timeout(5000) // 5 detik timeout
-    });
-    return response.ok;
-  } catch (error) {
-    console.log('Network connectivity check failed:', error);
-    return false;
-  }
-};
-
-// Helper function untuk fetch dengan retry dan fallback
+// Helper function untuk fetch dengan error handling
 export const fetchWithRetry = async (url: string, options: any = {}): Promise<Response> => {
-  console.log('Trying URL:', url);
-  
-  // Get all possible URLs to try
-  const getUrlVariants = (originalUrl: string) => {
-    const variants = [];
-    
-    // Try original URL first
-    variants.push({ timeout: 15000, url: originalUrl });
-    
-    // Try alternative IPs
-    API_CONFIG.ALTERNATIVE_IPS.forEach(baseUrl => {
-      const endpoint = originalUrl.replace(API_CONFIG.BASE_URL, '');
-      const newUrl = baseUrl + endpoint;
-      if (newUrl !== originalUrl) {
-        variants.push({ timeout: 20000, url: newUrl });
+  try {
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        ...options.headers
       }
     });
     
-    return variants;
-  };
-  
-  const attempts = getUrlVariants(url);
-  
-  for (let i = 0; i < attempts.length; i++) {
-    try {
-      console.log(`Attempt ${i + 1}: ${attempts[i].url}`);
-      
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), attempts[i].timeout);
-      
-      const response = await fetch(attempts[i].url, {
-        ...options,
-        signal: controller.signal,
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Cache-Control': 'no-cache',
-          ...options.headers
-        }
-      });
-      
-      clearTimeout(timeoutId);
-      
-      if (response.ok) {
-        console.log(`Success on attempt ${i + 1}`);
-        return response;
-      } else {
-        console.log(`HTTP ${response.status} on attempt ${i + 1}`);
-        if (i === attempts.length - 1) {
-          throw new Error(`HTTP ${response.status}`);
-        }
-      }
-    } catch (error: any) {
-      console.log(`Attempt ${i + 1} failed:`, error.message);
-      
-      if (i === attempts.length - 1) {
-        // Final attempt failed
-        if (error.name === 'AbortError') {
-          throw new Error('Koneksi timeout. Periksa koneksi internet dan pastikan HP dan komputer di WiFi yang sama.');
-        } else {
-          throw new Error('Tidak dapat terhubung ke server. Pastikan:\n1. HP dan komputer di WiFi yang sama\n2. Server backend berjalan\n3. Firewall tidak memblokir koneksi');
-        }
-      }
-      
-      // Wait before next attempt
-      await new Promise(resolve => setTimeout(resolve, 2000));
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
     }
+    
+    return response;
+  } catch (error: any) {
+    throw new Error(error.message || 'Tidak dapat terhubung ke server');
   }
-  
-  // This should never be reached, but TypeScript needs it
-  throw new Error('All attempts failed');
 };
 
-// API helper functions untuk semua modul
+// API helper functions
 export const AuthAPI = {
   login: async (email: string, password: string) => {
     try {
-      console.log('Starting login request for:', email);
-      
       const response = await fetchWithRetry(getApiUrl(API_CONFIG.ENDPOINTS.LOGIN), {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
         body: JSON.stringify({ email, password }),
       });
-      
-      const result = await response.json();
-      console.log('Login response:', result);
-      return result;
-      
+      return response.json();
     } catch (error: any) {
-      console.error('Login error:', error);
       return {
         success: false,
-        message: error.message || 'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.'
+        message: error.message || 'Tidak dapat terhubung ke server'
       };
     }
   },
@@ -197,30 +109,25 @@ export const AuthAPI = {
     try {
       const response = await fetchWithRetry(getApiUrl(API_CONFIG.ENDPOINTS.PROFILE));
       return response.json();
-    } catch (error) {
-      console.error('Profile error:', error);
+    } catch (error: any) {
       return {
         success: false,
-        message: (error as Error).message || 'Tidak dapat terhubung ke server'
+        message: error.message || 'Tidak dapat terhubung ke server'
       };
     }
   },
 };
 
-// API khusus untuk pegawai
+// API untuk pegawai
 export const PegawaiAPI = {
   getDashboard: async (user_id: string) => {
     try {
-      console.log('Fetching dashboard for user_id:', user_id);
       const response = await fetchWithRetry(`${getApiUrl(API_CONFIG.ENDPOINTS.PEGAWAI_DASHBOARD)}?user_id=${user_id}`);
-      const result = await response.json();
-      console.log('Dashboard API response:', result);
-      return result;
-    } catch (error) {
-      console.error('Dashboard error:', error);
+      return response.json();
+    } catch (error: any) {
       return {
         success: false,
-        message: (error as Error).message || 'Tidak dapat terhubung ke server',
+        message: error.message || 'Tidak dapat terhubung ke server',
         data: null
       };
     }
@@ -230,11 +137,10 @@ export const PegawaiAPI = {
     try {
       const response = await fetchWithRetry(`${getApiUrl(API_CONFIG.ENDPOINTS.PEGAWAI_PROFILE)}?user_id=${user_id}`);
       return response.json();
-    } catch (error) {
-      console.error('Profile error:', error);
+    } catch (error: any) {
       return {
         success: false,
-        message: (error as Error).message || 'Tidak dapat terhubung ke server',
+        message: error.message || 'Tidak dapat terhubung ke server',
         data: null
       };
     }
@@ -244,15 +150,13 @@ export const PegawaiAPI = {
     try {
       const response = await fetchWithRetry(getApiUrl(API_CONFIG.ENDPOINTS.PEGAWAI_PROFILE), {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
       return response.json();
-    } catch (error) {
-      console.error('Update profile error:', error);
+    } catch (error: any) {
       return {
         success: false,
-        message: (error as Error).message || 'Tidak dapat terhubung ke server'
+        message: error.message || 'Tidak dapat terhubung ke server'
       };
     }
   },
@@ -264,11 +168,10 @@ export const PegawaiAPI = {
       
       const response = await fetchWithRetry(`${getApiUrl(API_CONFIG.ENDPOINTS.PEGAWAI_PRESENSI)}?${params.toString()}`);
       return response.json();
-    } catch (error) {
-      console.error('Presensi error:', error);
+    } catch (error: any) {
       return {
         success: false,
-        message: (error as Error).message || 'Tidak dapat terhubung ke server',
+        message: error.message || 'Tidak dapat terhubung ke server',
         data: null
       };
     }
@@ -711,13 +614,18 @@ export const PengaturanAPI = {
   
   updateLokasi: async (id: any, data: any) => {
     try {
-      const response = await fetchWithRetry(`${getApiUrl('/admin/pengaturan/api/update-lokasi')}/${id}`, {
-        method: 'PUT',
+      // Gunakan POST dengan ID di body karena Apache tidak support PUT dengan path parameter
+      const response = await fetchWithRetry(getApiUrl(API_CONFIG.ENDPOINTS.LOKASI_KANTOR), {
+        method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          ...data,
+          id: id,
+          _method: 'PUT' // Method override
+        }),
       });
       return response.json();
     } catch (error) {

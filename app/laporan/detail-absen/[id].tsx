@@ -13,6 +13,7 @@ interface AbsenDetail {
 
 const statusConfig = {
   'Hadir': { color: '#4CAF50', icon: 'checkmark-circle' },
+  'Tidak hadir': { color: '#9E9E9E', icon: 'close-circle' },
   'Tidak Hadir': { color: '#9E9E9E', icon: 'close-circle' },
   'Terlambat': { color: '#FF9800', icon: 'time' },
   'Izin': { color: '#2196F3', icon: 'information-circle' },
@@ -239,9 +240,14 @@ export default function DetailAbsenPegawai() {
       }
     }
     
-    // Normalisasi status - kapitalisasi huruf pertama
+    // Normalisasi status - handle case sensitivity
     if (displayStatus && typeof displayStatus === 'string') {
-      displayStatus = displayStatus.charAt(0).toUpperCase() + displayStatus.slice(1).toLowerCase();
+      const normalizedStatus = displayStatus.toLowerCase();
+      if (normalizedStatus === 'tidak hadir') {
+        displayStatus = 'Tidak Hadir';
+      } else {
+        displayStatus = displayStatus.charAt(0).toUpperCase() + displayStatus.slice(1).toLowerCase();
+      }
     }
     
     const config = statusConfig[displayStatus as keyof typeof statusConfig] || statusConfig['Tidak Hadir'];
@@ -479,7 +485,7 @@ export default function DetailAbsenPegawai() {
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="#333" />
+            <Ionicons name="arrow-back" size={24} color="#004643" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Detail Absensi</Text>
         </View>
@@ -495,28 +501,36 @@ export default function DetailAbsenPegawai() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#333" />
+          <Ionicons name="arrow-back" size={24} color="#004643" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Detail Absensi</Text>
       </View>
 
       <View style={styles.pegawaiInfo}>
-        <Text style={styles.pegawaiNama}>{pegawai.nama}</Text>
-        <Text style={styles.pegawaiNip}>NIP: {pegawai.nip}</Text>
+        <View style={styles.pegawaiHeader}>
+          <Ionicons name="person-circle" size={24} color="#004643" />
+          <View style={styles.pegawaiDetails}>
+            <Text style={styles.pegawaiNama}>{pegawai.nama}</Text>
+            <Text style={styles.pegawaiNip}>NIP: {pegawai.nip}</Text>
+          </View>
+        </View>
       </View>
+
+
 
       <View style={styles.monthNavigation}>
         <TouchableOpacity onPress={() => navigateMonth('prev')} style={styles.navButton}>
-          <Ionicons name="chevron-back" size={20} color="#007AFF" />
+          <Ionicons name="chevron-back" size={20} color="#004643" />
         </TouchableOpacity>
         
         <TouchableOpacity onPress={() => setShowMonthPicker(true)} style={styles.monthButton}>
+          <Ionicons name="calendar" size={16} color="#004643" />
           <Text style={styles.monthText}>{getMonthName(selectedMonth)} {selectedYear}</Text>
-          <Ionicons name="chevron-down" size={16} color="#007AFF" />
+          <Ionicons name="chevron-down" size={16} color="#004643" />
         </TouchableOpacity>
         
         <TouchableOpacity onPress={() => navigateMonth('next')} style={styles.navButton}>
-          <Ionicons name="chevron-forward" size={20} color="#007AFF" />
+          <Ionicons name="chevron-forward" size={20} color="#004643" />
         </TouchableOpacity>
       </View>
 
@@ -537,81 +551,106 @@ export default function DetailAbsenPegawai() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#F8FAFB',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: 'white',
+    paddingHorizontal: 20,
+    paddingTop: 50,
+    paddingBottom: 20,
+    backgroundColor: '#fff',
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: '#F0F0F0',
   },
   backButton: {
-    marginRight: 16,
+    padding: 10,
+    marginRight: 15,
+    borderRadius: 10,
+    backgroundColor: '#F5F5F5',
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#004643',
   },
   pegawaiInfo: {
-    backgroundColor: 'white',
-    padding: 16,
-    marginBottom: 8,
+    backgroundColor: '#F0F8F7',
+    marginHorizontal: 20,
+    marginTop: 12,
+    marginBottom: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderRadius: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: '#004643',
+  },
+  pegawaiHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  pegawaiDetails: {
+    marginLeft: 12,
+    flex: 1,
   },
   pegawaiNama: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 4,
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#004643',
+    marginBottom: 2,
   },
   pegawaiNip: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#666',
   },
   monthNavigation: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: 'white',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginBottom: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    marginHorizontal: 20,
+    marginBottom: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    backgroundColor: '#fff',
   },
   navButton: {
-    padding: 8,
+    padding: 10,
+    borderRadius: 8,
+    backgroundColor: '#F5F5F5',
   },
   monthButton: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: '#f0f8ff',
+    paddingVertical: 10,
+    backgroundColor: '#F0F8F7',
     borderRadius: 8,
+    gap: 6,
   },
   monthText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
-    color: '#007AFF',
-    marginRight: 4,
+    color: '#004643',
   },
   listContainer: {
-    padding: 16,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
   },
   absenItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'white',
+    backgroundColor: '#fff',
     padding: 16,
-    marginBottom: 8,
+    marginBottom: 12,
     borderRadius: 12,
+    elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowRadius: 2,
   },
   dateSection: {
     alignItems: 'center',
@@ -724,7 +763,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   selectedPickerItem: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#004643',
   },
   pickerItemText: {
     fontSize: 14,
@@ -736,7 +775,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   confirmButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#004643',
     paddingVertical: 12,
     borderRadius: 8,
     marginTop: 20,
@@ -774,7 +813,7 @@ const styles = StyleSheet.create({
   detailDate: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#007AFF',
+    color: '#004643',
     textAlign: 'center',
     marginBottom: 8,
   },

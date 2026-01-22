@@ -4,8 +4,8 @@
     "slug": "HadirinApp",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
-    "scheme": "hadirinapp",
+    "icon": "./assets/images/hadir.in.jpeg",
+    "scheme": "hadir.in",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,

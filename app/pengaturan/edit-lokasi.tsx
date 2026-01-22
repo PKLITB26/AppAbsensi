@@ -12,6 +12,11 @@ export default function EditLokasiScreen() {
   const [loading, setLoading] = useState(false);
   const [showMapModal, setShowMapModal] = useState(false);
   const [markerPosition, setMarkerPosition] = useState<{latitude: number, longitude: number} | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchTimeout, setSearchTimeout] = useState<ReturnType<typeof setTimeout> | null>(null);
+  const [currentLocation, setCurrentLocation] = useState<{latitude: number, longitude: number} | null>(null);
   const [mapRegion, setMapRegion] = useState({
     latitude: -6.2088,
     longitude: 106.8456,
@@ -29,7 +34,21 @@ export default function EditLokasiScreen() {
 
   useEffect(() => {
     fetchLokasiData();
+    getCurrentLocation();
   }, []);
+
+  const getCurrentLocation = async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') return;
+
+      const location = await Location.getCurrentPositionAsync({});
+      const { latitude, longitude } = location.coords;
+      setCurrentLocation({ latitude, longitude });
+    } catch (error) {
+      console.error('Error getting location:', error);
+    }
+  };
 
   const fetchLokasiData = async () => {
     try {
@@ -66,6 +85,98 @@ export default function EditLokasiScreen() {
   const handleMapPress = (event: any) => {
     const { latitude, longitude } = event.nativeEvent.coordinate;
     setMarkerPosition({ latitude, longitude });
+  };
+
+  const searchLocation = async (query: string) => {
+    if (!query.trim() || query.length < 2) {
+      setSearchResults([]);
+      return;
+    }
+
+    try {
+      setSearchLoading(true);
+      const results = await Location.geocodeAsync(query);
+      if (results && results.length > 0) {
+        const indonesianResults = results.filter(result => 
+          result.latitude >= -11 && result.latitude <= 6 &&
+          result.longitude >= 95 && result.longitude <= 141
+        ).slice(0, 5);
+        
+        const enrichedResults = await Promise.all(
+          indonesianResults.map(async (result, index) => {
+            try {
+              const reverseResult = await Location.reverseGeocodeAsync({
+                latitude: result.latitude,
+                longitude: result.longitude
+              });
+              
+              let displayName = `${query} ${index + 1}`;
+              let address = 'Indonesia';
+              
+              if (reverseResult.length > 0) {
+                const addr = reverseResult[0];
+                const nameParts = [];
+                if (addr.name) nameParts.push(addr.name);
+                if (addr.street) nameParts.push(addr.street);
+                displayName = nameParts.length > 0 ? nameParts.join(', ') : displayName;
+                
+                const addressParts = [];
+                if (addr.street) addressParts.push(addr.street);
+                if (addr.district) addressParts.push(addr.district);
+                if (addr.city) addressParts.push(addr.city);
+                address = addressParts.join(', ') || 'Indonesia';
+              }
+              
+              return {
+                ...result,
+                displayName,
+                fullAddress: address
+              };
+            } catch (error) {
+              return {
+                ...result,
+                displayName: `${query} ${index + 1}`,
+                fullAddress: 'Indonesia'
+              };
+            }
+          })
+        );
+        
+        setSearchResults(enrichedResults);
+      }
+    } catch (error) {
+      console.error('Search error:', error);
+      setSearchResults([]);
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  const handleSearchInput = (text: string) => {
+    setSearchQuery(text);
+    
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+    }
+    
+    const timeout = setTimeout(() => {
+      searchLocation(text);
+    }, 800);
+    
+    setSearchTimeout(timeout);
+  };
+
+  const selectSearchResult = (result: any) => {
+    const { latitude, longitude } = result;
+    setMarkerPosition({ latitude, longitude });
+    setMapRegion({
+      latitude,
+      longitude,
+      latitudeDelta: 0.01,
+      longitudeDelta: 0.01
+    });
+    setSearchQuery('');
+    setSearchResults([]);
   };
 
   const confirmLocation = async () => {
@@ -155,9 +266,11 @@ export default function EditLokasiScreen() {
       <ScrollView style={styles.content}>
         <View style={styles.infoCard}>
           <Ionicons name="information-circle" size={20} color="#004643" />
-          <Text style={styles.infoText}>
-            {formData.jenis === 'tetap' ? 'Kantor Tetap' : 'Lokasi Dinas'}
-          </Text>
+          <View style={styles.infoContent}>
+            <Text style={styles.infoText}>
+              Edit informasi lokasi absensi. Pastikan koordinat dan radius sesuai kebutuhan.
+            </Text>
+          </View>
         </View>
 
         <View style={styles.formGroup}>
@@ -256,6 +369,46 @@ export default function EditLokasiScreen() {
             <Text style={styles.mapTitle}>Pilih Lokasi</Text>
           </View>
 
+          {/* Search Bar */}
+          <View style={styles.searchContainer}>
+            <View style={styles.searchInputWrapper}>
+              <Ionicons name="search" size={20} color="#666" />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Cari nama tempat atau koordinat (-6.2088, 106.8456)"
+                value={searchQuery}
+                onChangeText={handleSearchInput}
+              />
+              {searchLoading && <ActivityIndicator size="small" color="#004643" />}
+            </View>
+            
+            {/* Search Results */}
+            {searchResults.length > 0 && (
+              <View style={styles.searchResults}>
+                {searchResults.map((result, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={styles.searchResultItem}
+                    onPress={() => selectSearchResult(result)}
+                  >
+                    <Ionicons name="location-outline" size={16} color="#666" />
+                    <View style={styles.searchResultContent}>
+                      <Text style={styles.searchResultName}>
+                        {result.displayName}
+                      </Text>
+                      <Text style={styles.searchResultAddress}>
+                        {result.fullAddress}
+                      </Text>
+                      <Text style={styles.searchResultCoord}>
+                        {result.latitude.toFixed(6)}, {result.longitude.toFixed(6)}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </View>
+
           <MapView
             style={styles.map}
             region={mapRegion}
@@ -268,10 +421,10 @@ export default function EditLokasiScreen() {
                 description="Tap 'Konfirmasi' untuk menggunakan lokasi ini"
               />
             )}
-            {formData.latitude && formData.longitude && !markerPosition && (
+            {currentLocation && !markerPosition && (
               <Marker
-                coordinate={{latitude: formData.latitude, longitude: formData.longitude}}
-                title="Lokasi Saat Ini"
+                coordinate={currentLocation}
+                title="Lokasi Anda"
                 pinColor="blue"
               />
             )}
@@ -336,26 +489,28 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingBottom: 120
+    padding: 20,
+    paddingTop: 12
   },
   infoCard: {
     flexDirection: 'row',
     backgroundColor: '#F0F8F7',
-    padding: 15,
+    padding: 16,
     borderRadius: 12,
-    marginBottom: 20,
-    alignItems: 'center',
-    marginHorizontal: 20
+    marginBottom: 16,
+    alignItems: 'flex-start'
   },
   infoText: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#004643',
-    marginLeft: 10,
-    fontWeight: '600'
+    lineHeight: 16
+  },
+  infoContent: {
+    flex: 1,
+    marginLeft: 12
   },
   formGroup: {
-    marginBottom: 20,
-    marginHorizontal: 20
+    marginBottom: 16
   },
   label: {
     fontSize: 14,
@@ -557,5 +712,62 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 12,
     textAlign: 'center'
+  },
+  searchContainer: {
+    padding: 15,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0'
+  },
+  searchInputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8F9FA',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+    color: '#333',
+    marginLeft: 8
+  },
+  searchResults: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    marginTop: 8,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2
+  },
+  searchResultItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0'
+  },
+  searchResultContent: {
+    flex: 1,
+    marginLeft: 8
+  },
+  searchResultName: {
+    fontSize: 14,
+    color: '#333',
+    fontWeight: '500'
+  },
+  searchResultAddress: {
+    fontSize: 12,
+    color: '#888',
+    marginTop: 1
+  },
+  searchResultCoord: {
+    fontSize: 10,
+    color: '#999',
+    fontFamily: 'monospace',
+    marginTop: 2
   }
 });

@@ -536,30 +536,35 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    padding: 20
+    paddingHorizontal: 5,
+    paddingTop: 15
   },
   infoCard: {
     flexDirection: 'row',
     backgroundColor: '#F0F8F7',
-    padding: 15,
+    padding: 16,
     borderRadius: 12,
-    marginBottom: 20,
-    alignItems: 'center'
+    marginBottom: 16,
+    marginHorizontal: 20,
+    alignItems: 'flex-start'
   },
   infoText: {
     flex: 1,
     fontSize: 12,
     color: '#004643',
-    marginLeft: 10
+    marginLeft: 12,
+    lineHeight: 16
   },
   section: {
-    marginBottom: 5
+    marginBottom: 16,
+    marginHorizontal: 20
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 15
+    marginBottom: 12,
+    paddingHorizontal: 4
   },
   sectionLeft: {
     flexDirection: 'row',
@@ -589,14 +594,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 12,
-    marginBottom: 10,
-    elevation: 2,
+    padding: 16,
+    borderRadius: 16,
+    marginBottom: 15,
+    elevation: 3,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 2
+    shadowRadius: 4
   },
   lokasiInfo: {
     flex: 1
@@ -649,7 +654,7 @@ const styles = StyleSheet.create({
   separator: {
     height: 1,
     backgroundColor: '#E0E0E0',
-    marginVertical: 15,
+    marginVertical: 16,
     marginHorizontal: 10
   },
   editBtn: {

@@ -7,7 +7,8 @@ import {
   TouchableOpacity, 
   Alert, 
   KeyboardAvoidingView, 
-  Platform 
+  Platform,
+  Image 
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -74,11 +75,13 @@ export default function LoginScreen() {
     >
       <View style={styles.innerContainer}>
         <View style={styles.headerArea}>
-          <View style={styles.logoCircle}>
-             <Ionicons name="business" size={50} color="#004643" />
+          <View style={styles.logoContainer}>
+            <Image 
+              source={require('../assets/images/hadir.in.jpeg')} 
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
           </View>
-          <Text style={styles.brandName}>Hadir.in</Text>
-          <Text style={styles.tagline}>Sistem Presensi Terintegrasi</Text>
           <Text style={styles.welcomeText}>Selamat Datang!</Text>
           <Text style={styles.descriptionText}>Masuk ke akun Anda untuk melanjutkan</Text>
         </View>
@@ -109,16 +112,13 @@ export default function LoginScreen() {
             </TouchableOpacity>
           </View>
 
+          <TouchableOpacity style={styles.forgotPassword}>
+            <Text style={styles.forgotPasswordText}>Lupa Password?</Text>
+          </TouchableOpacity>
+
           <TouchableOpacity style={styles.loginBtn} onPress={handleLogin} disabled={loading}>
             <Text style={styles.loginText}>{loading ? 'Memproses...' : 'Masuk Sekarang'}</Text>
           </TouchableOpacity>
-
-          <View style={styles.helpSection}>
-            <Text style={styles.helpText}>Butuh bantuan?</Text>
-            <TouchableOpacity>
-              <Text style={styles.contactText}>Hubungi Admin IT</Text>
-            </TouchableOpacity>
-          </View>
         </View>
       </View>
     </KeyboardAvoidingView>
@@ -129,14 +129,26 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFB' },
   innerContainer: { flex: 1, padding: 30, justifyContent: 'center' },
   headerArea: { alignItems: 'center', marginBottom: 50 },
-  logoCircle: { 
-    width: 90, 
-    height: 90, 
-    backgroundColor: '#E6F0EF', 
-    borderRadius: 45, 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    marginBottom: 15 
+  logoContainer: { 
+    width: 60,
+    height: 60,
+    backgroundColor: '#E6F0EF',
+    borderRadius: 12,
+    marginBottom: 15,
+    overflow: 'hidden',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#004643',
+    shadowColor: '#004643',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4
+  },
+  logoImage: {
+    width: 140,
+    height: 105
   },
   brandName: { fontSize: 26, fontWeight: 'bold', color: '#004643' },
   tagline: { fontSize: 13, color: '#888', marginTop: 4, marginBottom: 20 },
@@ -190,5 +202,15 @@ const styles = StyleSheet.create({
     color: '#004643',
     fontWeight: '600',
     textDecorationLine: 'underline'
+  },
+  forgotPassword: {
+    alignSelf: 'flex-end',
+    marginTop: 5,
+    marginBottom: 10
+  },
+  forgotPasswordText: {
+    fontSize: 14,
+    color: '#004643',
+    fontWeight: '500'
   }
 });

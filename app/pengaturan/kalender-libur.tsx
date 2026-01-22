@@ -304,11 +304,11 @@ export default function KalenderLiburScreen() {
         </View>
       </ScrollView>
 
-      <Modal visible={showModal} animationType="slide" transparent>
+      <Modal visible={showModal} transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Tambah Hari Libur</Text>
+              <Text style={styles.modalTitle}>Hari Libur</Text>
               <TouchableOpacity onPress={() => setShowModal(false)}>
                 <Ionicons name="close" size={24} color="#666" />
               </TouchableOpacity>
@@ -396,27 +396,30 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    padding: 20
+    paddingHorizontal: 5,
+    paddingTop: 15
   },
   infoCard: {
     flexDirection: 'row',
     backgroundColor: '#F0F8F7',
-    padding: 15,
+    padding: 16,
     borderRadius: 12,
-    marginBottom: 20,
-    alignItems: 'center'
+    marginBottom: 16,
+    marginHorizontal: 20,
+    alignItems: 'flex-start'
   },
   infoText: {
     flex: 1,
     fontSize: 12,
     color: '#004643',
-    marginLeft: 10
+    marginLeft: 12,
+    lineHeight: 16
   },
   calendarCard: {
     backgroundColor: '#fff',
     borderRadius: 12,
     padding: 15,
-    marginBottom: 20,
+    marginBottom: 16,
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -457,7 +460,7 @@ const styles = StyleSheet.create({
     aspectRatio: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 8,
+    borderRadius: 20,
     marginBottom: 5
   },
   emptyCell: {
@@ -468,7 +471,8 @@ const styles = StyleSheet.create({
   },
   todayCell: {
     borderWidth: 2,
-    borderColor: '#004643'
+    borderColor: '#004643',
+    borderRadius: 20
   },
   dayText: {
     fontSize: 14,
@@ -479,6 +483,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold'
   },
   todayText: {
+    color: '#004643',
     fontWeight: 'bold'
   },
   holidayDot: {
@@ -493,7 +498,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 12,
     padding: 15,
-    marginBottom: 20
+    marginBottom: 16
   },
   legendTitle: {
     fontSize: 14,
@@ -507,8 +512,8 @@ const styles = StyleSheet.create({
     marginBottom: 8
   },
   legendBox: {
-    width: 20,
-    height: 20,
+    width: 16,
+    height: 16,
     borderRadius: 4,
     marginRight: 10
   },
@@ -520,7 +525,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 12,
     padding: 15,
-    marginBottom: 20
+    marginBottom: 16
   },
   listTitle: {
     fontSize: 14,
@@ -564,14 +569,15 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end'
+    justifyContent: 'center',
+    alignItems: 'center'
   },
   modalContent: {
     backgroundColor: '#fff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderRadius: 20,
     padding: 20,
-    maxHeight: '80%'
+    width: '90%',
+    maxWidth: 400
   },
   modalHeader: {
     flexDirection: 'row',

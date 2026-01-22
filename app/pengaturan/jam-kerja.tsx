@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, StatusBar, ScrollView, TouchableOpacity, Switch, Alert, KeyboardAvoidingView, Platform, Modal, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { PengaturanAPI } from '../../constants/config';
 
 interface JamKerjaHari {
@@ -265,11 +266,6 @@ export default function JamKerjaScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFB' },
   header: { 
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 1000,
     flexDirection: 'row', 
     alignItems: 'center', 
     paddingHorizontal: 20, 
@@ -296,26 +292,29 @@ const styles = StyleSheet.create({
     color: '#004643' 
   },
   contentContainer: {
-    flex: 1,
-    marginTop: 100
+    flex: 1
   },
   content: {
-    padding: 20,
+    flex: 1,
+    paddingHorizontal: 5,
+    paddingTop: 15,
     paddingBottom: 100
   },
   infoCard: {
     flexDirection: 'row',
     backgroundColor: '#F0F8F7',
-    padding: 15,
+    padding: 16,
     borderRadius: 12,
-    marginBottom: 20,
-    alignItems: 'center'
+    marginBottom: 16,
+    marginHorizontal: 20,
+    alignItems: 'flex-start'
   },
   infoText: {
     flex: 1,
     fontSize: 12,
     color: '#004643',
-    marginLeft: 10
+    marginLeft: 12,
+    lineHeight: 16
   },
   hariCard: {
     backgroundColor: '#fff',

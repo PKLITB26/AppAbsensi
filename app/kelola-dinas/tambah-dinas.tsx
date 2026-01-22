@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, StatusBar, ScrollView, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform, Modal, FlatList } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import DateTimePickerModal from 'react-native-modal-datetime-picker';
+import { Picker } from '@react-native-picker/picker';
+import { Calendar } from 'react-native-calendars';
 import { KelolaDinasAPI, PegawaiAkunAPI, PengaturanAPI } from '../../constants/config';
 import * as Location from 'expo-location';
 import MapView, { Marker } from 'react-native-maps';
@@ -37,28 +39,33 @@ export default function TambahDinasScreen() {
   const [selectedFile, setSelectedFile] = useState<any>(null);
   const [showJamMulaiPicker, setShowJamMulaiPicker] = useState(false);
   const [showJamSelesaiPicker, setShowJamSelesaiPicker] = useState(false);
+
+  const handleJamMulaiConfirm = (time: Date) => {
+    const formattedTime = formatTime(time);
+    setFormData({...formData, jamMulai: formattedTime});
+    validateField('jamMulai', formattedTime);
+    setShowJamMulaiPicker(false);
+  };
+
+  const handleJamSelesaiConfirm = (time: Date) => {
+    const formattedTime = formatTime(time);
+    setFormData({...formData, jamSelesai: formattedTime});
+    validateField('jamSelesai', formattedTime);
+    setShowJamSelesaiPicker(false);
+  };
+
   const [showJenisDinasDropdown, setShowJenisDinasDropdown] = useState(false);
   const [showDateMulaiPicker, setShowDateMulaiPicker] = useState(false);
   const [showDateSelesaiPicker, setShowDateSelesaiPicker] = useState(false);
-  const [selectedDateMulai, setSelectedDateMulai] = useState(new Date());
-  const [selectedDateSelesai, setSelectedDateSelesai] = useState(new Date());
-  const [showTimeMulaiPicker, setShowTimeMulaiPicker] = useState(false);
-  const [showTimeSelesaiPicker, setShowTimeSelesaiPicker] = useState(false);
-  const [selectedTimeMulai, setSelectedTimeMulai] = useState(new Date());
-  const [selectedTimeSelesai, setSelectedTimeSelesai] = useState(new Date());
-  
-  // New states for improvements
+  const [selectedDateMulai, setSelectedDateMulai] = useState('');
+  const [selectedDateSelesai, setSelectedDateSelesai] = useState('');
   const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({});
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
-  const totalSteps = 5;
 
-  const jamOptions = [
-    '06:00', '06:30', '07:00', '07:30', '08:00', '08:30', '09:00', '09:30',
-    '10:00', '10:30', '11:00', '11:30', '12:00', '12:30', '13:00', '13:30',
-    '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00', '17:30',
-    '18:00', '18:30', '19:00', '19:30', '20:00', '20:30', '21:00', '21:30'
-  ];
+  // New states for improvements
+
+  const totalSteps = 5;
 
   const pickDocument = async () => {
     try {
@@ -515,43 +522,25 @@ export default function TambahDinasScreen() {
     return `${day}/${month}/${year}`;
   };
 
-  const handleDateMulaiChange = (event: any, date?: Date) => {
-    setShowDateMulaiPicker(Platform.OS === 'ios');
-    if (date) {
-      setSelectedDateMulai(date);
-      const formattedDate = formatDate(date);
-      setFormData({...formData, tanggalMulai: formattedDate});
-    }
+  const handleDateMulaiSelect = (day: any) => {
+    const date = new Date(day.dateString);
+    const formattedDate = formatDate(date);
+    setSelectedDateMulai(day.dateString);
+    setFormData({...formData, tanggalMulai: formattedDate});
+    validateField('tanggalMulai', formattedDate);
+    setShowDateMulaiPicker(false);
   };
 
-  const handleDateSelesaiChange = (event: any, date?: Date) => {
-    setShowDateSelesaiPicker(Platform.OS === 'ios');
-    if (date) {
-      setSelectedDateSelesai(date);
-      const formattedDate = formatDate(date);
-      setFormData({...formData, tanggalSelesai: formattedDate});
-    }
+  const handleDateSelesaiSelect = (day: any) => {
+    const date = new Date(day.dateString);
+    const formattedDate = formatDate(date);
+    setSelectedDateSelesai(day.dateString);
+    setFormData({...formData, tanggalSelesai: formattedDate});
+    validateField('tanggalSelesai', formattedDate);
+    setShowDateSelesaiPicker(false);
   };
 
-  const handleTimeMulaiChange = (event: any, time?: Date) => {
-    setShowTimeMulaiPicker(Platform.OS === 'ios');
-    if (time) {
-      setSelectedTimeMulai(time);
-      const formattedTime = formatTime(time);
-      setFormData({...formData, jamMulai: formattedTime});
-      validateField('jamMulai', formattedTime);
-    }
-  };
 
-  const handleTimeSelesaiChange = (event: any, time?: Date) => {
-    setShowTimeSelesaiPicker(Platform.OS === 'ios');
-    if (time) {
-      setSelectedTimeSelesai(time);
-      const formattedTime = formatTime(time);
-      setFormData({...formData, jamSelesai: formattedTime});
-      validateField('jamSelesai', formattedTime);
-    }
-  };
 
   const formatTime = (time: Date) => {
     const hours = String(time.getHours()).padStart(2, '0');
@@ -865,7 +854,7 @@ export default function TambahDinasScreen() {
                   keyboardType="numeric"
                   maxLength={5}
                 />
-                <TouchableOpacity onPress={() => setShowTimeMulaiPicker(true)} style={styles.calendarButton}>
+                <TouchableOpacity onPress={() => setShowJamMulaiPicker(true)} style={styles.calendarButton}>
                   <Ionicons name="time" size={20} color="#004643" />
                 </TouchableOpacity>
               </View>
@@ -892,7 +881,7 @@ export default function TambahDinasScreen() {
                   keyboardType="numeric"
                   maxLength={5}
                 />
-                <TouchableOpacity onPress={() => setShowTimeSelesaiPicker(true)} style={styles.calendarButton}>
+                <TouchableOpacity onPress={() => setShowJamSelesaiPicker(true)} style={styles.calendarButton}>
                   <Ionicons name="time" size={20} color="#004643" />
                 </TouchableOpacity>
               </View>
@@ -1119,53 +1108,121 @@ export default function TambahDinasScreen() {
         </View>
       </ScrollView>
 
-      {/* Date Pickers */}
-      {showDateMulaiPicker && (
-        <DateTimePicker
-          value={selectedDateMulai}
-          mode="date"
-          display="default"
-          onChange={handleDateMulaiChange}
-          minimumDate={new Date()}
-          accentColor="#004643"
-          textColor="#004643"
-        />
-      )}
-      
-      {showDateSelesaiPicker && (
-        <DateTimePicker
-          value={selectedDateSelesai}
-          mode="date"
-          display="default"
-          onChange={handleDateSelesaiChange}
-          minimumDate={new Date()}
-          accentColor="#004643"
-          textColor="#004643"
-        />
-      )}
+      {/* Calendar Modals */}
+      <Modal visible={showDateMulaiPicker} transparent>
+        <View style={styles.calendarModalOverlay}>
+          <View style={styles.calendarModalContainer}>
+            <View style={styles.calendarHeader}>
+              <Text style={styles.calendarTitle}>Pilih Tanggal Mulai</Text>
+              <TouchableOpacity onPress={() => setShowDateMulaiPicker(false)}>
+                <Ionicons name="close" size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
+            <Calendar
+              onDayPress={handleDateMulaiSelect}
+              markedDates={{
+                [selectedDateMulai]: {
+                  selected: true,
+                  selectedColor: '#004643'
+                }
+              }}
+              minDate={new Date().toISOString().split('T')[0]}
+              theme={{
+                backgroundColor: '#ffffff',
+                calendarBackground: '#ffffff',
+                textSectionTitleColor: '#004643',
+                selectedDayBackgroundColor: '#004643',
+                selectedDayTextColor: '#ffffff',
+                todayTextColor: '#004643',
+                dayTextColor: '#2d4150',
+                textDisabledColor: '#d9e1e8',
+                dotColor: '#004643',
+                selectedDotColor: '#ffffff',
+                arrowColor: '#004643',
+                disabledArrowColor: '#d9e1e8',
+                monthTextColor: '#004643',
+                indicatorColor: '#004643',
+                textDayFontFamily: 'System',
+                textMonthFontFamily: 'System',
+                textDayHeaderFontFamily: 'System',
+                textDayFontWeight: '400',
+                textMonthFontWeight: 'bold',
+                textDayHeaderFontWeight: '600',
+                textDayFontSize: 16,
+                textMonthFontSize: 18,
+                textDayHeaderFontSize: 14
+              }}
+            />
+          </View>
+        </View>
+      </Modal>
 
-      {/* Time Pickers */}
-      {showTimeMulaiPicker && (
-        <DateTimePicker
-          value={selectedTimeMulai}
-          mode="time"
-          display="default"
-          onChange={handleTimeMulaiChange}
-          accentColor="#004643"
-          textColor="#004643"
-        />
-      )}
-      
-      {showTimeSelesaiPicker && (
-        <DateTimePicker
-          value={selectedTimeSelesai}
-          mode="time"
-          display="default"
-          onChange={handleTimeSelesaiChange}
-          accentColor="#004643"
-          textColor="#004643"
-        />
-      )}
+      <Modal visible={showDateSelesaiPicker} transparent>
+        <View style={styles.calendarModalOverlay}>
+          <View style={styles.calendarModalContainer}>
+            <View style={styles.calendarHeader}>
+              <Text style={styles.calendarTitle}>Pilih Tanggal Selesai</Text>
+              <TouchableOpacity onPress={() => setShowDateSelesaiPicker(false)}>
+                <Ionicons name="close" size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
+            <Calendar
+              onDayPress={handleDateSelesaiSelect}
+              markedDates={{
+                [selectedDateSelesai]: {
+                  selected: true,
+                  selectedColor: '#004643'
+                }
+              }}
+              minDate={selectedDateMulai || new Date().toISOString().split('T')[0]}
+              theme={{
+                backgroundColor: '#ffffff',
+                calendarBackground: '#ffffff',
+                textSectionTitleColor: '#004643',
+                selectedDayBackgroundColor: '#004643',
+                selectedDayTextColor: '#ffffff',
+                todayTextColor: '#004643',
+                dayTextColor: '#2d4150',
+                textDisabledColor: '#d9e1e8',
+                dotColor: '#004643',
+                selectedDotColor: '#ffffff',
+                arrowColor: '#004643',
+                disabledArrowColor: '#d9e1e8',
+                monthTextColor: '#004643',
+                indicatorColor: '#004643',
+                textDayFontFamily: 'System',
+                textMonthFontFamily: 'System',
+                textDayHeaderFontFamily: 'System',
+                textDayFontWeight: '400',
+                textMonthFontWeight: 'bold',
+                textDayHeaderFontWeight: '600',
+                textDayFontSize: 16,
+                textMonthFontSize: 18,
+                textDayHeaderFontSize: 14
+              }}
+            />
+          </View>
+        </View>
+      </Modal>
+
+      {/* Time Picker Modals - Simple Version */}
+      <DateTimePickerModal
+        isVisible={showJamMulaiPicker}
+        mode="time"
+        onConfirm={handleJamMulaiConfirm}
+        onCancel={() => setShowJamMulaiPicker(false)}
+        is24Hour={true}
+        display="default"
+      />
+
+      <DateTimePickerModal
+        isVisible={showJamSelesaiPicker}
+        mode="time"
+        onConfirm={handleJamSelesaiConfirm}
+        onCancel={() => setShowJamSelesaiPicker(false)}
+        is24Hour={true}
+        display="default"
+      />
 
       {/* Sticky Save Button */}
       <View style={styles.stickyFooter}>
@@ -2210,6 +2267,37 @@ const styles = StyleSheet.create({
   },
   saveConfirmText: {
     fontSize: 14,
+    fontWeight: '600',
+    color: '#fff'
+  },
+  calendarModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  calendarModalContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 15,
+    width: '90%',
+    maxWidth: 400
+  },
+  calendarHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0'
+  },
+  calendarTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#004643'
+  },
+  timeConfirmText: {
+    fontSize: 16,
     fontWeight: '600',
     color: '#fff'
   }
