@@ -1,10 +1,11 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 
-export default function TestScreen() {
+export default function TestApp() {
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>Test Screen - App Working!</Text>
+      <Text style={styles.text}>Hello World!</Text>
+      <Text style={styles.text}>Test App Berjalan</Text>
     </View>
   );
 }
@@ -17,7 +18,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   text: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 20,
+    marginBottom: 10,
   },
 });

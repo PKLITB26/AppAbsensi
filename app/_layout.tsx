@@ -16,6 +16,7 @@ export default function RootLayout() {
         <Stack.Screen name="users" />
         <Stack.Screen name="pengajuan" />
         <Stack.Screen name="modal" />
+        <Stack.Screen name="kelola-dinas" />
       </Stack>
     </ErrorBoundary>
   );

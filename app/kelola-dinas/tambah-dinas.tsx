@@ -638,7 +638,7 @@ export default function TambahDinasScreen() {
       console.log('Data yang akan dikirim:', dinasData);
       
       try {
-        const response = await KelolaDinasAPI.createDinas(dinasData);
+        const response = await DinasAPI.createDinas(dinasData);
         
         if (response.success) {
           // Clear draft after successful save
@@ -695,240 +695,243 @@ export default function TambahDinasScreen() {
       </View>
 
       <ScrollView style={styles.contentContainer} showsVerticalScrollIndicator={false}>
-        <View style={styles.formContainer}>
+        {/* Card 1: Informasi Dasar */}
+        <View style={styles.cardContainer}>
+          <View style={styles.cardHeader}>
+            <Ionicons name="information-circle-outline" size={24} color="#004643" />
+            <Text style={styles.cardTitle}>Informasi Dasar Dinas</Text>
+          </View>
           
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Nama Kegiatan *</Text>
-            <View style={[styles.inputWrapper, validationErrors.namaKegiatan && styles.inputError]}>
-              <Ionicons name="clipboard-outline" size={20} color="#666" style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="Contoh: Rapat Koordinasi Regional"
-                value={formData.namaKegiatan}
-                onChangeText={(text) => {
-                  setFormData({...formData, namaKegiatan: text});
-                  validateField('namaKegiatan', text);
-                }}
-              />
-            </View>
-            {validationErrors.namaKegiatan && (
-              <Text style={styles.errorText}>{validationErrors.namaKegiatan}</Text>
-            )}
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Nomor SPT *</Text>
-            <View style={[styles.inputWrapper, validationErrors.nomorSpt && styles.inputError]}>
-              <Ionicons name="document-text-outline" size={20} color="#666" style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="Contoh: SPT/001/2024"
-                value={formData.nomorSpt}
-                onChangeText={(text) => {
-                  setFormData({...formData, nomorSpt: text});
-                  validateField('nomorSpt', text);
-                }}
-              />
-            </View>
-            {validationErrors.nomorSpt && (
-              <Text style={styles.errorText}>{validationErrors.nomorSpt}</Text>
-            )}
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Jenis Dinas *</Text>
-            <TouchableOpacity 
-              style={styles.dropdownBtn}
-              onPress={() => setShowJenisDinasDropdown(!showJenisDinasDropdown)}
-            >
-              <Ionicons 
-                name={formData.jenisDinas === 'lokal' ? 'business-outline' : formData.jenisDinas === 'luar_kota' ? 'car-outline' : 'airplane-outline'} 
-                size={20} 
-                color="#004643" 
-              />
-              <Text style={styles.dropdownBtnText}>
-                {formData.jenisDinas === 'lokal' ? 'Dinas Lokal' : 
-                 formData.jenisDinas === 'luar_kota' ? 'Dinas Luar Kota' : 'Dinas Luar Negeri'}
-              </Text>
-              <Ionicons 
-                name={showJenisDinasDropdown ? "chevron-up" : "chevron-down"} 
-                size={16} 
-                color="#666" 
-              />
-            </TouchableOpacity>
-            
-            {showJenisDinasDropdown && (
-              <View style={styles.dropdownContainer}>
-                {[
-                  { key: 'lokal', label: 'Dinas Lokal', icon: 'business-outline' },
-                  { key: 'luar_kota', label: 'Dinas Luar Kota', icon: 'car-outline' },
-                  { key: 'luar_negeri', label: 'Dinas Luar Negeri', icon: 'airplane-outline' }
-                ].map((item) => (
-                  <TouchableOpacity
-                    key={item.key}
-                    style={[styles.pegawaiDropdownItem, formData.jenisDinas === item.key && styles.pegawaiSelected]}
-                    onPress={() => {
-                      setFormData({...formData, jenisDinas: item.key});
-                      setShowJenisDinasDropdown(false);
-                    }}
-                  >
-                    <Ionicons name={item.icon as any} size={20} color="#004643" />
-                    <Text style={[styles.pegawaiItemName, {marginLeft: 12, marginBottom: 0}]}>{item.label}</Text>
-                    {formData.jenisDinas === item.key && (
-                      <Ionicons name="checkmark-circle" size={20} color="#004643" />
-                    )}
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Tanggal Mulai *</Text>
-            <View style={styles.dateInputContainer}>
-              <View style={[styles.inputWrapper, validationErrors.tanggalMulai && styles.inputError]}>
-                <Ionicons name="calendar-outline" size={20} color="#666" style={styles.inputIcon} />
+          <View style={styles.formContainer}>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Nama Kegiatan *</Text>
+              <View style={[styles.inputWrapper, validationErrors.namaKegiatan && styles.inputError]}>
+                <Ionicons name="clipboard-outline" size={20} color="#666" style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
-                  placeholder="DD/MM/YYYY"
-                  value={formData.tanggalMulai}
+                  placeholder="Contoh: Rapat Koordinasi Regional"
+                  value={formData.namaKegiatan}
                   onChangeText={(text) => {
-                    const formatted = formatTanggal(text);
-                    setFormData({...formData, tanggalMulai: formatted});
-                    validateField('tanggalMulai', formatted);
+                    setFormData({...formData, namaKegiatan: text});
+                    validateField('namaKegiatan', text);
                   }}
-                  keyboardType="numeric"
-                  maxLength={10}
                 />
-                <TouchableOpacity onPress={() => setShowDateMulaiPicker(true)} style={styles.calendarButton}>
-                  <Ionicons name="calendar" size={20} color="#004643" />
-                </TouchableOpacity>
               </View>
-            </View>
-            {validationErrors.tanggalMulai && (
-              <Text style={styles.errorText}>{validationErrors.tanggalMulai}</Text>
-            )}
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Tanggal Selesai *</Text>
-            <View style={styles.dateInputContainer}>
-              <View style={[styles.inputWrapper, validationErrors.tanggalSelesai && styles.inputError]}>
-                <Ionicons name="calendar-outline" size={20} color="#666" style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="DD/MM/YYYY"
-                  value={formData.tanggalSelesai}
-                  onChangeText={(text) => {
-                    const formatted = formatTanggal(text);
-                    setFormData({...formData, tanggalSelesai: formatted});
-                    validateField('tanggalSelesai', formatted);
-                  }}
-                  keyboardType="numeric"
-                  maxLength={10}
-                />
-                <TouchableOpacity onPress={() => setShowDateSelesaiPicker(true)} style={styles.calendarButton}>
-                  <Ionicons name="calendar" size={20} color="#004643" />
-                </TouchableOpacity>
-              </View>
-            </View>
-            {validationErrors.tanggalSelesai && (
-              <Text style={styles.errorText}>{validationErrors.tanggalSelesai}</Text>
-            )}
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Jam Mulai *</Text>
-            <View style={styles.dateInputContainer}>
-              <View style={[styles.inputWrapper, validationErrors.jamMulai && styles.inputError]}>
-                <Ionicons name="time-outline" size={20} color="#666" style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="08:00"
-                  value={formData.jamMulai}
-                  onChangeText={(text) => {
-                    const formatted = formatJam(text);
-                    setFormData({...formData, jamMulai: formatted});
-                    validateField('jamMulai', formatted);
-                  }}
-                  keyboardType="numeric"
-                  maxLength={5}
-                />
-                <TouchableOpacity onPress={() => setShowJamMulaiPicker(true)} style={styles.calendarButton}>
-                  <Ionicons name="time" size={20} color="#004643" />
-                </TouchableOpacity>
-              </View>
-            </View>
-            {validationErrors.jamMulai && (
-              <Text style={styles.errorText}>{validationErrors.jamMulai}</Text>
-            )}
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Jam Selesai *</Text>
-            <View style={styles.dateInputContainer}>
-              <View style={[styles.inputWrapper, validationErrors.jamSelesai && styles.inputError]}>
-                <Ionicons name="time-outline" size={20} color="#666" style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="17:00"
-                  value={formData.jamSelesai}
-                  onChangeText={(text) => {
-                    const formatted = formatJam(text);
-                    setFormData({...formData, jamSelesai: formatted});
-                    validateField('jamSelesai', formatted);
-                  }}
-                  keyboardType="numeric"
-                  maxLength={5}
-                />
-                <TouchableOpacity onPress={() => setShowJamSelesaiPicker(true)} style={styles.calendarButton}>
-                  <Ionicons name="time" size={20} color="#004643" />
-                </TouchableOpacity>
-              </View>
-            </View>
-            {validationErrors.jamSelesai && (
-              <Text style={styles.errorText}>{validationErrors.jamSelesai}</Text>
-            )}
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Deskripsi (Opsional)</Text>
-            <View style={[styles.inputWrapper, styles.textAreaWrapper]}>
-              <Ionicons name="document-outline" size={20} color="#666" style={[styles.inputIcon, styles.textAreaIcon]} />
-              <TextInput
-                style={[styles.input, styles.textArea]}
-                placeholder="Deskripsi kegiatan dinas..."
-                value={formData.deskripsi}
-                onChangeText={(text) => setFormData({...formData, deskripsi: text})}
-                multiline
-                numberOfLines={3}
-              />
-            </View>
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Upload Dokumen SPT (Opsional)</Text>
-            <TouchableOpacity style={styles.uploadBtn} onPress={pickDocument}>
-              <Ionicons name="document-attach-outline" size={20} color="#004643" />
-              <View style={styles.uploadContent}>
-                <Text style={styles.uploadText}>
-                  {selectedFile ? selectedFile.name : 'Pilih File SPT'}
-                </Text>
-                <Text style={styles.uploadSubtext}>PDF, DOC, JPG (Max 5MB)</Text>
-              </View>
-              {selectedFile && (
-                <TouchableOpacity 
-                  onPress={() => setSelectedFile(null)}
-                  style={styles.removeFileBtn}
-                >
-                  <Ionicons name="close-circle" size={20} color="#F44336" />
-                </TouchableOpacity>
+              {validationErrors.namaKegiatan && (
+                <Text style={styles.errorText}>{validationErrors.namaKegiatan}</Text>
               )}
-            </TouchableOpacity>
-          </View>
+            </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Lokasi Dinas *</Text>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Nomor SPT *</Text>
+              <View style={[styles.inputWrapper, validationErrors.nomorSpt && styles.inputError]}>
+                <Ionicons name="document-text-outline" size={20} color="#666" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Contoh: SPT/001/2024"
+                  value={formData.nomorSpt}
+                  onChangeText={(text) => {
+                    setFormData({...formData, nomorSpt: text});
+                    validateField('nomorSpt', text);
+                  }}
+                />
+              </View>
+              {validationErrors.nomorSpt && (
+                <Text style={styles.errorText}>{validationErrors.nomorSpt}</Text>
+              )}
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Jenis Dinas *</Text>
+              <TouchableOpacity 
+                style={styles.dropdownBtn}
+                onPress={() => setShowJenisDinasDropdown(!showJenisDinasDropdown)}
+              >
+                <Ionicons 
+                  name={formData.jenisDinas === 'lokal' ? 'business-outline' : formData.jenisDinas === 'luar_kota' ? 'car-outline' : 'airplane-outline'} 
+                  size={20} 
+                  color="#004643" 
+                />
+                <Text style={styles.dropdownBtnText}>
+                  {formData.jenisDinas === 'lokal' ? 'Dinas Lokal' : 
+                   formData.jenisDinas === 'luar_kota' ? 'Dinas Luar Kota' : 'Dinas Luar Negeri'}
+                </Text>
+                <Ionicons 
+                  name={showJenisDinasDropdown ? "chevron-up" : "chevron-down"} 
+                  size={16} 
+                  color="#666" 
+                />
+              </TouchableOpacity>
+              
+              {showJenisDinasDropdown && (
+                <View style={styles.dropdownContainer}>
+                  {[
+                    { key: 'lokal', label: 'Dinas Lokal', icon: 'business-outline' },
+                    { key: 'luar_kota', label: 'Dinas Luar Kota', icon: 'car-outline' },
+                    { key: 'luar_negeri', label: 'Dinas Luar Negeri', icon: 'airplane-outline' }
+                  ].map((item) => (
+                    <TouchableOpacity
+                      key={item.key}
+                      style={[styles.pegawaiDropdownItem, formData.jenisDinas === item.key && styles.pegawaiSelected]}
+                      onPress={() => {
+                        setFormData({...formData, jenisDinas: item.key});
+                        setShowJenisDinasDropdown(false);
+                      }}
+                    >
+                      <Ionicons name={item.icon as any} size={20} color="#004643" />
+                      <Text style={[styles.pegawaiItemName, {marginLeft: 12, marginBottom: 0}]}>{item.label}</Text>
+                      {formData.jenisDinas === item.key && (
+                        <Ionicons name="checkmark-circle" size={20} color="#004643" />
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Deskripsi (Opsional)</Text>
+              <View style={[styles.inputWrapper, styles.textAreaWrapper]}>
+                <Ionicons name="document-outline" size={20} color="#666" style={[styles.inputIcon, styles.textAreaIcon]} />
+                <TextInput
+                  style={[styles.input, styles.textArea]}
+                  placeholder="Deskripsi kegiatan dinas..."
+                  value={formData.deskripsi}
+                  onChangeText={(text) => setFormData({...formData, deskripsi: text})}
+                  multiline
+                  numberOfLines={3}
+                />
+              </View>
+            </View>
+          </View>
+        </View>
+
+        {/* Card 2: Waktu & Jadwal */}
+        <View style={styles.cardContainer}>
+          <View style={styles.cardHeader}>
+            <Ionicons name="time-outline" size={24} color="#004643" />
+            <Text style={styles.cardTitle}>Waktu & Jadwal Dinas</Text>
+          </View>
+          
+          <View style={styles.formContainer}>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Tanggal Mulai *</Text>
+              <View style={styles.dateInputContainer}>
+                <View style={[styles.inputWrapper, validationErrors.tanggalMulai && styles.inputError]}>
+                  <Ionicons name="calendar-outline" size={20} color="#666" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="DD/MM/YYYY"
+                    value={formData.tanggalMulai}
+                    onChangeText={(text) => {
+                      const formatted = formatTanggal(text);
+                      setFormData({...formData, tanggalMulai: formatted});
+                      validateField('tanggalMulai', formatted);
+                    }}
+                    keyboardType="numeric"
+                    maxLength={10}
+                  />
+                  <TouchableOpacity onPress={() => setShowDateMulaiPicker(true)} style={styles.calendarButton}>
+                    <Ionicons name="calendar" size={20} color="#004643" />
+                  </TouchableOpacity>
+                </View>
+              </View>
+              {validationErrors.tanggalMulai && (
+                <Text style={styles.errorText}>{validationErrors.tanggalMulai}</Text>
+              )}
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Tanggal Selesai *</Text>
+              <View style={styles.dateInputContainer}>
+                <View style={[styles.inputWrapper, validationErrors.tanggalSelesai && styles.inputError]}>
+                  <Ionicons name="calendar-outline" size={20} color="#666" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="DD/MM/YYYY"
+                    value={formData.tanggalSelesai}
+                    onChangeText={(text) => {
+                      const formatted = formatTanggal(text);
+                      setFormData({...formData, tanggalSelesai: formatted});
+                      validateField('tanggalSelesai', formatted);
+                    }}
+                    keyboardType="numeric"
+                    maxLength={10}
+                  />
+                  <TouchableOpacity onPress={() => setShowDateSelesaiPicker(true)} style={styles.calendarButton}>
+                    <Ionicons name="calendar" size={20} color="#004643" />
+                  </TouchableOpacity>
+                </View>
+              </View>
+              {validationErrors.tanggalSelesai && (
+                <Text style={styles.errorText}>{validationErrors.tanggalSelesai}</Text>
+              )}
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Jam Mulai *</Text>
+              <View style={styles.dateInputContainer}>
+                <View style={[styles.inputWrapper, validationErrors.jamMulai && styles.inputError]}>
+                  <Ionicons name="time-outline" size={20} color="#666" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="08:00"
+                    value={formData.jamMulai}
+                    onChangeText={(text) => {
+                      const formatted = formatJam(text);
+                      setFormData({...formData, jamMulai: formatted});
+                      validateField('jamMulai', formatted);
+                    }}
+                    keyboardType="numeric"
+                    maxLength={5}
+                  />
+                  <TouchableOpacity onPress={() => setShowJamMulaiPicker(true)} style={styles.calendarButton}>
+                    <Ionicons name="time" size={20} color="#004643" />
+                  </TouchableOpacity>
+                </View>
+              </View>
+              {validationErrors.jamMulai && (
+                <Text style={styles.errorText}>{validationErrors.jamMulai}</Text>
+              )}
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Jam Selesai *</Text>
+              <View style={styles.dateInputContainer}>
+                <View style={[styles.inputWrapper, validationErrors.jamSelesai && styles.inputError]}>
+                  <Ionicons name="time-outline" size={20} color="#666" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="17:00"
+                    value={formData.jamSelesai}
+                    onChangeText={(text) => {
+                      const formatted = formatJam(text);
+                      setFormData({...formData, jamSelesai: formatted});
+                      validateField('jamSelesai', formatted);
+                    }}
+                    keyboardType="numeric"
+                    maxLength={5}
+                  />
+                  <TouchableOpacity onPress={() => setShowJamSelesaiPicker(true)} style={styles.calendarButton}>
+                    <Ionicons name="time" size={20} color="#004643" />
+                  </TouchableOpacity>
+                </View>
+              </View>
+              {validationErrors.jamSelesai && (
+                <Text style={styles.errorText}>{validationErrors.jamSelesai}</Text>
+              )}
+            </View>
+          </View>
+        </View>
+
+        {/* Card 3: Lokasi Dinas */}
+        <View style={styles.cardContainer}>
+          <View style={styles.cardHeader}>
+            <Ionicons name="location-outline" size={24} color="#004643" />
+            <Text style={styles.cardTitle}>Lokasi Dinas</Text>
+          </View>
+          
+          <View style={styles.formContainer}>
             <TouchableOpacity 
               style={styles.dropdownBtn}
               onPress={() => setShowLokasiModal(!showLokasiModal)}
@@ -1026,84 +1029,115 @@ export default function TambahDinasScreen() {
               </View>
             )}
           </View>
+        </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Pegawai Dinas * ({selectedPegawai.length} dipilih)</Text>
-            <TouchableOpacity 
-              style={styles.dropdownBtn}
-              onPress={() => setShowPegawaiDropdown(!showPegawaiDropdown)}
-            >
-              <Ionicons name="people-outline" size={20} color="#004643" />
-              <Text style={styles.dropdownBtnText}>
-                {selectedPegawai.length > 0 
-                  ? `${selectedPegawai.length} pegawai dipilih` 
-                  : 'Pilih Pegawai Dinas'
-                }
-              </Text>
-              <Ionicons 
-                name={showPegawaiDropdown ? "chevron-up" : "chevron-down"} 
-                size={16} 
-                color="#666" 
-              />
-            </TouchableOpacity>
-            
-            {showPegawaiDropdown && (
-              <View style={styles.dropdownContainer}>
-                <View style={styles.pegawaiSearchWrapper}>
-                  <Ionicons name="search-outline" size={16} color="#666" />
-                  <TextInput
-                    style={styles.searchPegawaiInput}
-                    placeholder="Cari nama atau NIP pegawai..."
-                    value={pegawaiSearchQuery}
-                    onChangeText={filterPegawai}
-                  />
+        {/* Card 4: Pegawai & Dokumen */}
+        <View style={styles.cardContainer}>
+          <View style={styles.cardHeader}>
+            <Ionicons name="people-outline" size={24} color="#004643" />
+            <Text style={styles.cardTitle}>Pegawai & Dokumen</Text>
+          </View>
+          
+          <View style={styles.formContainer}>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Upload Dokumen SPT (Opsional)</Text>
+              <TouchableOpacity style={styles.uploadBtn} onPress={pickDocument}>
+                <Ionicons name="document-attach-outline" size={20} color="#004643" />
+                <View style={styles.uploadContent}>
+                  <Text style={styles.uploadText}>
+                    {selectedFile ? selectedFile.name : 'Pilih File SPT'}
+                  </Text>
+                  <Text style={styles.uploadSubtext}>PDF, DOC, JPG (Max 5MB)</Text>
                 </View>
-                
-                <ScrollView style={styles.pegawaiDropdownList} nestedScrollEnabled>
-                  {filteredPegawai.map((pegawai: any, index) => {
-                    const pegawaiId = pegawai.id_user || pegawai.id_pegawai || pegawai.id;
-                    const isSelected = selectedPegawai.find((p: any) => {
-                      const selectedId = p.id_user || p.id_pegawai || p.id;
-                      return selectedId === pegawaiId;
-                    });
-                    return (
-                      <TouchableOpacity
-                        key={pegawaiId || index}
-                        style={[styles.pegawaiDropdownItem, isSelected && styles.pegawaiSelected]}
-                        onPress={() => togglePegawai(pegawai)}
-                      >
-                        <View style={styles.pegawaiItemInfo}>
-                          <Text style={styles.pegawaiItemName}>{pegawai.nama_lengkap}</Text>
-                          <Text style={styles.pegawaiItemNip}>NIP: {pegawai.nip}</Text>
-                        </View>
-                        {isSelected && (
-                          <Ionicons name="checkmark-circle" size={20} color="#004643" />
-                        )}
-                      </TouchableOpacity>
-                    );
-                  })}
-                  
-                  {filteredPegawai.length === 0 && (
-                    <View style={styles.emptyPegawai}>
-                      <Text style={styles.emptyPegawaiText}>Pegawai tidak ditemukan</Text>
-                    </View>
-                  )}
-                </ScrollView>
-              </View>
-            )}
-            
-            {selectedPegawai.length > 0 && (
-              <View style={styles.selectedPegawaiContainer}>
-                {selectedPegawai.map((pegawai: any, index) => (
-                  <View key={index} style={styles.selectedPegawaiChip}>
-                    <Text style={styles.selectedPegawaiChipText}>{pegawai.nama_lengkap}</Text>
-                    <TouchableOpacity onPress={() => togglePegawai(pegawai)}>
-                      <Ionicons name="close-circle" size={16} color="#F44336" />
-                    </TouchableOpacity>
+                {selectedFile && (
+                  <TouchableOpacity 
+                    onPress={() => setSelectedFile(null)}
+                    style={styles.removeFileBtn}
+                  >
+                    <Ionicons name="close-circle" size={20} color="#F44336" />
+                  </TouchableOpacity>
+                )}
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Pegawai Dinas * ({selectedPegawai.length} dipilih)</Text>
+              <TouchableOpacity 
+                style={styles.dropdownBtn}
+                onPress={() => setShowPegawaiDropdown(!showPegawaiDropdown)}
+              >
+                <Ionicons name="people-outline" size={20} color="#004643" />
+                <Text style={styles.dropdownBtnText}>
+                  {selectedPegawai.length > 0 
+                    ? `${selectedPegawai.length} pegawai dipilih` 
+                    : 'Pilih Pegawai Dinas'
+                  }
+                </Text>
+                <Ionicons 
+                  name={showPegawaiDropdown ? "chevron-up" : "chevron-down"} 
+                  size={16} 
+                  color="#666" 
+                />
+              </TouchableOpacity>
+              
+              {showPegawaiDropdown && (
+                <View style={styles.dropdownContainer}>
+                  <View style={styles.pegawaiSearchWrapper}>
+                    <Ionicons name="search-outline" size={16} color="#666" />
+                    <TextInput
+                      style={styles.searchPegawaiInput}
+                      placeholder="Cari nama atau NIP pegawai..."
+                      value={pegawaiSearchQuery}
+                      onChangeText={filterPegawai}
+                    />
                   </View>
-                ))}
-              </View>
-            )}
+                  
+                  <ScrollView style={styles.pegawaiDropdownList} nestedScrollEnabled>
+                    {filteredPegawai.map((pegawai: any, index) => {
+                      const pegawaiId = pegawai.id_user || pegawai.id_pegawai || pegawai.id;
+                      const isSelected = selectedPegawai.find((p: any) => {
+                        const selectedId = p.id_user || p.id_pegawai || p.id;
+                        return selectedId === pegawaiId;
+                      });
+                      return (
+                        <TouchableOpacity
+                          key={pegawaiId || index}
+                          style={[styles.pegawaiDropdownItem, isSelected && styles.pegawaiSelected]}
+                          onPress={() => togglePegawai(pegawai)}
+                        >
+                          <View style={styles.pegawaiItemInfo}>
+                            <Text style={styles.pegawaiItemName}>{pegawai.nama_lengkap}</Text>
+                            <Text style={styles.pegawaiItemNip}>NIP: {pegawai.nip}</Text>
+                          </View>
+                          {isSelected && (
+                            <Ionicons name="checkmark-circle" size={20} color="#004643" />
+                          )}
+                        </TouchableOpacity>
+                      );
+                    })}
+                    
+                    {filteredPegawai.length === 0 && (
+                      <View style={styles.emptyPegawai}>
+                        <Text style={styles.emptyPegawaiText}>Pegawai tidak ditemukan</Text>
+                      </View>
+                    )}
+                  </ScrollView>
+                </View>
+              )}
+              
+              {selectedPegawai.length > 0 && (
+                <View style={styles.selectedPegawaiContainer}>
+                  {selectedPegawai.map((pegawai: any, index) => (
+                    <View key={index} style={styles.selectedPegawaiChip}>
+                      <Text style={styles.selectedPegawaiChipText}>{pegawai.nama_lengkap}</Text>
+                      <TouchableOpacity onPress={() => togglePegawai(pegawai)}>
+                        <Ionicons name="close-circle" size={16} color="#F44336" />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
           </View>
         </View>
       </ScrollView>
@@ -1411,9 +1445,35 @@ const styles = StyleSheet.create({
     flex: 1,
     marginTop: 120
   },
+  cardContainer: {
+    backgroundColor: '#fff',
+    marginHorizontal: 16,
+    marginTop: 16,
+    marginBottom: 100,
+    borderRadius: 16,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0'
+  },
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#004643',
+    marginLeft: 12
+  },
   formContainer: {
-    padding: 20,
-    paddingBottom: 100
+    padding: 20
   },
   inputGroup: { 
     marginBottom: 25 
