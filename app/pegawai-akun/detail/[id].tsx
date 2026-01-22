@@ -96,31 +96,30 @@ export default function DetailPegawai() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
       
-      {/* Header */}
-      <View style={styles.stickyHeader}>
-        <View style={styles.headerContent}>
-          <View style={styles.headerLeft}>
-            <TouchableOpacity 
-              style={styles.backBtn}
-              onPress={() => router.back()}
-            >
-              <Ionicons name="arrow-back" size={24} color="#004643" />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>Detail Pegawai</Text>
-          </View>
-          <View style={[styles.headerStats, {
-            backgroundColor: isDataComplete(pegawai) ? '#E8F5E9' : '#FFEBEE'
+      {/* FIXED HEADER */}
+      <View style={styles.header}>
+        <View style={styles.headerLeft}>
+          <TouchableOpacity 
+            style={styles.backBtn}
+            onPress={() => router.back()}
+          >
+            <Ionicons name="arrow-back" size={24} color="#004643" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Detail Pegawai</Text>
+        </View>
+        <View style={[styles.headerStats, {
+          backgroundColor: isDataComplete(pegawai) ? '#E8F5E9' : '#FFEBEE'
+        }]}>
+          <Text style={[styles.statsText, {
+            color: isDataComplete(pegawai) ? '#2E7D32' : '#F44336'
           }]}>
-            <Text style={[styles.statsText, {
-              color: isDataComplete(pegawai) ? '#2E7D32' : '#F44336'
-            }]}>
-              {isDataComplete(pegawai) ? 'Informasi Lengkap' : 'Belum Lengkap'}
-            </Text>
-          </View>
+            {isDataComplete(pegawai) ? 'Informasi Lengkap' : 'Belum Lengkap'}
+          </Text>
         </View>
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <View style={styles.contentContainer}>
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Profile Section */}
         <View style={styles.profileSection}>
           <View style={styles.profileCard}>
@@ -160,10 +159,16 @@ export default function DetailPegawai() {
                   <Text style={styles.infoValue}>{pegawai.tanggal_lahir || 'Belum diisi'}</Text>
                 </View>
               </View>
-              <View style={styles.infoRowLast}>
+              <View style={styles.infoRow}>
                 <View style={styles.infoItem}>
                   <Text style={styles.infoLabel}>Jenis Kelamin</Text>
                   <Text style={styles.infoValue}>{pegawai.jenis_kelamin || 'Belum diisi'}</Text>
+                </View>
+              </View>
+              <View style={styles.infoRowLast}>
+                <View style={styles.infoItemFull}>
+                  <Text style={styles.infoLabel}>Alamat</Text>
+                  <Text style={styles.alamatText}>{pegawai.alamat || 'Alamat belum diisi'}</Text>
                 </View>
               </View>
             </View>
@@ -294,18 +299,9 @@ export default function DetailPegawai() {
             </View>
           </View>
 
-          {/* Alamat */}
-          <View style={styles.infoCard}>
-            <View style={styles.cardHeader}>
-              <Ionicons name="location-outline" size={20} color="#004643" />
-              <Text style={styles.cardTitle}>Alamat</Text>
-            </View>
-            <View style={styles.cardContent}>
-              <Text style={styles.alamatText}>{pegawai.alamat || 'Alamat belum diisi'}</Text>
-            </View>
-          </View>
         </View>
-      </ScrollView>
+        </ScrollView>
+      </View>
       
       {/* Conditional Edit Button - Only show if data incomplete */}
       {!isDataComplete(pegawai) && (
@@ -361,34 +357,37 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  stickyHeader: {
-    backgroundColor: '#fff',
+  header: { 
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    paddingHorizontal: 20,
     paddingTop: 50,
     paddingBottom: 15,
-    paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
-    elevation: 2,
+    backgroundColor: '#fff',
+    elevation: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  headerContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    shadowRadius: 4
   },
   headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1
   },
+  contentContainer: {
+    flex: 1,
+    marginTop: 120
+  },
   headerTitle: { 
     fontSize: 20, 
     fontWeight: 'bold', 
-    color: '#004643',
-    flex: 1
+    color: '#004643'
   },
   headerStats: {
     backgroundColor: '#E6F0EF',
@@ -513,6 +512,9 @@ const styles = StyleSheet.create({
   infoItem: {
     flex: 1,
     marginRight: 8,
+  },
+  infoItemFull: {
+    flex: 1,
   },
   infoLabel: {
     fontSize: 12,

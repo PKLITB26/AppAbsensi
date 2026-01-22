@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, FlatList, TouchableOpacity, ActivityIndicator, Modal } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, FlatList, TouchableOpacity, ActivityIndicator, Modal, Image, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 
@@ -35,8 +35,8 @@ export default function DetailAbsenPegawai() {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [detailAbsen, setDetailAbsen] = useState<any>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
-  const [selectedMonth, setSelectedMonth] = useState(1);
-  const [selectedYear, setSelectedYear] = useState(2026);
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [showMonthPicker, setShowMonthPicker] = useState(false);
 
   useEffect(() => {
@@ -52,7 +52,7 @@ export default function DetailAbsenPegawai() {
         setHariLibur(data.data.map((item: any) => ({ tanggal: item.tanggal, nama_libur: item.nama_libur })));
       }
     } catch (error) {
-      console.error('Error fetching hari libur:', error);
+      // Silent error handling
     }
   };
 
@@ -70,11 +70,8 @@ export default function DetailAbsenPegawai() {
           user_id: data.pegawai.id_user 
         });
         setAbsenData(data.absen);
-      } else {
-        console.error('Error:', data.message);
       }
     } catch (error) {
-      console.error('Network error:', error);
       setPegawai({ nama: 'Error', nip: '-', user_id: '' });
       setAbsenData([]);
     } finally {
@@ -120,11 +117,11 @@ export default function DetailAbsenPegawai() {
       const mockTidakHadirData = {
         tanggal: item.tanggal,
         status: 'Tidak Hadir',
-        jam_masuk: null,
-        jam_pulang: null,
+        jam_masuk: '-',
+        jam_pulang: '-',
         lokasi_masuk: '-',
         lokasi_pulang: '-',
-        lat_masuk: null,
+        lat_masuk: '-',
         long_masuk: null,
         lat_pulang: null,
         long_pulang: null,
@@ -146,10 +143,27 @@ export default function DetailAbsenPegawai() {
         setDetailAbsen(data.data);
         setShowDetailModal(true);
       } else {
-        console.error('Detail absen not found:', data.message);
+        const fallbackData = {
+          tanggal: tanggal,
+          status: 'Tidak Hadir',
+          jam_masuk: '-',
+          jam_pulang: '-',
+          lokasi_masuk: '-',
+          lokasi_pulang: '-',
+          lat_masuk: null,
+          long_masuk: null,
+          lat_pulang: null,
+          long_pulang: null,
+          alasan_pulang_cepat: null,
+          foto_masuk: null,
+          foto_pulang: null,
+          keterangan: 'Tidak ada data absensi'
+        };
+        setDetailAbsen(fallbackData);
+        setShowDetailModal(true);
       }
     } catch (error) {
-      console.error('Error fetching detail absen:', error);
+      // Silent error handling
     }
   };
 
@@ -212,6 +226,13 @@ export default function DetailAbsenPegawai() {
     const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
     const liburInfo = hariLibur.find(h => h.tanggal === item.tanggal);
     
+    // Check if date is in the future (not clickable)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const itemDate = new Date(item.tanggal);
+    itemDate.setHours(0, 0, 0, 0);
+    const isFutureDate = itemDate > today;
+    
     let displayStatus = item.status;
     let displayKeterangan = item.keterangan;
     
@@ -266,9 +287,10 @@ export default function DetailAbsenPegawai() {
     
     return (
       <TouchableOpacity 
-        style={styles.absenItem} 
-        onPress={() => showDetailForDate(item)}
-        activeOpacity={0.7}
+        style={[styles.absenItem, isFutureDate && styles.absenItemDisabled]} 
+        onPress={() => !isFutureDate && showDetailForDate(item)}
+        activeOpacity={isFutureDate ? 1 : 0.7}
+        disabled={isFutureDate}
       >
         <View style={styles.dateSection}>
           <Text style={styles.dayText}>{dateInfo.day}</Text>
@@ -400,12 +422,22 @@ export default function DetailAbsenPegawai() {
       
       return `${days[date.getDay()]}, ${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
     };
+
+    const calculateWorkDuration = (jamMasuk: string, jamPulang: string) => {
+      if (!jamMasuk || !jamPulang) return '-';
+      const masuk = new Date(`2000-01-01 ${jamMasuk}`);
+      const pulang = new Date(`2000-01-01 ${jamPulang}`);
+      const diff = pulang.getTime() - masuk.getTime();
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      return `${hours} jam ${minutes} menit`;
+    };
     
     return (
       <Modal
         visible={showDetailModal}
         transparent={true}
-        animationType="slide"
+        animationType="none"
         onRequestClose={() => setShowDetailModal(false)}
       >
         <View style={styles.modalOverlay}>
@@ -417,7 +449,7 @@ export default function DetailAbsenPegawai() {
               </TouchableOpacity>
             </View>
             
-            <View style={styles.detailContent}>
+            <ScrollView style={styles.detailContent} showsVerticalScrollIndicator={false}>
               <Text style={styles.detailDate}>{formatDetailDate(detailAbsen.tanggal)}</Text>
               
               <View style={styles.detailRow}>
@@ -437,31 +469,79 @@ export default function DetailAbsenPegawai() {
                 </View>
               ) : (
                 <>
-                  {detailAbsen.jam_masuk && (
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Jam Masuk:</Text>
+                    <Text style={styles.detailValue}>{detailAbsen.jam_masuk || '-'}</Text>
+                  </View>
+                  
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Jam Pulang:</Text>
+                    <Text style={styles.detailValue}>{detailAbsen.jam_pulang || '-'}</Text>
+                  </View>
+
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Durasi Kerja:</Text>
+                    <Text style={styles.detailValue}>
+                      {detailAbsen.jam_masuk && detailAbsen.jam_pulang ? calculateWorkDuration(detailAbsen.jam_masuk, detailAbsen.jam_pulang) : '-'}
+                    </Text>
+                  </View>
+                  
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Lokasi Masuk:</Text>
+                    <Text style={styles.detailValue}>{detailAbsen.lokasi_masuk || '-'}</Text>
+                  </View>
+                  
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Lokasi Pulang:</Text>
+                    <Text style={styles.detailValue}>{detailAbsen.lokasi_pulang || '-'}</Text>
+                  </View>
+
+                  {/* Koordinat GPS */}
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Koordinat Masuk:</Text>
+                    <Text style={styles.detailValue}>
+                      {detailAbsen.lat_masuk && detailAbsen.long_masuk ? 
+                        `${parseFloat(detailAbsen.lat_masuk).toFixed(6)}, ${parseFloat(detailAbsen.long_masuk).toFixed(6)}` : '-'}
+                    </Text>
+                  </View>
+
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Koordinat Pulang:</Text>
+                    <Text style={styles.detailValue}>
+                      {detailAbsen.lat_pulang && detailAbsen.long_pulang ? 
+                        `${parseFloat(detailAbsen.lat_pulang).toFixed(6)}, ${parseFloat(detailAbsen.long_pulang).toFixed(6)}` : '-'}
+                    </Text>
+                  </View>
+
+                  {/* Jarak dari Kantor */}
+                  {detailAbsen.jarak_masuk && (
                     <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>Jam Masuk:</Text>
-                      <Text style={styles.detailValue}>{detailAbsen.jam_masuk}</Text>
+                      <Text style={styles.detailLabel}>Jarak Masuk:</Text>
+                      <Text style={styles.detailValue}>{Math.round(detailAbsen.jarak_masuk)} meter</Text>
+                    </View>
+                  )}
+
+                  {detailAbsen.jarak_pulang && (
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>Jarak Pulang:</Text>
+                      <Text style={styles.detailValue}>{Math.round(detailAbsen.jarak_pulang)} meter</Text>
+                    </View>
+                  )}
+
+                  {/* Status Keterlambatan */}
+                  {detailAbsen.menit_terlambat && detailAbsen.menit_terlambat > 0 && (
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>Keterlambatan:</Text>
+                      <Text style={[styles.detailValue, { color: '#F44336' }]}>
+                        {detailAbsen.menit_terlambat} menit
+                      </Text>
                     </View>
                   )}
                   
-                  {detailAbsen.jam_pulang && (
+                  {detailAbsen.alasan_terlambat && (
                     <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>Jam Pulang:</Text>
-                      <Text style={styles.detailValue}>{detailAbsen.jam_pulang}</Text>
-                    </View>
-                  )}
-                  
-                  {detailAbsen.lokasi_masuk && (
-                    <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>Lokasi Masuk:</Text>
-                      <Text style={styles.detailValue}>{detailAbsen.lokasi_masuk}</Text>
-                    </View>
-                  )}
-                  
-                  {detailAbsen.lokasi_pulang && (
-                    <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>Lokasi Pulang:</Text>
-                      <Text style={styles.detailValue}>{detailAbsen.lokasi_pulang}</Text>
+                      <Text style={styles.detailLabel}>Alasan Terlambat:</Text>
+                      <Text style={styles.detailValue}>{detailAbsen.alasan_terlambat}</Text>
                     </View>
                   )}
                   
@@ -471,9 +551,60 @@ export default function DetailAbsenPegawai() {
                       <Text style={styles.detailValue}>{detailAbsen.alasan_pulang_cepat}</Text>
                     </View>
                   )}
+                  
+                  {/* Foto Presensi */}
+                  {(detailAbsen.foto_masuk || detailAbsen.foto_pulang) && (
+                    <View style={styles.photoRow}>
+                      {detailAbsen.foto_masuk && (
+                        <View style={styles.photoColumn}>
+                          <View style={styles.photoHeader}>
+                            <Ionicons name="camera" size={16} color="#4CAF50" />
+                            <Text style={styles.photoLabel}>Foto Masuk</Text>
+                          </View>
+                          <View style={styles.photoContainer}>
+                            <Image 
+                              source={{ uri: detailAbsen.foto_masuk }} 
+                              style={styles.photoPresensi}
+                            />
+                          </View>
+                        </View>
+                      )}
+                      
+                      {detailAbsen.foto_pulang && (
+                        <View style={styles.photoColumn}>
+                          <View style={styles.photoHeader}>
+                            <Ionicons name="camera" size={16} color="#FF5722" />
+                            <Text style={styles.photoLabel}>Foto Pulang</Text>
+                          </View>
+                          <View style={styles.photoContainer}>
+                            <Image 
+                              source={{ uri: detailAbsen.foto_pulang }} 
+                              style={styles.photoPresensi}
+                            />
+                          </View>
+                        </View>
+                      )}
+                    </View>
+                  )}
+
+                  {/* Device Info */}
+                  {detailAbsen.device_info && (
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>Perangkat:</Text>
+                      <Text style={styles.detailValue}>{detailAbsen.device_info}</Text>
+                    </View>
+                  )}
+
+                  {/* Keterangan Tambahan */}
+                  {detailAbsen.keterangan && !detailAbsen.isLibur && (
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>Keterangan:</Text>
+                      <Text style={styles.detailValue}>{detailAbsen.keterangan}</Text>
+                    </View>
+                  )}
                 </>
               )}
-            </View>
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -652,6 +783,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 2,
   },
+  absenItemDisabled: {
+    opacity: 0.5,
+    backgroundColor: '#F5F5F5',
+  },
   dateSection: {
     alignItems: 'center',
     marginRight: 16,
@@ -808,7 +943,8 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   detailContent: {
-    gap: 16,
+    maxHeight: 400,
+    paddingBottom: 10
   },
   detailDate: {
     fontSize: 16,
@@ -844,5 +980,59 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 12,
     fontWeight: '600',
+  },
+  photoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginVertical: 12,
+    gap: 12,
+  },
+  photoColumn: {
+    flex: 1,
+  },
+  photoHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    gap: 6,
+  },
+  photoSection: {
+    marginVertical: 12,
+  },
+  photoLabel: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '500',
+  },
+  photoContainer: {
+    alignItems: 'center',
+    backgroundColor: '#F8F9FA',
+    borderRadius: 8,
+    padding: 8,
+  },
+  photoPresensi: {
+    width: 100,
+    height: 100,
+    borderRadius: 8,
+    backgroundColor: '#E0E0E0',
+  },
+  debugSection: {
+    backgroundColor: '#FFF3CD',
+    padding: 10,
+    borderRadius: 6,
+    marginVertical: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: '#FFC107',
+  },
+  debugTitle: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#856404',
+    marginBottom: 4,
+  },
+  debugText: {
+    fontSize: 10,
+    color: '#856404',
+    marginBottom: 2,
   },
 });

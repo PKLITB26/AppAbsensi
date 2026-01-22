@@ -21,6 +21,9 @@ export default function JamKerjaScreen() {
   const [editJamMasuk, setEditJamMasuk] = useState('');
   const [editBatasAbsen, setEditBatasAbsen] = useState('');
   const [editJamPulang, setEditJamPulang] = useState('');
+  const [showJamMasukPicker, setShowJamMasukPicker] = useState(false);
+  const [showBatasAbsenPicker, setShowBatasAbsenPicker] = useState(false);
+  const [showJamPulangPicker, setShowJamPulangPicker] = useState(false);
   const [jamKerjaList, setJamKerjaList] = useState<JamKerjaHari[]>([
     { hari: 'Senin', jam_masuk: '08:00', batas_absen: '08:30', jam_pulang: '17:00', is_kerja: true },
     { hari: 'Selasa', jam_masuk: '08:00', batas_absen: '08:30', jam_pulang: '17:00', is_kerja: true },
@@ -84,6 +87,30 @@ export default function JamKerjaScreen() {
     return cleaned;
   };
 
+  const formatTime = (time: Date) => {
+    const hours = String(time.getHours()).padStart(2, '0');
+    const minutes = String(time.getMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`;
+  };
+
+  const handleJamMasukConfirm = (time: Date) => {
+    const formattedTime = formatTime(time);
+    setEditJamMasuk(formattedTime);
+    setShowJamMasukPicker(false);
+  };
+
+  const handleBatasAbsenConfirm = (time: Date) => {
+    const formattedTime = formatTime(time);
+    setEditBatasAbsen(formattedTime);
+    setShowBatasAbsenPicker(false);
+  };
+
+  const handleJamPulangConfirm = (time: Date) => {
+    const formattedTime = formatTime(time);
+    setEditJamPulang(formattedTime);
+    setShowJamPulangPicker(false);
+  };
+
   const handleSave = async () => {
     try {
       setLoading(true);
@@ -112,7 +139,8 @@ export default function JamKerjaScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
     >
-      <View style={styles.header}>
+      {/* FIXED HEADER */}
+      <View style={styles.fixedHeader}>
         <View style={styles.headerLeft}>
           <TouchableOpacity 
             style={styles.backBtn}
@@ -124,7 +152,8 @@ export default function JamKerjaScreen() {
         </View>
       </View>
 
-      <ScrollView style={styles.contentContainer} showsVerticalScrollIndicator={false}>
+      <View style={styles.contentWrapper}>
+        <ScrollView style={styles.contentContainer} showsVerticalScrollIndicator={false}>
         <View style={styles.content}>
         <View style={styles.infoCard}>
           <Ionicons name="information-circle" size={20} color="#004643" />
@@ -173,7 +202,8 @@ export default function JamKerjaScreen() {
         ))}
 
         </View>
-      </ScrollView>
+        </ScrollView>
+      </View>
 
       {/* Sticky Save Button */}
       <View style={styles.stickyFooter}>
@@ -209,6 +239,9 @@ export default function JamKerjaScreen() {
                   keyboardType="numeric"
                   maxLength={5}
                 />
+                <TouchableOpacity onPress={() => setShowJamMasukPicker(true)} style={styles.timeButton}>
+                  <Ionicons name="time" size={20} color="#004643" />
+                </TouchableOpacity>
               </View>
             </View>
 
@@ -224,6 +257,9 @@ export default function JamKerjaScreen() {
                   keyboardType="numeric"
                   maxLength={5}
                 />
+                <TouchableOpacity onPress={() => setShowBatasAbsenPicker(true)} style={styles.timeButton}>
+                  <Ionicons name="time" size={20} color="#004643" />
+                </TouchableOpacity>
               </View>
             </View>
 
@@ -239,6 +275,9 @@ export default function JamKerjaScreen() {
                   keyboardType="numeric"
                   maxLength={5}
                 />
+                <TouchableOpacity onPress={() => setShowJamPulangPicker(true)} style={styles.timeButton}>
+                  <Ionicons name="time" size={20} color="#004643" />
+                </TouchableOpacity>
               </View>
             </View>
 
@@ -259,21 +298,61 @@ export default function JamKerjaScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Time Picker Modals */}
+      <DateTimePickerModal
+        isVisible={showJamMasukPicker}
+        mode="time"
+        onConfirm={handleJamMasukConfirm}
+        onCancel={() => setShowJamMasukPicker(false)}
+        is24Hour={true}
+        display="default"
+      />
+
+      <DateTimePickerModal
+        isVisible={showBatasAbsenPicker}
+        mode="time"
+        onConfirm={handleBatasAbsenConfirm}
+        onCancel={() => setShowBatasAbsenPicker(false)}
+        is24Hour={true}
+        display="default"
+      />
+
+      <DateTimePickerModal
+        isVisible={showJamPulangPicker}
+        mode="time"
+        onConfirm={handleJamPulangConfirm}
+        onCancel={() => setShowJamPulangPicker(false)}
+        is24Hour={true}
+        display="default"
+      />
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFB' },
-  header: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    paddingHorizontal: 20, 
-    paddingTop: 50, 
-    paddingBottom: 20,
+  fixedHeader: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 50,
+    paddingBottom: 15,
     backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0'
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4
+  },
+  contentWrapper: {
+    flex: 1,
+    marginTop: 120
   },
   headerLeft: {
     flexDirection: 'row',
@@ -436,6 +515,11 @@ const styles = StyleSheet.create({
     color: '#333',
     paddingVertical: 12,
     marginLeft: 10
+  },
+  timeButton: {
+    padding: 8,
+    borderRadius: 6,
+    backgroundColor: '#F0F8F0'
   },
   modalButtons: {
     flexDirection: 'row',

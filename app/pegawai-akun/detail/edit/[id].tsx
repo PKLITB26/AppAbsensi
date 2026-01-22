@@ -116,17 +116,15 @@ export default function EditPegawai() {
       <StatusBar barStyle="dark-content" />
       
       {/* Header */}
-      <View style={styles.stickyHeader}>
-        <View style={styles.headerContent}>
-          <View style={styles.headerLeft}>
-            <TouchableOpacity 
-              style={styles.backBtn}
-              onPress={() => router.back()}
-            >
-              <Ionicons name="arrow-back" size={24} color="#004643" />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>Edit Pegawai</Text>
-          </View>
+      <View style={styles.header}>
+        <View style={styles.headerLeft}>
+          <TouchableOpacity 
+            style={styles.backBtn}
+            onPress={() => router.back()}
+          >
+            <Ionicons name="arrow-back" size={24} color="#004643" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Edit Pegawai</Text>
         </View>
       </View>
 
@@ -199,6 +197,18 @@ export default function EditPegawai() {
                   </Text>
                 </TouchableOpacity>
               </View>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Alamat Lengkap</Text>
+              <TextInput
+                style={[styles.textInput, styles.textArea]}
+                value={formData.alamat}
+                onChangeText={(text) => setFormData({...formData, alamat: text})}
+                placeholder="Masukkan alamat lengkap"
+                multiline
+                numberOfLines={3}
+              />
             </View>
           </View>
         </View>
@@ -289,26 +299,7 @@ export default function EditPegawai() {
           </View>
         </View>
 
-        {/* Alamat */}
-        <View style={styles.formCard}>
-          <View style={styles.cardHeader}>
-            <Ionicons name="location-outline" size={20} color="#004643" />
-            <Text style={styles.cardTitle}>Alamat</Text>
-          </View>
-          <View style={styles.cardContent}>
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Alamat Lengkap</Text>
-              <TextInput
-                style={[styles.textInput, styles.textArea]}
-                value={formData.alamat}
-                onChangeText={(text) => setFormData({...formData, alamat: text})}
-                placeholder="Masukkan alamat lengkap"
-                multiline
-                numberOfLines={3}
-              />
-            </View>
-          </View>
-        </View>
+
       </ScrollView>
       
       {/* Sticky Save Button */}
@@ -348,23 +339,23 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
   },
-  stickyHeader: {
-    backgroundColor: '#fff',
+  header: { 
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    paddingHorizontal: 20,
     paddingTop: 50,
     paddingBottom: 15,
-    paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
-    elevation: 2,
+    backgroundColor: '#fff',
+    elevation: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  headerContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    shadowRadius: 4
   },
   headerLeft: {
     flexDirection: 'row',
@@ -380,11 +371,11 @@ const styles = StyleSheet.create({
   headerTitle: { 
     fontSize: 20, 
     fontWeight: 'bold', 
-    color: '#004643',
-    flex: 1
+    color: '#004643'
   },
   content: {
     flex: 1,
+    marginTop: 120,
   },
   scrollContent: {
     paddingBottom: 100,

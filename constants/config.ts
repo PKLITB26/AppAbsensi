@@ -135,9 +135,17 @@ export const PegawaiAPI = {
   
   getProfile: async (user_id: string) => {
     try {
-      const response = await fetchWithRetry(`${getApiUrl(API_CONFIG.ENDPOINTS.PEGAWAI_PROFILE)}?user_id=${user_id}`);
-      return response.json();
+      console.log('PegawaiAPI.getProfile called with user_id:', user_id);
+      const url = `${getApiUrl(API_CONFIG.ENDPOINTS.PEGAWAI_PROFILE)}?user_id=${user_id}`;
+      console.log('Request URL:', url);
+      
+      const response = await fetchWithRetry(url);
+      const result = await response.json();
+      console.log('API Response:', result);
+      
+      return result;
     } catch (error: any) {
+      console.error('PegawaiAPI.getProfile error:', error);
       return {
         success: false,
         message: error.message || 'Tidak dapat terhubung ke server',

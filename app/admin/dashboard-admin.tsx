@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { 
   StyleSheet, View, Text, ScrollView, TouchableOpacity, 
-  SafeAreaView, StatusBar, Image, RefreshControl, Modal 
+  SafeAreaView, StatusBar, Image, RefreshControl, Modal, Platform 
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -268,6 +268,7 @@ export default function AdminDashboard() {
           onPress={() => setShowNotifications(false)}
         >
           <View style={styles.notificationDropdown}>
+            <View style={styles.dropdownArrow} />
             <View style={styles.dropdownHeader}>
               <Text style={styles.modalTitle}>Notifikasi</Text>
               <TouchableOpacity onPress={() => {
@@ -322,7 +323,14 @@ export default function AdminDashboard() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFB' },
   scrollContent: { paddingBottom: 30 },
-  headerSection: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingHorizontal: 20, paddingTop: 40, marginBottom: 20 },
+  headerSection: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'flex-start', 
+    paddingHorizontal: 20, 
+    paddingTop: Platform.OS === 'ios' ? 10 : 30, 
+    marginBottom: 20 
+  },
   adminInfo: { flex: 1 },
   credentialRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
   emailText: { fontSize: 12, color: '#666', fontFamily: 'monospace' },
@@ -457,8 +465,8 @@ const styles = StyleSheet.create({
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.3)' },
   notificationDropdown: { 
     position: 'absolute', 
-    top: 90, 
-    right: 20, 
+    top: 65, 
+    right: 15, 
     width: 280, 
     backgroundColor: '#fff', 
     borderRadius: 12, 
@@ -468,6 +476,20 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 8,
     maxHeight: 400
+  },
+  dropdownArrow: {
+    position: 'absolute',
+    top: -8,
+    right: 20,
+    width: 16,
+    height: 16,
+    backgroundColor: '#fff',
+    transform: [{ rotate: '45deg' }],
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 8,
   },
   dropdownHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: '#F0F0F0' },
   modalTitle: { fontSize: 16, fontWeight: 'bold', color: '#333' },

@@ -88,8 +88,8 @@ export default function LaporanAdminScreen() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
       
-      {/* Header */}
-      <View style={styles.stickyHeader}>
+      {/* HEADER */}
+      <View style={styles.header}>
         <View style={styles.headerContent}>
           <View style={styles.headerLeft}>
             <TouchableOpacity 
@@ -127,7 +127,8 @@ export default function LaporanAdminScreen() {
           <Text style={styles.loadingText}>Memuat statistik laporan...</Text>
         </View>
       ) : (
-        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={styles.contentContainer}>
+          <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           <Text style={styles.subtitle}>Pilih jenis laporan yang ingin dilihat</Text>
           
           <View style={styles.laporanGrid}>
@@ -151,7 +152,8 @@ export default function LaporanAdminScreen() {
               </TouchableOpacity>
             ))}
           </View>
-        </ScrollView>
+          </ScrollView>
+        </View>
       )}
     </SafeAreaView>
   );
@@ -159,18 +161,25 @@ export default function LaporanAdminScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFB' },
-  stickyHeader: {
+  header: { 
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
     backgroundColor: '#fff',
     paddingTop: 50,
-    paddingBottom: 20,
+    paddingBottom: 15,
     paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
-    elevation: 2,
+    elevation: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
+  },
+  contentContainer: {
+    flex: 1,
+    marginTop: 120
   },
   headerContent: {
     flexDirection: 'row',

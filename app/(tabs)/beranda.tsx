@@ -118,18 +118,34 @@ export default function BerandaScreen() {
       }
     } catch (error) {
       console.log('Dashboard Error:', error);
-      setUserData({
-        nama: 'Pengguna',
-        jabatan: 'Pegawai',
-        statusAbsen: 'Belum Absen',
-        jamMasuk: '08:00',
-        jamKeluar: '17:00',
-        totalJamKerja: '0h'
-      });
-      // Hanya tampilkan alert jika benar-benar error API, bukan karena tidak ada data login
+      
+      // Gunakan data fallback dari AsyncStorage jika ada
       const userData = await AsyncStorage.getItem('userData');
       if (userData) {
-        Alert.alert('Info', 'Tidak dapat memuat data dari server');
+        const user = JSON.parse(userData);
+        setUserData({
+          nama: user.nama_lengkap || user.nama || 'Pengguna',
+          jabatan: user.jabatan || 'Pegawai',
+          statusAbsen: 'Belum Absen',
+          jamMasuk: '08:00',
+          jamKeluar: '17:00',
+          totalJamKerja: '0h'
+        });
+        
+        // Hanya tampilkan alert jika benar-benar error koneksi, bukan data kosong
+        if (error instanceof Error && error.message.includes('fetch')) {
+          Alert.alert('Info', 'Menggunakan data offline - tidak dapat terhubung ke server');
+        }
+      } else {
+        // Jika tidak ada data sama sekali
+        setUserData({
+          nama: 'Pengguna',
+          jabatan: 'Pegawai',
+          statusAbsen: 'Belum Absen',
+          jamMasuk: '08:00',
+          jamKeluar: '17:00',
+          totalJamKerja: '0h'
+        });
       }
     } finally {
       setLoading(false);
@@ -206,7 +222,7 @@ export default function BerandaScreen() {
         {/* SECTION 4: MENU LAYANAN */}
         <View style={styles.menuSection}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Layanan Mandiri</Text>
+            <Text style={styles.sectionTitle}>Layanan</Text>
             <TouchableOpacity>
               <Text style={styles.seeAll}>Lihat Semua</Text>
             </TouchableOpacity>

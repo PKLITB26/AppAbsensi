@@ -11,7 +11,8 @@ export default function PengaturanScreen() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
       
-      <View style={styles.header}>
+      {/* FIXED HEADER */}
+      <View style={styles.fixedHeader}>
         <View style={styles.headerLeft}>
           <TouchableOpacity 
             style={styles.backBtn}
@@ -23,7 +24,8 @@ export default function PengaturanScreen() {
         </View>
       </View>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <View style={styles.contentContainer}>
+        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         <View style={styles.section}>
           <Text style={styles.sectionHeader}>ABSENSI</Text>
           <View style={styles.settingGroup}>
@@ -86,7 +88,8 @@ export default function PengaturanScreen() {
             </View>
           </View>
         </View>
-      </ScrollView>
+        </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
@@ -96,15 +99,27 @@ const styles = StyleSheet.create({
     flex: 1, 
     backgroundColor: '#F8FAFB' 
   },
-  header: { 
+  fixedHeader: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 50,
-    paddingBottom: 20,
+    paddingBottom: 15,
     backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0'
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4
+  },
+  contentContainer: {
+    flex: 1,
+    marginTop: 120
   },
   headerLeft: {
     flexDirection: 'row',

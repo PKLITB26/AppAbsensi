@@ -207,28 +207,26 @@ export default function LaporanDetailIzinScreen() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
       
-      <View style={styles.stickyHeader}>
-        <View style={styles.headerContent}>
-          <View style={styles.headerLeft}>
-            <TouchableOpacity 
-              style={styles.backBtn}
-              onPress={() => router.back()}
-            >
-              <Ionicons name="arrow-back" size={24} color="#004643" />
-            </TouchableOpacity>
-            <View style={styles.headerTitleContainer}>
-              <Ionicons name="calendar" size={20} color="#004643" style={styles.headerIcon} />
-              <Text style={styles.headerTitle}>Laporan Izin/Cuti</Text>
-            </View>
-          </View>
+      <View style={styles.header}>
+        <View style={styles.headerLeft}>
           <TouchableOpacity 
-            style={styles.exportBtn}
-            onPress={() => console.log('Export semua data izin/cuti')}
+            style={styles.backBtn}
+            onPress={() => router.back()}
           >
-            <Ionicons name="download-outline" size={18} color="#004643" />
-            <Text style={styles.exportText}>Export</Text>
+            <Ionicons name="arrow-back" size={24} color="#004643" />
           </TouchableOpacity>
+          <View style={styles.headerTitleContainer}>
+            <Ionicons name="calendar" size={20} color="#004643" style={styles.headerIcon} />
+            <Text style={styles.headerTitle}>Laporan Izin/Cuti</Text>
+          </View>
         </View>
+        <TouchableOpacity 
+          style={styles.exportBtn}
+          onPress={() => console.log('Export semua data izin/cuti')}
+        >
+          <Ionicons name="download-outline" size={18} color="#004643" />
+          <Text style={styles.exportText}>Export</Text>
+        </TouchableOpacity>
       </View>
 
       {loading ? (
@@ -334,19 +332,23 @@ export default function LaporanDetailIzinScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFB' },
-  stickyHeader: {
-    backgroundColor: '#fff',
-    paddingTop: 50,
-    paddingBottom: 20,
+  header: { 
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
+    flexDirection: 'row', 
+    alignItems: 'center', 
     paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
-    elevation: 2,
-  },
-  headerContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    paddingTop: 50,
+    paddingBottom: 15,
+    backgroundColor: '#fff',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4
   },
   headerLeft: {
     flexDirection: 'row',
@@ -366,10 +368,10 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     backgroundColor: '#F5F5F5'
   },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#004643',
+  headerTitle: { 
+    fontSize: 20, 
+    fontWeight: 'bold', 
+    color: '#004643'
   },
   exportBtn: {
     flexDirection: 'row',
@@ -385,7 +387,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#004643',
   },
-  content: { flex: 1 },
+  content: { flex: 1, marginTop: 120 },
   searchContainer: {
     paddingHorizontal: 15,
     paddingVertical: 8,
@@ -545,12 +547,15 @@ const styles = StyleSheet.create({
   cardContent: { gap: 8 },
   infoRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: 8,
+    marginBottom: 4,
   },
   infoText: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#666',
+    flex: 1,
+    flexWrap: 'wrap',
   },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   loadingText: { marginTop: 10, color: '#666' },

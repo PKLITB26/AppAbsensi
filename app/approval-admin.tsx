@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, StatusBar, FlatList, TouchableOpacity, Alert, ActivityIndicator, Modal, TextInput, Image, TouchableWithoutFeedback, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, StatusBar, ScrollView, TouchableOpacity, FlatList, TextInput, Alert, ActivityIndicator, Modal, TextInput as RNTextInput, Image, TouchableWithoutFeedback, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { getApiUrl, API_CONFIG } from '../constants/config';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface PengajuanData {
   id_pengajuan: number;
@@ -24,13 +25,11 @@ interface PengajuanData {
 
 export default function ApprovalAdminScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [pengajuan, setPengajuan] = useState<PengajuanData[]>([]);
   const [filteredPengajuan, setFilteredPengajuan] = useState<PengajuanData[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
-  const [selectedJenis, setSelectedJenis] = useState<string[]>([]);
-  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
-  const [showJenisDropdown, setShowJenisDropdown] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedPengajuan, setSelectedPengajuan] = useState<PengajuanData | null>(null);
   const [approvalNote, setApprovalNote] = useState('');
@@ -42,7 +41,7 @@ export default function ApprovalAdminScreen() {
 
   useEffect(() => {
     filterPengajuan();
-  }, [selectedFilters, selectedJenis, pengajuan]);
+  }, [selectedFilters, pengajuan]);
 
   const fetchPengajuan = async () => {
     try {
@@ -68,11 +67,6 @@ export default function ApprovalAdminScreen() {
     // Filter by status
     if (selectedFilters.length > 0) {
       filtered = filtered.filter(item => selectedFilters.includes(item.status));
-    }
-    
-    // Filter by jenis pengajuan
-    if (selectedJenis.length > 0) {
-      filtered = filtered.filter(item => selectedJenis.includes(item.jenis_pengajuan));
     }
     
     setFilteredPengajuan(filtered);
@@ -150,168 +144,9 @@ export default function ApprovalAdminScreen() {
     );
   };
 
-  const toggleJenisFilter = (jenis: string) => {
-    setSelectedJenis(prev => 
-      prev.includes(jenis) 
-        ? prev.filter(j => j !== jenis)
-        : [...prev, jenis]
-    );
-  };
 
-  const removeFilter = (type: 'status' | 'jenis', value: string) => {
-    if (type === 'status') {
-      setSelectedFilters(prev => prev.filter(s => s !== value));
-    } else {
-      setSelectedJenis(prev => prev.filter(j => j !== value));
-    }
-  };
 
-  const renderFilterButtons = () => (
-    <View style={styles.filterButtonsContainer}>
-      <View style={styles.statusButtonContainer}>
-        <TouchableOpacity 
-          style={styles.filterButton}
-          onPress={() => setShowStatusDropdown(!showStatusDropdown)}
-        >
-          <Ionicons name="funnel-outline" size={18} color="#004643" />
-          <Text style={styles.filterButtonText}>Status</Text>
-          <Ionicons name={showStatusDropdown ? "chevron-up" : "chevron-down"} size={16} color="#004643" />
-        </TouchableOpacity>
-        {renderStatusDropdown()}
-      </View>
-      
-      <View style={styles.jenisButtonContainer}>
-        <TouchableOpacity 
-          style={styles.filterButton}
-          onPress={() => setShowJenisDropdown(!showJenisDropdown)}
-        >
-          <Ionicons name="list-outline" size={18} color="#004643" />
-          <Text style={styles.filterButtonText}>Jenis</Text>
-          <Ionicons name={showJenisDropdown ? "chevron-up" : "chevron-down"} size={16} color="#004643" />
-        </TouchableOpacity>
-        {renderJenisDropdown()}
-      </View>
-    </View>
-  );
 
-  const renderStatusDropdown = () => {
-    if (!showStatusDropdown) return null;
-    
-    const statusOptions = [
-      { key: 'pending', label: 'Menunggu', count: pengajuan.filter(p => p.status === 'pending').length },
-      { key: 'approved', label: 'Disetujui', count: pengajuan.filter(p => p.status === 'approved').length },
-      { key: 'rejected', label: 'Ditolak', count: pengajuan.filter(p => p.status === 'rejected').length }
-    ];
-
-    return (
-      <View style={styles.dropdown}>
-        {statusOptions.map(option => (
-          <TouchableOpacity
-            key={option.key}
-            style={styles.dropdownItem}
-            onPress={() => toggleStatusFilter(option.key)}
-          >
-            <View style={styles.checkboxContainer}>
-              <View style={[styles.checkbox, selectedFilters.includes(option.key) && styles.checkboxActive]}>
-                {selectedFilters.includes(option.key) && <Ionicons name="checkmark" size={12} color="#fff" />}
-              </View>
-              <Text style={styles.dropdownText}>{option.label} ({option.count})</Text>
-            </View>
-          </TouchableOpacity>
-        ))}
-      </View>
-    );
-  };
-
-  const renderJenisDropdown = () => {
-    if (!showJenisDropdown) return null;
-    
-    const jenisOptions = [
-      { key: 'cuti_sakit', label: 'Cuti Sakit' },
-      { key: 'cuti_tahunan', label: 'Cuti Tahunan' },
-      { key: 'izin_pribadi', label: 'Izin Pribadi' },
-      { key: 'pulang_cepat_terencana', label: 'Pulang Cepat' },
-      { key: 'pulang_cepat_mendadak', label: 'Pulang Mendadak' },
-      { key: 'koreksi_presensi', label: 'Koreksi Presensi' }
-    ];
-
-    return (
-      <View style={styles.jenisDropdown}>
-        <FlatList
-          data={jenisOptions}
-          keyExtractor={(item) => item.key}
-          showsVerticalScrollIndicator={true}
-          nestedScrollEnabled={true}
-          renderItem={({ item: option }) => {
-            const count = pengajuan.filter(p => p.jenis_pengajuan === option.key).length;
-            return (
-              <TouchableOpacity
-                style={styles.dropdownItem}
-                onPress={() => toggleJenisFilter(option.key)}
-              >
-                <View style={styles.checkboxContainer}>
-                  <View style={[styles.checkbox, selectedJenis.includes(option.key) && styles.checkboxActive]}>
-                    {selectedJenis.includes(option.key) && <Ionicons name="checkmark" size={12} color="#fff" />}
-                  </View>
-                  <Text style={styles.dropdownText}>{option.label} ({count})</Text>
-                </View>
-              </TouchableOpacity>
-            );
-          }}
-        />
-      </View>
-    );
-  };
-
-  const renderActiveFilters = () => {
-    const allFilters = [
-      ...selectedFilters.map(s => ({ type: 'status' as const, value: s, label: getStatusLabel(s) })),
-      ...selectedJenis.map(j => ({ type: 'jenis' as const, value: j, label: getJenisLabel(j) }))
-    ];
-
-    if (allFilters.length === 0) return null;
-
-    return (
-      <View style={styles.activeFiltersContainer}>
-        {allFilters.map((filter, index) => (
-          <View key={`${filter.type}-${filter.value}`} style={styles.activeFilterChip}>
-            <Text style={styles.activeFilterText}>{filter.label}</Text>
-            <TouchableOpacity onPress={() => removeFilter(filter.type, filter.value)}>
-              <Ionicons name="close" size={14} color="#004643" />
-            </TouchableOpacity>
-          </View>
-        ))}
-      </View>
-    );
-  };
-
-  const renderFilterTabs = () => (
-    <View style={styles.filterContainer}>
-      {renderFilterButtons()}
-      {renderActiveFilters()}
-    </View>
-  );
-
-  const renderHeader = () => (
-    <View style={styles.stickyHeader}>
-      <View style={styles.headerContent}>
-        <View style={styles.headerLeft}>
-          <TouchableOpacity 
-            style={styles.backBtn}
-            onPress={() => router.back()}
-          >
-            <Ionicons name="arrow-back" size={24} color="#004643" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Approval Pengajuan</Text>
-        </View>
-        <View style={styles.headerStats}>
-          <Text style={styles.statsText}>{filteredPengajuan.length} Pengajuan</Text>
-        </View>
-      </View>
-      
-      {renderFilterTabs()}
-    </View>
-  );
 
   const renderPengajuanCard = ({ item }: { item: PengajuanData }) => (
     <View style={styles.pengajuanCard}>
@@ -402,18 +237,80 @@ export default function ApprovalAdminScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
+      
+      {/* FIXED HEADER */}
+      <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
+        <View style={styles.headerLeft}>
+          <TouchableOpacity 
+            style={styles.backBtn}
+            onPress={() => router.back()}
+          >
+            <Ionicons name="arrow-back" size={24} color="#004643" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Approval Pengajuan</Text>
+        </View>
+        <View style={styles.headerStats}>
+          <Text style={styles.statsText}>{filteredPengajuan.length} Pengajuan</Text>
+        </View>
+      </View>
         
-        {loading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#004643" />
-            <Text style={styles.loadingText}>Memuat data pengajuan...</Text>
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#004643" />
+          <Text style={styles.loadingText}>Memuat data pengajuan...</Text>
+        </View>
+      ) : (
+        <View style={[styles.contentContainer, { marginTop: insets.top + 90 }]}>
+          
+          <View style={styles.searchContainer}>
+            <View style={styles.searchInputWrapper}>
+              <Ionicons name="search-outline" size={20} color="#666" style={styles.searchIcon} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Cari nama pegawai atau jenis pengajuan..."
+                placeholderTextColor="#999"
+              />
+            </View>
           </View>
-        ) : (
+
+          <View style={styles.filterCard}>
+            <View style={styles.filterHeader}>
+              <Ionicons name="funnel-outline" size={20} color="#004643" />
+              <Text style={styles.filterTitle}>Filter Status</Text>
+            </View>
+            <View style={styles.sortContainer}>
+              <TouchableOpacity
+                style={[styles.sortBtn, selectedFilters.includes('pending') && styles.sortBtnActive]}
+                onPress={() => toggleStatusFilter('pending')}
+              >
+                <Text style={[styles.sortText, selectedFilters.includes('pending') && styles.sortTextActive]}>
+                  Menunggu
+                </Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[styles.sortBtn, selectedFilters.includes('approved') && styles.sortBtnActive]}
+                onPress={() => toggleStatusFilter('approved')}
+              >
+                <Text style={[styles.sortText, selectedFilters.includes('approved') && styles.sortTextActive]}>
+                  Disetujui
+                </Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[styles.sortBtn, selectedFilters.includes('rejected') && styles.sortBtnActive]}
+                onPress={() => toggleStatusFilter('rejected')}
+              >
+                <Text style={[styles.sortText, selectedFilters.includes('rejected') && styles.sortTextActive]}>
+                  Ditolak
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
           <FlatList
             data={filteredPengajuan}
             keyExtractor={(item) => item.id_pengajuan.toString()}
-            ListHeaderComponent={renderHeader}
-            stickyHeaderIndices={[0]}
             renderItem={renderPengajuanCard}
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
@@ -424,7 +321,8 @@ export default function ApprovalAdminScreen() {
               </View>
             }
           />
-        )}
+        </View>
+      )}
 
         {/* Approval Modal */}
         <Modal
@@ -492,41 +390,107 @@ export default function ApprovalAdminScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFB' },
-  stickyHeader: {
-    backgroundColor: '#fff',
-    paddingTop: 50,
-    paddingBottom: 15,
+  header: { 
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
+    flexDirection: 'row', 
+    alignItems: 'center', 
     paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
-    elevation: 2,
+    paddingBottom: 15,
+    backgroundColor: '#fff',
+    elevation: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  headerContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 15,
+    shadowRadius: 4
   },
   headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1
   },
+  contentContainer: {
+    flex: 1,
+  },
+  searchContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    backgroundColor: '#F8FAFB'
+  },
+  searchInputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    paddingHorizontal: 15,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    gap: 10
+  },
+  searchIcon: {
+    marginRight: 10
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#333',
+    paddingVertical: 12
+  },
+  filterCard: {
+    backgroundColor: '#fff',
+    marginHorizontal: 20,
+    marginVertical: 5,
+    borderRadius: 16,
+    padding: 15,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4
+  },
+  filterHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12
+  },
+  filterTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginLeft: 8
+  },
+  sortContainer: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  sortBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: '#F5F5F5',
+    gap: 4,
+  },
+  sortBtnActive: { backgroundColor: '#004643' },
+  sortText: { fontSize: 12, color: '#666', fontWeight: '500' },
+  sortTextActive: { color: '#fff' },
   backBtn: {
     padding: 10,
     marginRight: 15,
     borderRadius: 10,
     backgroundColor: '#F5F5F5'
   },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#004643',
-    flex: 1
+  headerTitle: { 
+    fontSize: 20, 
+    fontWeight: 'bold', 
+    color: '#004643'
   },
   headerStats: {
     backgroundColor: '#E6F0EF',
@@ -539,114 +503,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#004643'
   },
-  filterContainer: {
-    marginTop: 15,
-    position: 'relative',
-  },
-  filterButtonsContainer: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 10,
-  },
-  statusButtonContainer: {
-    position: 'relative',
-    width: '40%',
-  },
-  jenisButtonContainer: {
-    position: 'relative',
-    flex: 1,
-  },
-  filterButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    backgroundColor: '#F8F9FA',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E9ECEF',
-    gap: 6,
-  },
-  filterButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#004643',
-  },
-  dropdown: {
-    position: 'absolute',
-    top: 50,
-    left: 0,
-    right: 0,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E9ECEF',
-    maxHeight: 200,
-    zIndex: 1000,
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  jenisDropdown: {
-  position: 'absolute',
-  top: 50,
-  left: 0,
-  right: 0,
-  backgroundColor: '#fff',
-  borderRadius: 12,
-  borderWidth: 1,
-  borderColor: '#E9ECEF',
-},
-  dropdownItem: {
-    paddingHorizontal: 7,
-    paddingVertical: 9,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F3F4',
-  },
-  checkboxContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  checkbox: {
-    width: 18,
-    height: 18,
-    borderRadius: 4,
-    borderWidth: 2,
-    borderColor: '#DDD',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  checkboxActive: {
-    backgroundColor: '#004643',
-    borderColor: '#004643',
-  },
-  dropdownText: {
-    fontSize: 14,
-    color: '#333',
-  },
-  activeFiltersContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 10,
-  },
-  activeFilterChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#E6F0EF',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    gap: 6,
-  },
-  activeFilterText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#004643',
-  },
+
 
   loadingContainer: {
     flex: 1,

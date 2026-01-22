@@ -15,19 +15,21 @@ export default function KelolaDinasScreen() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
       
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <TouchableOpacity 
-              style={styles.backBtn}
-              onPress={() => router.back()}
-            >
-              <Ionicons name="arrow-back" size={24} color="#004643" />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>Kelola Dinas</Text>
-          </View>
+      {/* HEADER */}
+      <View style={styles.header}>
+        <View style={styles.headerLeft}>
+          <TouchableOpacity 
+            style={styles.backBtn}
+            onPress={() => router.back()}
+          >
+            <Ionicons name="arrow-back" size={24} color="#004643" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Kelola Dinas</Text>
         </View>
+      </View>
+
+      <View style={styles.contentContainer}>
+        <ScrollView showsVerticalScrollIndicator={false}>
 
         {/* Stats Cards */}
         <View style={styles.statsContainer}>
@@ -135,7 +137,8 @@ export default function KelolaDinasScreen() {
             <Text style={styles.emptyText}>Belum ada aktivitas dinas hari ini</Text>
           </View>
         </View>
-      </ScrollView>
+        </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
@@ -143,11 +146,26 @@ export default function KelolaDinasScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFB' },
   header: { 
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
     flexDirection: 'row', 
     alignItems: 'center', 
-    paddingHorizontal: 20, 
-    paddingTop: 50, 
-    paddingBottom: 20 
+    paddingHorizontal: 20,
+    paddingTop: 50,
+    paddingBottom: 15,
+    backgroundColor: '#fff',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4
+  },
+  contentContainer: {
+    flex: 1,
+    marginTop: 120
   },
   headerLeft: {
     flexDirection: 'row',

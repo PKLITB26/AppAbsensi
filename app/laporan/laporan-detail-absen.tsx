@@ -184,8 +184,8 @@ export default function LaporanDetailAbsenScreen() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
       
-      {/* Header */}
-      <View style={styles.stickyHeader}>
+      {/* HEADER */}
+      <View style={styles.header}>
         <View style={styles.headerContent}>
           <View style={styles.headerLeft}>
             <TouchableOpacity 
@@ -215,7 +215,8 @@ export default function LaporanDetailAbsenScreen() {
           <Text style={styles.loadingText}>Memuat data absen...</Text>
         </View>
       ) : (
-        <View style={styles.content}>
+        <View style={styles.contentContainer}>
+          <View style={styles.content}>
           {/* Search Bar */}
           <View style={styles.searchContainer}>
             <View style={styles.searchInputWrapper}>
@@ -296,6 +297,7 @@ export default function LaporanDetailAbsenScreen() {
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.listContent}
           />
+          </View>
         </View>
       )}
       
@@ -306,14 +308,25 @@ export default function LaporanDetailAbsenScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFB' },
-  stickyHeader: {
+  header: { 
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
     backgroundColor: '#fff',
     paddingTop: 50,
-    paddingBottom: 20,
+    paddingBottom: 15,
     paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
-    elevation: 2,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  contentContainer: {
+    flex: 1,
+    marginTop: 120
   },
   headerContent: {
     flexDirection: 'row',

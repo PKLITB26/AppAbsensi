@@ -199,6 +199,7 @@ export default function DinasAktifScreen() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
       
+      {/* HEADER */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <TouchableOpacity 
@@ -210,6 +211,8 @@ export default function DinasAktifScreen() {
           <Text style={styles.headerTitle}>Data Dinas Aktif</Text>
         </View>
       </View>
+
+      <View style={styles.contentContainer}>
 
       <View style={styles.searchContainer}>
         <View style={styles.searchInputWrapper}>
@@ -315,6 +318,7 @@ export default function DinasAktifScreen() {
       >
         <Ionicons name="add" size={28} color="#fff" />
       </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 }
@@ -322,14 +326,26 @@ export default function DinasAktifScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFB' },
   header: { 
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
     flexDirection: 'row', 
     alignItems: 'center', 
-    paddingHorizontal: 20, 
-    paddingTop: 50, 
-    paddingBottom: 20,
+    paddingHorizontal: 20,
+    paddingTop: 50,
+    paddingBottom: 15,
     backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0'
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4
+  },
+  contentContainer: {
+    flex: 1,
+    marginTop: 120
   },
   headerLeft: {
     flexDirection: 'row',

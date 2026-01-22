@@ -33,16 +33,18 @@ export default function PengajuanScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* HEADER CUSTOM */}
+      {/* FIXED HEADER */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={24} color="#333" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Form Pengajuan</Text>
-        <View style={{ width: 40 }} /> {/* Spacer agar judul tetap di tengah */}
+        <View style={styles.headerLeft}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+            <Ionicons name="arrow-back" size={24} color="#004643" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Form Pengajuan</Text>
+        </View>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <View style={styles.contentContainer}>
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         
         {/* PILIH JENIS KEPERLUAN */}
         <Text style={styles.label}>Jenis Keperluan</Text>
@@ -87,7 +89,8 @@ export default function PengajuanScreen() {
           *Pengajuan yang sudah dikirim akan muncul di halaman Riwayat setelah disetujui oleh Admin.
         </Text>
 
-      </ScrollView>
+        </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
@@ -95,17 +98,44 @@ export default function PengajuanScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFFFFF' },
   header: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    justifyContent: 'space-between', 
-    paddingHorizontal: 15, 
-    paddingVertical: 20,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
+    backgroundColor: '#fff',
+    paddingTop: 50,
+    paddingBottom: 15,
+    paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0'
+    borderBottomColor: '#F0F0F0',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4
   },
-  backBtn: { padding: 8 },
-  headerTitle: { fontSize: 18, fontWeight: 'bold', color: '#333' },
-  scrollContent: { padding: 20 },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1
+  },
+  backBtn: {
+    padding: 10,
+    marginRight: 15,
+    borderRadius: 10,
+    backgroundColor: '#F5F5F5'
+  },
+  headerTitle: { 
+    fontSize: 20, 
+    fontWeight: 'bold', 
+    color: '#004643'
+  },
+  contentContainer: {
+    flex: 1,
+    marginTop: 100
+  },
+  scrollContent: { padding: 20, paddingBottom: 40 },
   label: { fontSize: 14, fontWeight: 'bold', color: '#555', marginBottom: 12, marginTop: 10 },
   chipContainer: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 25 },
   chip: { 

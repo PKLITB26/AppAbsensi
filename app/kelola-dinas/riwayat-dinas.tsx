@@ -321,16 +321,20 @@ export default function RiwayatDinasScreen() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
       
-      {/* Header */}
+      {/* HEADER */}
       <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backBtn}
-          onPress={() => router.back()}
-        >
-          <Ionicons name="arrow-back" size={24} color="#004643" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Riwayat Dinas</Text>
+        <View style={styles.headerLeft}>
+          <TouchableOpacity 
+            style={styles.backBtn}
+            onPress={() => router.back()}
+          >
+            <Ionicons name="arrow-back" size={24} color="#004643" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Riwayat Dinas</Text>
+        </View>
       </View>
+
+      <View style={styles.contentContainer}>
 
       {/* Search Bar */}
       <View style={styles.searchContainer}>
@@ -459,6 +463,7 @@ export default function RiwayatDinasScreen() {
           );
         }}
       />
+      </View>
 
       {renderCalendarModal()}
     </SafeAreaView>
@@ -468,14 +473,31 @@ export default function RiwayatDinasScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFB' },
   header: { 
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
     flexDirection: 'row', 
     alignItems: 'center', 
-    paddingHorizontal: 20, 
-    paddingTop: 50, 
-    paddingBottom: 20,
+    paddingHorizontal: 20,
+    paddingTop: 50,
+    paddingBottom: 15,
     backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0'
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1
+  },
+  contentContainer: {
+    flex: 1,
+    marginTop: 120
   },
   backBtn: {
     padding: 10,

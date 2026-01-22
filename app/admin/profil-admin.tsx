@@ -186,14 +186,16 @@ export default function ProfilAdminScreen() {
         <View style={styles.profileHeader}>
           <View style={styles.imageWrapper}>
             <View style={styles.profileImagePlaceholder}>
-              <Ionicons name="person" size={50} color="#fff" />
+              <Ionicons name="shield-checkmark" size={50} color="#fff" />
             </View>
+            <View style={styles.statusDot} />
           </View>
           <Text style={styles.userName}>Administrator</Text>
           <Text style={styles.userRole}>
             {profile?.role?.toUpperCase() || "ADMIN"}
           </Text>
           <View style={styles.badge}>
+            <Ionicons name="key" size={12} color="#004643" style={{ marginRight: 4 }} />
             <Text style={styles.badgeText}>ID: {profile?.id_user}</Text>
           </View>
         </View>
@@ -201,10 +203,14 @@ export default function ProfilAdminScreen() {
         {/* INFO AKUN */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Informasi Akun</Text>
+            <View style={styles.sectionTitleContainer}>
+              <Ionicons name="person-circle-outline" size={18} color="#004643" />
+              <Text style={styles.sectionTitle}>Informasi Akun</Text>
+            </View>
             <TouchableOpacity
               style={styles.editBtn}
               onPress={() => setEditModal(true)}
+              activeOpacity={0.7}
             >
               <Ionicons name="create-outline" size={16} color="#004643" />
               <Text style={styles.editBtnText}>Edit</Text>
@@ -227,7 +233,12 @@ export default function ProfilAdminScreen() {
 
         {/* PENGATURAN & LAINNYA */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Pengaturan Aplikasi</Text>
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionTitleContainer}>
+              <Ionicons name="settings-outline" size={18} color="#004643" />
+              <Text style={styles.sectionTitle}>Pengaturan Aplikasi</Text>
+            </View>
+          </View>
           <View style={styles.infoCard}>
             <MenuLink
               icon="notifications-outline"
@@ -241,6 +252,7 @@ export default function ProfilAdminScreen() {
         <TouchableOpacity
           style={styles.logoutBtn}
           onPress={() => setLogoutModal(true)}
+          activeOpacity={0.7}
         >
           <Ionicons name="log-out-outline" size={20} color="#FF4D4D" />
           <Text style={styles.logoutText}>Keluar Akun</Text>
@@ -400,7 +412,10 @@ function InfoItem({ icon, label, value }: any) {
 
 function MenuLink({ icon, title }: any) {
   return (
-    <TouchableOpacity style={styles.menuLink}>
+    <TouchableOpacity 
+      style={styles.menuLink}
+      activeOpacity={0.6}
+    >
       <View style={styles.menuLinkLeft}>
         <Ionicons name={icon} size={20} color="#555" />
         <Text style={styles.menuLinkText}>{title}</Text>
@@ -415,10 +430,31 @@ const styles = StyleSheet.create({
   profileHeader: {
     backgroundColor: "#fff",
     alignItems: "center",
-    paddingVertical: 30,
+    paddingVertical: 35,
+    paddingTop: 50,
     borderBottomLeftRadius: 30,
     borderBottomRightRadius: 30,
-    elevation: 2,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  statusDot: {
+    position: 'absolute',
+    bottom: 2,
+    right: 2,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: '#4CAF50',
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
+  sectionTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   imageWrapper: { position: "relative", marginBottom: 15 },
   profileImage: {
@@ -448,14 +484,28 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: "#fff",
   },
-  userName: { fontSize: 22, fontWeight: "bold", color: "#333" },
-  userRole: { fontSize: 14, color: "#777", marginTop: 4 },
+  userName: { 
+    fontSize: 24, 
+    fontWeight: "700", 
+    color: "#333",
+    letterSpacing: 0.5,
+    marginTop: 8,
+  },
+  userRole: { 
+    fontSize: 14, 
+    color: "#777", 
+    marginTop: 4,
+    fontWeight: "500",
+    letterSpacing: 0.2,
+  },
   badge: {
     backgroundColor: "#E6F0EF",
     paddingHorizontal: 12,
-    paddingVertical: 4,
+    paddingVertical: 6,
     borderRadius: 20,
-    marginTop: 10,
+    marginTop: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   badgeText: { color: "#004643", fontSize: 12, fontWeight: "bold" },
   section: { marginTop: 25, paddingHorizontal: 20 },
@@ -465,7 +515,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 12,
   },
-  sectionTitle: { fontSize: 15, fontWeight: "bold", color: "#333" },
+  sectionTitle: { 
+    fontSize: 16, 
+    fontWeight: "700", 
+    color: "#333",
+    letterSpacing: 0.3,
+  },
   editBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -482,9 +537,13 @@ const styles = StyleSheet.create({
   },
   infoCard: {
     backgroundColor: "#fff",
-    borderRadius: 15,
+    borderRadius: 16,
     paddingVertical: 10,
-    elevation: 1,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
   },
   infoItem: {
     flexDirection: "row",
@@ -511,8 +570,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginTop: 30,
-    marginBottom: 10,
+    marginBottom: 30,
+    marginHorizontal: 20,
   },
+
   logoutText: {
     marginLeft: 10,
     color: "#FF4D4D",

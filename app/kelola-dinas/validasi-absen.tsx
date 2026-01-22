@@ -229,6 +229,7 @@ export default function ValidasiAbsenScreen() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
       
+      {/* HEADER */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <TouchableOpacity 
@@ -241,45 +242,62 @@ export default function ValidasiAbsenScreen() {
         </View>
       </View>
 
+      <View style={styles.contentContainer}>
+
       <View style={styles.searchContainer}>
         <View style={styles.searchInputWrapper}>
-          <Ionicons name="search-outline" size={20} color="#666" />
+          <Ionicons name="search-outline" size={20} color="#666" style={styles.searchIcon} />
           <TextInput
             style={styles.searchInput}
             placeholder="Cari nama pegawai atau kegiatan..."
             value={searchQuery}
             onChangeText={setSearchQuery}
+            placeholderTextColor="#999"
           />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity 
+              onPress={() => setSearchQuery('')}
+              style={styles.clearBtn}
+            >
+              <Ionicons name="close-circle" size={20} color="#999" />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
-      <View style={styles.filterContainer}>
-        <TouchableOpacity
-          style={[styles.filterBtn, selectedFilter === 'pending' && styles.filterBtnActive]}
-          onPress={() => setSelectedFilter('pending')}
-        >
-          <Text style={[styles.filterText, selectedFilter === 'pending' && styles.filterTextActive]}>
-            Menunggu
-          </Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity
-          style={[styles.filterBtn, selectedFilter === 'approved' && styles.filterBtnActive]}
-          onPress={() => setSelectedFilter('approved')}
-        >
-          <Text style={[styles.filterText, selectedFilter === 'approved' && styles.filterTextActive]}>
-            Disetujui
-          </Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity
-          style={[styles.filterBtn, selectedFilter === 'rejected' && styles.filterBtnActive]}
-          onPress={() => setSelectedFilter('rejected')}
-        >
-          <Text style={[styles.filterText, selectedFilter === 'rejected' && styles.filterTextActive]}>
-            Ditolak
-          </Text>
-        </TouchableOpacity>
+      <View style={styles.filterCard}>
+        <View style={styles.filterHeader}>
+          <Ionicons name="funnel-outline" size={20} color="#004643" />
+          <Text style={styles.filterTitle}>Filter Status</Text>
+        </View>
+        <View style={styles.sortContainer}>
+          <TouchableOpacity
+            style={[styles.sortBtn, selectedFilter === 'pending' && styles.sortBtnActive]}
+            onPress={() => setSelectedFilter('pending')}
+          >
+            <Text style={[styles.sortText, selectedFilter === 'pending' && styles.sortTextActive]}>
+              Menunggu
+            </Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={[styles.sortBtn, selectedFilter === 'approved' && styles.sortBtnActive]}
+            onPress={() => setSelectedFilter('approved')}
+          >
+            <Text style={[styles.sortText, selectedFilter === 'approved' && styles.sortTextActive]}>
+              Disetujui
+            </Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={[styles.sortBtn, selectedFilter === 'rejected' && styles.sortBtnActive]}
+            onPress={() => setSelectedFilter('rejected')}
+          >
+            <Text style={[styles.sortText, selectedFilter === 'rejected' && styles.sortTextActive]}>
+              Ditolak
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <FlatList
@@ -318,6 +336,7 @@ export default function ValidasiAbsenScreen() {
           </TouchableOpacity>
         </View>
       )}
+      </View>
     </SafeAreaView>
   );
 }
@@ -325,14 +344,26 @@ export default function ValidasiAbsenScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFB' },
   header: { 
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
     flexDirection: 'row', 
     alignItems: 'center', 
-    paddingHorizontal: 20, 
-    paddingTop: 50, 
-    paddingBottom: 20,
+    paddingHorizontal: 20,
+    paddingTop: 50,
+    paddingBottom: 15,
     backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0'
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4
+  },
+  contentContainer: {
+    flex: 1,
+    marginTop: 120
   },
   headerLeft: {
     flexDirection: 'row',
@@ -351,47 +382,74 @@ const styles = StyleSheet.create({
     color: '#004643',
   },
   searchContainer: {
-    padding: 16,
-    backgroundColor: '#fff',
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    backgroundColor: '#F8FAFB'
   },
   searchInputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    paddingHorizontal: 15,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    gap: 10
+  },
+  searchIcon: {
+    marginRight: 10
   },
   searchInput: {
     flex: 1,
-    marginLeft: 8,
-    fontSize: 14,
+    fontSize: 16,
+    color: '#333',
+    paddingVertical: 12
   },
-  filterContainer: {
-    flexDirection: 'row',
-    padding: 16,
+  clearBtn: {
+    padding: 4
+  },
+  filterCard: {
     backgroundColor: '#fff',
+    marginHorizontal: 20,
+    marginVertical: 5,
+    borderRadius: 16,
+    padding: 15,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4
+  },
+  filterHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12
+  },
+  filterTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginLeft: 8
+  },
+  sortContainer: {
+    flexDirection: 'row',
     gap: 8,
   },
-  filterBtn: {
-    flex: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    backgroundColor: '#f5f5f5',
+  sortBtn: {
+    flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: '#F5F5F5',
+    gap: 4,
   },
-  filterBtnActive: {
-    backgroundColor: '#004643',
-  },
-  filterText: {
-    fontSize: 14,
-    color: '#666',
-  },
-  filterTextActive: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
+  sortBtnActive: { backgroundColor: '#004643' },
+  sortText: { fontSize: 12, color: '#666', fontWeight: '500' },
+  sortTextActive: { color: '#fff' },
   listContainer: {
     padding: 16,
   },
