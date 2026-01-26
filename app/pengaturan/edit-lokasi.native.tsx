@@ -1,19 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, StatusBar, ScrollView, TouchableOpacity, TextInput, Alert, Modal, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, StatusBar, ScrollView, TouchableOpacity, TextInput, Alert, Modal, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { PengaturanAPI } from '../../constants/config';
 import * as Location from 'expo-location';
-
-// Platform-specific imports
-let MapView: any = null;
-let Marker: any = null;
-
-if (Platform.OS !== 'web') {
-  const Maps = require('react-native-maps');
-  MapView = Maps.default;
-  Marker = Maps.Marker;
-}
+import MapView, { Marker } from 'react-native-maps';
 
 export default function EditLokasiScreen() {
   const router = useRouter();
@@ -221,7 +212,7 @@ export default function EditLokasiScreen() {
       return;
     }
 
-    if (Platform.OS !== 'web' && (!formData.latitude || !formData.longitude)) {
+    if (!formData.latitude || !formData.longitude) {
       Alert.alert('Info', 'Lokasi wajib dipilih di peta');
       return;
     }
@@ -277,7 +268,7 @@ export default function EditLokasiScreen() {
           <Ionicons name="information-circle" size={20} color="#004643" />
           <View style={styles.infoContent}>
             <Text style={styles.infoText}>
-              Edit informasi lokasi absensi. {Platform.OS === 'web' ? 'Fitur peta tidak tersedia di web.' : 'Pastikan koordinat dan radius sesuai kebutuhan.'}
+              Edit informasi lokasi absensi. Pastikan koordinat dan radius sesuai kebutuhan.
             </Text>
           </View>
         </View>
@@ -311,64 +302,24 @@ export default function EditLokasiScreen() {
         </View>
 
         <View style={styles.formGroup}>
-          {Platform.OS === 'web' ? (
-            <>
-              <Text style={styles.label}>Latitude</Text>
-              <View style={styles.inputWrapper}>
-                <Ionicons name="navigate-outline" size={20} color="#666" />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Contoh: -6.2088"
-                  value={formData.latitude?.toString() || ''}
-                  onChangeText={(text) => {
-                    const num = parseFloat(text);
-                    setFormData({ ...formData, latitude: isNaN(num) ? null : num });
-                  }}
-                  keyboardType="numeric"
-                />
-              </View>
-            </>
-          ) : (
-            <>
-              <TouchableOpacity 
-                style={styles.mapBtn} 
-                onPress={() => setShowMapModal(true)}
-              >
-                <Ionicons name="map-outline" size={20} color="#004643" />
-                <Text style={styles.mapBtnText}>
-                  {formData.latitude ? 'Lokasi Dipilih' : 'Pilih Lokasi di Peta'}
-                </Text>
-                {formData.latitude && (
-                  <Ionicons name="checkmark-circle" size={16} color="#4CAF50" />
-                )}
-              </TouchableOpacity>
-              {formData.latitude && formData.longitude && (
-                <Text style={styles.coordText}>
-                  {formData.latitude.toFixed(6)}, {formData.longitude.toFixed(6)}
-                </Text>
-              )}
-            </>
+          <TouchableOpacity 
+            style={styles.mapBtn} 
+            onPress={() => setShowMapModal(true)}
+          >
+            <Ionicons name="map-outline" size={20} color="#004643" />
+            <Text style={styles.mapBtnText}>
+              {formData.latitude ? 'Lokasi Dipilih' : 'Pilih Lokasi di Peta'}
+            </Text>
+            {formData.latitude && (
+              <Ionicons name="checkmark-circle" size={16} color="#4CAF50" />
+            )}
+          </TouchableOpacity>
+          {formData.latitude && formData.longitude && (
+            <Text style={styles.coordText}>
+              {formData.latitude.toFixed(6)}, {formData.longitude.toFixed(6)}
+            </Text>
           )}
         </View>
-
-        {Platform.OS === 'web' && (
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Longitude</Text>
-            <View style={styles.inputWrapper}>
-              <Ionicons name="navigate-outline" size={20} color="#666" />
-              <TextInput
-                style={styles.input}
-                placeholder="Contoh: 106.8456"
-                value={formData.longitude?.toString() || ''}
-                onChangeText={(text) => {
-                  const num = parseFloat(text);
-                  setFormData({ ...formData, longitude: isNaN(num) ? null : num });
-                }}
-                keyboardType="numeric"
-              />
-            </View>
-          </View>
-        )}
 
         <View style={styles.formGroup}>
           <Text style={styles.label}>Radius Absensi (meter) *</Text>
@@ -406,113 +357,102 @@ export default function EditLokasiScreen() {
         </TouchableOpacity>
       </View>
 
-      {Platform.OS !== 'web' && (
-        <Modal visible={showMapModal} animationType="slide">
-          <SafeAreaView style={styles.mapModalContainer}>
-            <View style={styles.mapHeader}>
-              <TouchableOpacity 
-                style={styles.backButton}
-                onPress={() => setShowMapModal(false)}
-              >
-                <Ionicons name="arrow-back" size={24} color="#004643" />
-              </TouchableOpacity>
-              <Text style={styles.mapTitle}>Pilih Lokasi</Text>
-            </View>
+      <Modal visible={showMapModal} animationType="slide">
+        <SafeAreaView style={styles.mapModalContainer}>
+          <View style={styles.mapHeader}>
+            <TouchableOpacity 
+              style={styles.backButton}
+              onPress={() => setShowMapModal(false)}
+            >
+              <Ionicons name="arrow-back" size={24} color="#004643" />
+            </TouchableOpacity>
+            <Text style={styles.mapTitle}>Pilih Lokasi</Text>
+          </View>
 
-            {/* Search Bar */}
-            <View style={styles.searchContainer}>
-              <View style={styles.searchInputWrapper}>
-                <Ionicons name="search" size={20} color="#666" />
-                <TextInput
-                  style={styles.searchInput}
-                  placeholder="Cari nama tempat atau koordinat (-6.2088, 106.8456)"
-                  value={searchQuery}
-                  onChangeText={handleSearchInput}
-                />
-                {searchLoading && <ActivityIndicator size="small" color="#004643" />}
-              </View>
-              
-              {/* Search Results */}
-              {searchResults.length > 0 && (
-                <View style={styles.searchResults}>
-                  {searchResults.map((result, index) => (
-                    <TouchableOpacity
-                      key={index}
-                      style={styles.searchResultItem}
-                      onPress={() => selectSearchResult(result)}
-                    >
-                      <Ionicons name="location-outline" size={16} color="#666" />
-                      <View style={styles.searchResultContent}>
-                        <Text style={styles.searchResultName}>
-                          {result.displayName}
-                        </Text>
-                        <Text style={styles.searchResultAddress}>
-                          {result.fullAddress}
-                        </Text>
-                        <Text style={styles.searchResultCoord}>
-                          {result.latitude.toFixed(6)}, {result.longitude.toFixed(6)}
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              )}
+          <View style={styles.searchContainer}>
+            <View style={styles.searchInputWrapper}>
+              <Ionicons name="search" size={20} color="#666" />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Cari nama tempat atau koordinat (-6.2088, 106.8456)"
+                value={searchQuery}
+                onChangeText={handleSearchInput}
+              />
+              {searchLoading && <ActivityIndicator size="small" color="#004643" />}
             </View>
-
-            {Platform.OS === 'web' ? (
-              <View style={[styles.map, styles.webMapPlaceholder]}>
-                <Text style={styles.webMapText}>Peta tidak tersedia di web</Text>
-                <Text style={styles.webMapSubtext}>Gunakan aplikasi mobile untuk fitur peta</Text>
-              </View>
-            ) : (
-              <MapView
-                style={styles.map}
-                region={mapRegion}
-                onPress={handleMapPress}
-              >
-                {markerPosition && (
-                  <Marker
-                    coordinate={markerPosition}
-                    title="Lokasi Dipilih"
-                    description="Tap 'Konfirmasi' untuk menggunakan lokasi ini"
-                  />
-                )}
-                {currentLocation && !markerPosition && (
-                  <Marker
-                    coordinate={currentLocation}
-                    title="Lokasi Anda"
-                    pinColor="blue"
-                  />
-                )}
-              </MapView>
-            )}
             
+            {searchResults.length > 0 && (
+              <View style={styles.searchResults}>
+                {searchResults.map((result, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={styles.searchResultItem}
+                    onPress={() => selectSearchResult(result)}
+                  >
+                    <Ionicons name="location-outline" size={16} color="#666" />
+                    <View style={styles.searchResultContent}>
+                      <Text style={styles.searchResultName}>
+                        {result.displayName}
+                      </Text>
+                      <Text style={styles.searchResultAddress}>
+                        {result.fullAddress}
+                      </Text>
+                      <Text style={styles.searchResultCoord}>
+                        {result.latitude.toFixed(6)}, {result.longitude.toFixed(6)}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </View>
+
+          <MapView
+            style={styles.map}
+            region={mapRegion}
+            onPress={handleMapPress}
+          >
             {markerPosition && (
-              <View style={styles.mapActions}>
-                <TouchableOpacity 
-                  style={styles.confirmLocationBtn}
-                  onPress={confirmLocation}
-                >
-                  <Ionicons name="checkmark-circle" size={20} color="#fff" />
-                  <Text style={styles.confirmLocationText}>Konfirmasi Lokasi</Text>
-                </TouchableOpacity>
-                
-                <TouchableOpacity 
-                  style={styles.cancelLocationBtn}
-                  onPress={() => setMarkerPosition(null)}
-                >
-                  <Ionicons name="close-circle" size={20} color="#666" />
-                  <Text style={styles.cancelLocationText}>Batal</Text>
-                </TouchableOpacity>
-              </View>
+              <Marker
+                coordinate={markerPosition}
+                title="Lokasi Dipilih"
+                description="Tap 'Konfirmasi' untuk menggunakan lokasi ini"
+              />
             )}
-            
-            <View style={styles.mapInfo}>
-              <Text style={styles.mapInfoText}>Tap pada peta untuk memilih lokasi</Text>
+            {currentLocation && !markerPosition && (
+              <Marker
+                coordinate={currentLocation}
+                title="Lokasi Anda"
+                pinColor="blue"
+              />
+            )}
+          </MapView>
+          
+          {markerPosition && (
+            <View style={styles.mapActions}>
+              <TouchableOpacity 
+                style={styles.confirmLocationBtn}
+                onPress={confirmLocation}
+              >
+                <Ionicons name="checkmark-circle" size={20} color="#fff" />
+                <Text style={styles.confirmLocationText}>Konfirmasi Lokasi</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.cancelLocationBtn}
+                onPress={() => setMarkerPosition(null)}
+              >
+                <Ionicons name="close-circle" size={20} color="#666" />
+                <Text style={styles.cancelLocationText}>Batal</Text>
+              </TouchableOpacity>
             </View>
-          </SafeAreaView>
-        </Modal>
-      )}
+          )}
+          
+          <View style={styles.mapInfo}>
+            <Text style={styles.mapInfoText}>Tap pada peta untuk memilih lokasi</Text>
+          </View>
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -584,31 +524,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#333',
     marginBottom: 8
-  },
-  roleContainer: {
-    flexDirection: 'row',
-    gap: 8
-  },
-  roleBtn: {
-    flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 10,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#E0E0E0'
-  },
-  roleActive: {
-    backgroundColor: '#004643'
-  },
-  roleText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#666'
-  },
-  roleTextActive: {
-    color: '#fff'
   },
   inputWrapper: {
     flexDirection: 'row',
@@ -836,20 +751,5 @@ const styles = StyleSheet.create({
     color: '#999',
     fontFamily: 'monospace',
     marginTop: 2
-  },
-  webMapPlaceholder: {
-    backgroundColor: '#F5F5F5',
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-  webMapText: {
-    fontSize: 16,
-    color: '#666',
-    fontWeight: '600'
-  },
-  webMapSubtext: {
-    fontSize: 12,
-    color: '#999',
-    marginTop: 4
   }
 });

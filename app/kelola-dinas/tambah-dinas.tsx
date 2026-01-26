@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { Picker } from '@react-native-picker/picker';
 import { Calendar } from 'react-native-calendars';
-import { KelolaDinasAPI, PegawaiAkunAPI, PengaturanAPI } from '../../constants/config';
+import { KelolaDinasAPI as DinasAPI, PegawaiAkunAPI, PengaturanAPI } from '../../constants/config';
 import * as Location from 'expo-location';
 import MapView, { Marker } from 'react-native-maps';
 import * as DocumentPicker from 'expo-document-picker';
@@ -695,6 +695,7 @@ export default function TambahDinasScreen() {
       </View>
 
       <ScrollView style={styles.contentContainer} showsVerticalScrollIndicator={false}>
+        <View style={styles.formContainer}>
         {/* Card 1: Informasi Dasar */}
         <View style={styles.cardContainer}>
           <View style={styles.cardHeader}>
@@ -702,7 +703,7 @@ export default function TambahDinasScreen() {
             <Text style={styles.cardTitle}>Informasi Dasar Dinas</Text>
           </View>
           
-          <View style={styles.formContainer}>
+          <View style={styles.cardContent}>
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Nama Kegiatan *</Text>
               <View style={[styles.inputWrapper, validationErrors.namaKegiatan && styles.inputError]}>
@@ -813,7 +814,7 @@ export default function TambahDinasScreen() {
             <Text style={styles.cardTitle}>Waktu & Jadwal Dinas</Text>
           </View>
           
-          <View style={styles.formContainer}>
+          <View style={styles.cardContent}>
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Tanggal Mulai *</Text>
               <View style={styles.dateInputContainer}>
@@ -931,7 +932,7 @@ export default function TambahDinasScreen() {
             <Text style={styles.cardTitle}>Lokasi Dinas</Text>
           </View>
           
-          <View style={styles.formContainer}>
+          <View style={styles.cardContent}>
             <TouchableOpacity 
               style={styles.dropdownBtn}
               onPress={() => setShowLokasiModal(!showLokasiModal)}
@@ -1006,6 +1007,10 @@ export default function TambahDinasScreen() {
               </View>
             )}
             
+            {validationErrors.lokasi && (
+              <Text style={styles.errorText}>{validationErrors.lokasi}</Text>
+            )}
+            
             {selectedLokasi.length > 0 && (
               <View style={styles.selectedLokasiContainer}>
                 {selectedLokasi.map((lokasi, index) => (
@@ -1032,13 +1037,13 @@ export default function TambahDinasScreen() {
         </View>
 
         {/* Card 4: Pegawai & Dokumen */}
-        <View style={styles.cardContainer}>
+        <View style={[styles.cardContainer, {marginBottom: 100}]}>
           <View style={styles.cardHeader}>
             <Ionicons name="people-outline" size={24} color="#004643" />
             <Text style={styles.cardTitle}>Pegawai & Dokumen</Text>
           </View>
           
-          <View style={styles.formContainer}>
+          <View style={styles.cardContent}>
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Upload Dokumen SPT (Opsional)</Text>
               <TouchableOpacity style={styles.uploadBtn} onPress={pickDocument}>
@@ -1125,6 +1130,10 @@ export default function TambahDinasScreen() {
                 </View>
               )}
               
+              {validationErrors.pegawai && (
+                <Text style={styles.errorText}>{validationErrors.pegawai}</Text>
+              )}
+              
               {selectedPegawai.length > 0 && (
                 <View style={styles.selectedPegawaiContainer}>
                   {selectedPegawai.map((pegawai: any, index) => (
@@ -1139,6 +1148,7 @@ export default function TambahDinasScreen() {
               )}
             </View>
           </View>
+        </View>
         </View>
       </ScrollView>
 
@@ -1447,52 +1457,53 @@ const styles = StyleSheet.create({
   },
   cardContainer: {
     backgroundColor: '#fff',
-    marginHorizontal: 16,
-    marginTop: 16,
-    marginBottom: 100,
+    marginHorizontal: 20,
+    marginBottom: 20,
     borderRadius: 16,
-    elevation: 4,
+    elevation: 3,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 8
+    shadowRadius: 4
   },
   cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 16,
+    paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#F0F0F0'
   },
   cardTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#004643',
-    marginLeft: 12
-  },
-  formContainer: {
-    padding: 20
-  },
-  inputGroup: { 
-    marginBottom: 25 
-  },
-  label: {
     fontSize: 16,
     fontWeight: '600',
+    color: '#004643',
+    marginLeft: 8
+  },
+  cardContent: {
+    padding: 20
+  },
+  formContainer: {
+    paddingBottom: 20
+  },
+  inputGroup: { 
+    marginBottom: 16 
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '600',
     color: '#333',
-    marginBottom: 10
+    marginBottom: 8
   },
   inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 10,
+    backgroundColor: '#F8F9FA',
+    borderRadius: 8,
     paddingHorizontal: 12,
     minHeight: 45,
     borderWidth: 1,
-    borderColor: '#E0E0E0'
+    borderColor: '#E0E0E0',
+    flexDirection: 'row',
+    alignItems: 'center'
   },
   inputIcon: {
     marginRight: 12
@@ -1504,7 +1515,8 @@ const styles = StyleSheet.create({
   },
   textArea: {
     textAlignVertical: 'top',
-    paddingTop: 15
+    paddingTop: 15,
+    minHeight: 80
   },
 
   row: {
@@ -1795,19 +1807,20 @@ const styles = StyleSheet.create({
   },
 
   dropdownBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 10,
+    backgroundColor: '#F8F9FA',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
     borderWidth: 1,
-    borderColor: '#E0E0E0'
+    borderColor: '#E0E0E0',
+    flexDirection: 'row',
+    alignItems: 'center'
   },
   dropdownBtnText: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 16,
     color: '#333',
-    marginLeft: 10
+    marginLeft: 8
   },
   dropdownContainer: {
     backgroundColor: '#fff',

@@ -17,6 +17,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { AuthAPI } from '../constants/config';
+import NetworkDebugger from '../utils/NetworkDebugger';
+import ExpoGoFixer from '../utils/ExpoGoFixer';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -60,6 +63,16 @@ export default function LoginScreen() {
   };
 
   useEffect(() => {
+    // Log environment info for debugging
+    ExpoGoFixer.logEnvironmentInfo();
+    
+    // Test network connection
+    NetworkDebugger.testConnection().then(result => {
+      if (!result.success) {
+        console.warn('Network test failed:', result.error);
+      }
+    });
+    
     Animated.sequence([
       Animated.timing(fadeAnim, {
         toValue: 1,
@@ -102,8 +115,6 @@ export default function LoginScreen() {
 
     setLoading(true);
     try {
-      // Import dan gunakan API config
-      const { AuthAPI } = require('../constants/config');
       const result = await AuthAPI.login(email, password);
       
       if (result.success) {
@@ -135,7 +146,7 @@ export default function LoginScreen() {
       }
     } catch (error) {
       console.error('Login error:', error);
-      Alert.alert("Error", "Tidak dapat terhubung ke server");
+      NetworkDebugger.showNetworkError((error as Error).message);
     } finally {
       setLoading(false);
     }

@@ -1,8 +1,8 @@
 // Konfigurasi API untuk HadirinApp
 export const API_CONFIG = {
-  BASE_URL: 'http://10.251.109.41/hadirinapp',
+  BASE_URL: 'http://192.168.1.8/hadirinapp',
   
-  // Endpoint APIcls
+  // Endpoint API
   ENDPOINTS: {
     // Auth endpoints (untuk semua user)
     LOGIN: '/auth/api/login.php',
@@ -68,22 +68,35 @@ export const getApiUrl = (endpoint: string) => {
 
 // Helper function untuk fetch dengan error handling
 export const fetchWithRetry = async (url: string, options: any = {}): Promise<Response> => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+  
   try {
     const response = await fetch(url, {
       ...options,
+      signal: controller.signal,
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
+        'Cache-Control': 'no-cache',
         ...options.headers
       }
     });
     
+    clearTimeout(timeoutId);
+    
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
     
     return response;
   } catch (error: any) {
+    clearTimeout(timeoutId);
+    
+    if (error.name === 'AbortError') {
+      throw new Error('Request timeout - Server tidak merespons');
+    }
+    
     throw new Error(error.message || 'Tidak dapat terhubung ke server');
   }
 };
@@ -135,17 +148,10 @@ export const PegawaiAPI = {
   
   getProfile: async (user_id: string) => {
     try {
-      console.log('PegawaiAPI.getProfile called with user_id:', user_id);
       const url = `${getApiUrl(API_CONFIG.ENDPOINTS.PEGAWAI_PROFILE)}?user_id=${user_id}`;
-      console.log('Request URL:', url);
-      
       const response = await fetchWithRetry(url);
-      const result = await response.json();
-      console.log('API Response:', result);
-      
-      return result;
+      return response.json();
     } catch (error: any) {
-      console.error('PegawaiAPI.getProfile error:', error);
       return {
         success: false,
         message: error.message || 'Tidak dapat terhubung ke server',
@@ -194,7 +200,6 @@ export const PegawaiAPI = {
       });
       return response.json();
     } catch (error) {
-      console.error('Submit presensi error:', error);
       return {
         success: false,
         message: (error as Error).message || 'Tidak dapat terhubung ke server'
@@ -207,7 +212,6 @@ export const PegawaiAPI = {
       const response = await fetchWithRetry(`${getApiUrl(API_CONFIG.ENDPOINTS.PEGAWAI_PENGAJUAN)}?user_id=${user_id}`);
       return response.json();
     } catch (error) {
-      console.error('Pengajuan error:', error);
       return {
         success: false,
         message: (error as Error).message || 'Tidak dapat terhubung ke server',
@@ -225,7 +229,6 @@ export const PegawaiAPI = {
       });
       return response.json();
     } catch (error) {
-      console.error('Submit pengajuan error:', error);
       return {
         success: false,
         message: (error as Error).message || 'Tidak dapat terhubung ke server'
@@ -240,7 +243,6 @@ export const PegawaiAkunAPI = {
       const response = await fetchWithRetry(getApiUrl(API_CONFIG.ENDPOINTS.DATA_PEGAWAI));
       return response.json();
     } catch (error) {
-      console.error('Get data pegawai error:', error);
       return { success: false, message: 'Tidak dapat terhubung ke server', data: [] };
     }
   },
@@ -254,7 +256,6 @@ export const PegawaiAkunAPI = {
       });
       return response.json();
     } catch (error) {
-      console.error('Delete pegawai error:', error);
       return { success: false, message: 'Tidak dapat terhubung ke server' };
     }
   },
@@ -264,7 +265,6 @@ export const PegawaiAkunAPI = {
       const response = await fetchWithRetry(getApiUrl(API_CONFIG.ENDPOINTS.AKUN_LOGIN));
       return response.json();
     } catch (error) {
-      console.error('Get akun login error:', error);
       return { success: false, message: 'Tidak dapat terhubung ke server', data: [] };
     }
   },
@@ -274,7 +274,6 @@ export const PegawaiAkunAPI = {
       const response = await fetchWithRetry(getApiUrl(API_CONFIG.ENDPOINTS.CHECK_EMAILS));
       return response.json();
     } catch (error) {
-      console.error('Check emails error:', error);
       return { success: false, message: 'Tidak dapat terhubung ke server', data: [] };
     }
   },
@@ -286,36 +285,18 @@ export const PresensiAPI = {
       const response = await fetchWithRetry(getApiUrl(API_CONFIG.ENDPOINTS.TRACKING));
       return response.json();
     } catch (error) {
-      console.error('Get tracking error:', error);
       return { success: false, message: 'Tidak dapat terhubung ke server', data: [] };
     }
   },
 };
 
-export const PersetujuanAPI = {
-  getApproval: async (params: any = {}) => {
+export const AdminAPI = {
+  getApproval: async () => {
     try {
-      const queryParams = new URLSearchParams(params);
-      const url = `${getApiUrl(API_CONFIG.ENDPOINTS.APPROVAL)}?${queryParams.toString()}`;
-      const response = await fetchWithRetry(url);
+      const response = await fetchWithRetry(getApiUrl(API_CONFIG.ENDPOINTS.APPROVAL));
       return response.json();
     } catch (error) {
-      console.error('Get approval error:', error);
       return { success: false, message: 'Tidak dapat terhubung ke server', data: [] };
-    }
-  },
-  
-  updateApproval: async (data: any) => {
-    try {
-      const response = await fetchWithRetry(getApiUrl(API_CONFIG.ENDPOINTS.APPROVAL), {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-      return response.json();
-    } catch (error) {
-      console.error('Update approval error:', error);
-      return { success: false, message: 'Tidak dapat terhubung ke server' };
     }
   },
 };
@@ -328,31 +309,6 @@ export const LaporanAPI = {
       const response = await fetchWithRetry(url);
       return response.json();
     } catch (error) {
-      console.error('Get laporan error:', error);
-      return { success: false, message: 'Tidak dapat terhubung ke server', data: [] };
-    }
-  },
-  
-  getDetailLaporan: async (params: any = {}) => {
-    try {
-      const queryParams = new URLSearchParams(params);
-      const url = `${getApiUrl(API_CONFIG.ENDPOINTS.DETAIL_LAPORAN)}?${queryParams.toString()}`;
-      const response = await fetchWithRetry(url);
-      return response.json();
-    } catch (error) {
-      console.error('Get detail laporan error:', error);
-      return { success: false, message: 'Tidak dapat terhubung ke server', data: [] };
-    }
-  },
-  
-  getDetailAbsen: async (params: any = {}) => {
-    try {
-      const queryParams = new URLSearchParams(params);
-      const url = `${getApiUrl(API_CONFIG.ENDPOINTS.DETAIL_ABSEN)}?${queryParams.toString()}`;
-      const response = await fetchWithRetry(url);
-      return response.json();
-    } catch (error) {
-      console.error('Get detail absen error:', error);
       return { success: false, message: 'Tidak dapat terhubung ke server', data: [] };
     }
   },
@@ -364,60 +320,7 @@ export const LaporanAPI = {
       const response = await fetchWithRetry(url);
       return response.blob();
     } catch (error) {
-      console.error('Export PDF error:', error);
       throw error;
-    }
-  },
-};
-
-export const AdminAPI = {
-  getAdmin: async () => {
-    try {
-      const response = await fetchWithRetry(getApiUrl(API_CONFIG.ENDPOINTS.ADMIN));
-      return response.json();
-    } catch (error) {
-      console.error('Get admin error:', error);
-      return { success: false, message: 'Tidak dapat terhubung ke server', data: null };
-    }
-  },
-  
-  getKelolaPegawai: async (params: any = {}) => {
-    try {
-      const queryParams = new URLSearchParams(params);
-      const url = `${getApiUrl(API_CONFIG.ENDPOINTS.KELOLA_PEGAWAI)}?${queryParams.toString()}`;
-      const response = await fetchWithRetry(url);
-      return response.json();
-    } catch (error) {
-      console.error('Get kelola pegawai error:', error);
-      return { success: false, message: 'Tidak dapat terhubung ke server', data: [] };
-    }
-  },
-  
-  createAdmin: async (data: any) => {
-    try {
-      const response = await fetchWithRetry(getApiUrl(API_CONFIG.ENDPOINTS.CREATE_ADMIN), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-      return response.json();
-    } catch (error) {
-      console.error('Create admin error:', error);
-      return { success: false, message: 'Tidak dapat terhubung ke server' };
-    }
-  },
-  
-  createAccounts: async (data: any) => {
-    try {
-      const response = await fetchWithRetry(getApiUrl(API_CONFIG.ENDPOINTS.CREATE_ACCOUNTS), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-      return response.json();
-    } catch (error) {
-      console.error('Create accounts error:', error);
-      return { success: false, message: 'Tidak dapat terhubung ke server' };
     }
   },
 };
@@ -428,73 +331,29 @@ export const KelolaDinasAPI = {
       const response = await fetchWithRetry(getApiUrl(API_CONFIG.ENDPOINTS.DINAS_AKTIF));
       return response.json();
     } catch (error) {
-      console.error('Get dinas aktif error:', error);
       return { success: false, message: 'Tidak dapat terhubung ke server', data: [] };
     }
   },
   
-  getRiwayatDinas: async (params: {
-    filter_date?: string;
-    selected_date?: string;
-    search?: string;
-    page?: number;
-    limit?: number;
-  } = {}) => {
+  getRiwayatDinas: async (params: any = {}) => {
     try {
-      const queryParams = new URLSearchParams();
-      Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined && value !== '') {
-          queryParams.append(key, value.toString());
-        }
-      });
-      
+      const queryParams = new URLSearchParams(params);
       const url = `${getApiUrl(API_CONFIG.ENDPOINTS.RIWAYAT_DINAS)}?${queryParams.toString()}`;
       const response = await fetchWithRetry(url);
       return response.json();
     } catch (error) {
-      console.error('Get riwayat dinas error:', error);
       return { success: false, message: 'Tidak dapat terhubung ke server', data: [] };
     }
   },
   
-  getValidasiAbsen: async (params: {
-    status?: string;
-    search?: string;
-    page?: number;
-    limit?: number;
-  } = {}) => {
+  getValidasiAbsen: async (params: any = {}) => {
     try {
-      const queryParams = new URLSearchParams();
-      Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined && value !== '') {
-          queryParams.append(key, value.toString());
-        }
-      });
-      
+      const queryParams = new URLSearchParams(params);
       const url = `${getApiUrl(API_CONFIG.ENDPOINTS.VALIDASI_ABSEN)}?${queryParams.toString()}`;
       const response = await fetchWithRetry(url);
       return response.json();
     } catch (error) {
-      console.error('Get validasi absen error:', error);
       return { success: false, message: 'Tidak dapat terhubung ke server', data: [] };
-    }
-  },
-  
-  updateValidasiAbsen: async (data: {
-    id: number;
-    action: 'approve' | 'reject';
-    keterangan?: string;
-  }) => {
-    try {
-      const response = await fetchWithRetry(getApiUrl(API_CONFIG.ENDPOINTS.VALIDASI_ABSEN), {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-      return response.json();
-    } catch (error) {
-      console.error('Update validasi absen error:', error);
-      return { success: false, message: 'Tidak dapat terhubung ke server' };
     }
   },
   
@@ -502,89 +361,22 @@ export const KelolaDinasAPI = {
     try {
       const response = await fetchWithRetry(getApiUrl(API_CONFIG.ENDPOINTS.CREATE_DINAS), {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
       return response.json();
     } catch (error) {
-      console.error('Error in createDinas:', error);
       return { success: false, message: 'Tidak dapat terhubung ke server' };
     }
   },
 };
 
 export const PengaturanAPI = {
-  getJamKerja: async () => {
-    try {
-      const response = await fetchWithRetry(getApiUrl(API_CONFIG.ENDPOINTS.JAM_KERJA));
-      return response.json();
-    } catch (error) {
-      console.error('Get jam kerja error:', error);
-      return { success: false, message: 'Tidak dapat terhubung ke server', data: null };
-    }
-  },
-  
-  saveJamKerja: async (data: any) => {
-    try {
-      const response = await fetchWithRetry(getApiUrl(API_CONFIG.ENDPOINTS.JAM_KERJA), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-      return response.json();
-    } catch (error) {
-      console.error('Save jam kerja error:', error);
-      return { success: false, message: 'Tidak dapat terhubung ke server' };
-    }
-  },
-  
-  getHariLibur: async () => {
-    try {
-      const response = await fetchWithRetry(getApiUrl(API_CONFIG.ENDPOINTS.HARI_LIBUR));
-      return response.json();
-    } catch (error) {
-      console.error('Get hari libur error:', error);
-      return { success: false, message: 'Tidak dapat terhubung ke server', data: [] };
-    }
-  },
-  
-  saveHariLibur: async (data: any) => {
-    try {
-      const response = await fetchWithRetry(getApiUrl(API_CONFIG.ENDPOINTS.HARI_LIBUR), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-      return response.json();
-    } catch (error) {
-      console.error('Save hari libur error:', error);
-      return { success: false, message: 'Tidak dapat terhubung ke server' };
-    }
-  },
-  
-  deleteHariLibur: async (id: number) => {
-    try {
-      const response = await fetchWithRetry(getApiUrl(API_CONFIG.ENDPOINTS.HARI_LIBUR), {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id }),
-      });
-      return response.json();
-    } catch (error) {
-      console.error('Delete hari libur error:', error);
-      return { success: false, message: 'Tidak dapat terhubung ke server' };
-    }
-  },
-  
   getLokasiKantor: async () => {
     try {
       const response = await fetchWithRetry(getApiUrl(API_CONFIG.ENDPOINTS.LOKASI_KANTOR));
       return response.json();
     } catch (error) {
-      console.error('Get lokasi kantor error:', error);
       return { success: false, message: 'Tidak dapat terhubung ke server', data: [] };
     }
   },
@@ -598,64 +390,28 @@ export const PengaturanAPI = {
       });
       return response.json();
     } catch (error) {
-      console.error('Save lokasi kantor error:', error);
       return { success: false, message: 'Tidak dapat terhubung ke server' };
     }
   },
   
-  deleteLokasi: async (id: number) => {
+  getJamKerja: async () => {
     try {
-      const response = await fetchWithRetry(getApiUrl(API_CONFIG.ENDPOINTS.LOKASI_KANTOR), {
-        method: 'DELETE',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({ id }),
-      });
+      const response = await fetchWithRetry(getApiUrl(API_CONFIG.ENDPOINTS.JAM_KERJA));
       return response.json();
     } catch (error) {
-      console.error('Error in deleteLokasi:', error);
-      return { success: false, message: 'Tidak dapat terhubung ke server' };
+      return { success: false, message: 'Tidak dapat terhubung ke server', data: null };
     }
   },
   
-  updateLokasi: async (id: any, data: any) => {
+  getHariLibur: async () => {
     try {
-      // Gunakan POST dengan ID di body karena Apache tidak support PUT dengan path parameter
-      const response = await fetchWithRetry(getApiUrl(API_CONFIG.ENDPOINTS.LOKASI_KANTOR), {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({
-          ...data,
-          id: id,
-          _method: 'PUT' // Method override
-        }),
-      });
+      const response = await fetchWithRetry(getApiUrl(API_CONFIG.ENDPOINTS.HARI_LIBUR));
       return response.json();
     } catch (error) {
-      console.error('Error in updateLokasi:', error);
-      return { success: false, message: 'Tidak dapat terhubung ke server' };
+      return { success: false, message: 'Tidak dapat terhubung ke server', data: [] };
     }
   },
 };
 
-export const NotifikasiAPI = {
-  getNotifikasiAdmin: async () => {
-    try {
-      const response = await fetchWithRetry(getApiUrl(API_CONFIG.ENDPOINTS.NOTIFIKASI_ADMIN));
-      return response.json();
-    } catch (error) {
-      console.error('Error in getNotifikasiAdmin:', error);
-      return {
-        success: false,
-        message: 'Tidak dapat terhubung ke server',
-        data: [],
-        total_unread: 0
-      };
-    }
-  },
-};
+// Export default config
+export default API_CONFIG;
