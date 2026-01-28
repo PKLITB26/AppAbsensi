@@ -26,7 +26,14 @@
         "ACCESS_COARSE_LOCATION"
       ],
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "statusBar": {
+        "translucent": true,
+        "backgroundColor": "transparent"
+      },
+      "navigationBar": {
+        "visible": "leanback"
+      }
     },
     "web": {
       "output": "static",

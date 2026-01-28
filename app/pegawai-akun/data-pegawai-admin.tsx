@@ -1,9 +1,27 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, StatusBar, TextInput, FlatList, TouchableOpacity, Alert, ActivityIndicator, RefreshControl, Platform } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
-import { useCallback } from 'react';
-import { getApiUrl, API_CONFIG, PegawaiAkunAPI } from '../../constants/config';
+import { Ionicons } from "@expo/vector-icons";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { useCallback, useEffect, useState, useRef } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  Animated,
+  FlatList,
+  Modal,
+  PanResponder,
+  Platform,
+  RefreshControl,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { StatusBar } from 'expo-status-bar';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import * as NavigationBar from 'expo-navigation-bar';
+import { API_CONFIG, getApiUrl, PegawaiAkunAPI } from "../../constants/config";
+import { AppHeader } from "../../components";
 
 interface PegawaiData {
   id_pegawai?: number;
@@ -25,34 +43,49 @@ interface PegawaiData {
 export default function DataPegawaiAdminScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
+  
   const [pegawai, setPegawai] = useState<PegawaiData[]>([]);
   const [filteredPegawai, setFilteredPegawai] = useState<PegawaiData[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [sortType, setSortType] = useState<'alphabetical' | 'newest' | 'oldest'>('alphabetical');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
+  const [selectedPegawai, setSelectedPegawai] = useState<PegawaiData | null>(null);
+  const [showActionModal, setShowActionModal] = useState(false);
+  const translateY = useRef(new Animated.Value(0)).current;
 
-  const sortData = (data: PegawaiData[], type: 'alphabetical' | 'newest' | 'oldest') => {
-    const sorted = [...data];
-    switch (type) {
-      case 'alphabetical':
-        return sorted.sort((a, b) => a.nama_lengkap.localeCompare(b.nama_lengkap));
-      case 'newest':
-        return sorted.sort((a, b) => (b.id_pegawai || b.id_user || 0) - (a.id_pegawai || a.id_user || 0));
-      case 'oldest':
-        return sorted.sort((a, b) => (a.id_pegawai || a.id_user || 0) - (b.id_pegawai || b.id_user || 0));
-      default:
-        return sorted;
+  useEffect(() => {
+    if (!showActionModal) {
+      translateY.setValue(0);
     }
-  };
+  }, [showActionModal]);
 
-  const handleSort = (type: 'alphabetical' | 'newest' | 'oldest') => {
-    setSortType(type);
-    const sortedData = sortData(pegawai, type);
-    setFilteredPegawai(sortData(filteredPegawai, type));
-  };
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        return Math.abs(gestureState.dy) > 5;
+      },
+      onPanResponderMove: (_, gestureState) => {
+        if (gestureState.dy > 0) {
+          translateY.setValue(gestureState.dy);
+        }
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dy > 100) {
+          setShowActionModal(false);
+        } else {
+          Animated.spring(translateY, {
+            toValue: 0,
+            useNativeDriver: false,
+          }).start();
+        }
+      },
+    })
+  ).current;
+
+
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -63,7 +96,11 @@ export default function DataPegawaiAdminScreen() {
   useFocusEffect(
     useCallback(() => {
       fetchPegawai();
-    }, [])
+      // Set navigation bar translucent
+      if (Platform.OS === 'android') {
+        NavigationBar.setBackgroundColorAsync('transparent');
+      }
+    }, []),
   );
 
   useEffect(() => {
@@ -78,16 +115,19 @@ export default function DataPegawaiAdminScreen() {
 
   const filterPegawai = () => {
     let filtered = pegawai;
-    if (searchQuery.trim() !== '') {
-      filtered = pegawai.filter(p =>
-        p.nama_lengkap.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (p.email && p.email.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (p.jabatan && p.jabatan.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (p.nip && p.nip.includes(searchQuery))
+    if (searchQuery.trim() !== "") {
+      filtered = pegawai.filter(
+        (p) =>
+          p.nama_lengkap.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (p.email &&
+            p.email.toLowerCase().includes(searchQuery.toLowerCase())) ||
+          (p.jabatan &&
+            p.jabatan.toLowerCase().includes(searchQuery.toLowerCase())) ||
+          (p.nip && p.nip.includes(searchQuery)),
       );
     }
-    setFilteredPegawai(sortData(filtered, sortType));
-    setCurrentPage(1); // Reset to first page when filtering
+    setFilteredPegawai(filtered);
+    setCurrentPage(1);
   };
 
   // Pagination logic
@@ -99,18 +139,34 @@ export default function DataPegawaiAdminScreen() {
   const fetchPegawai = async (showLoading = true) => {
     if (showLoading) setLoading(true);
     try {
-      const response = await fetch(getApiUrl(API_CONFIG.ENDPOINTS.DATA_PEGAWAI));
-      const result = await response.json();
+      console.log('Fetching data from:', getApiUrl(API_CONFIG.ENDPOINTS.DATA_PEGAWAI));
+      const response = await fetch(
+        getApiUrl(API_CONFIG.ENDPOINTS.DATA_PEGAWAI),
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+        }
+      );
       
+      console.log('Response status:', response.status);
+      const result = await response.json();
+      console.log('Response data:', result);
+
       if (result.success) {
-        const sortedData = sortData(result.data, sortType);
-        setPegawai(sortedData);
-        setFilteredPegawai(sortedData);
+        setPegawai(result.data);
+        setFilteredPegawai(result.data);
       } else {
-        Alert.alert('Error', 'Gagal memuat data pegawai');
+        Alert.alert("Error", result.message || "Gagal memuat data pegawai");
       }
     } catch (error) {
-      Alert.alert('Koneksi Error', 'Pastikan XAMPP nyala dan HP satu Wi-Fi dengan laptop.');
+      console.error('Fetch error:', error);
+      Alert.alert(
+        "Koneksi Error",
+        "Pastikan XAMPP nyala dan HP satu Wi-Fi dengan laptop.\n\nDetail: " + (error as Error).message,
+      );
     } finally {
       if (showLoading) setLoading(false);
     }
@@ -120,292 +176,250 @@ export default function DataPegawaiAdminScreen() {
     try {
       const result = await PegawaiAkunAPI.deletePegawai(id);
       if (result.success) {
-        Alert.alert('Sukses', result.message);
+        Alert.alert("Sukses", result.message);
         fetchPegawai(); // Refresh data
       } else {
-        Alert.alert('Error', result.message);
+        Alert.alert("Error", result.message);
       }
     } catch (error) {
-      Alert.alert('Error', 'Gagal menghapus data pegawai');
+      Alert.alert("Error", "Gagal menghapus data pegawai");
     }
   };
 
-  const renderHeader = () => (
-    <View>
-      <View style={styles.headerContent}>
-        <View style={styles.headerLeft}>
-          <TouchableOpacity 
-            style={styles.backBtn}
-            onPress={() => router.back()}
-          >
-            <Ionicons name="arrow-back" size={24} color="#004643" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Data Pegawai</Text>
-        </View>
-        <View style={styles.headerStats}>
-          <Text style={styles.statsText}>{filteredPegawai.length} Pegawai</Text>
-        </View>
-      </View>
-      
-      <View style={styles.searchContainer}>
-        <Ionicons name="search" size={20} color="#666" />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Cari nama, email, jabatan, atau NIP..."
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          placeholderTextColor="#999"
-        />
-        {searchQuery.length > 0 && (
-          <TouchableOpacity onPress={() => setSearchQuery('')}>
-            <Ionicons name="close-circle" size={20} color="#666" />
-          </TouchableOpacity>
-        )}
-      </View>
-      
-      <View style={styles.sortContainer}>
-        <TouchableOpacity 
-          style={[styles.sortBtn, sortType === 'alphabetical' && styles.sortBtnActive]}
-          onPress={() => handleSort('alphabetical')}
-        >
-          <Ionicons name="text-outline" size={16} color={sortType === 'alphabetical' ? '#fff' : '#666'} />
-          <Text style={[styles.sortText, sortType === 'alphabetical' && styles.sortTextActive]}>A-Z</Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={[styles.sortBtn, sortType === 'newest' && styles.sortBtnActive]}
-          onPress={() => handleSort('newest')}
-        >
-          <Ionicons name="arrow-down-outline" size={16} color={sortType === 'newest' ? '#fff' : '#666'} />
-          <Text style={[styles.sortText, sortType === 'newest' && styles.sortTextActive]}>Terbaru</Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={[styles.sortBtn, sortType === 'oldest' && styles.sortBtnActive]}
-          onPress={() => handleSort('oldest')}
-        >
-          <Ionicons name="arrow-up-outline" size={16} color={sortType === 'oldest' ? '#fff' : '#666'} />
-          <Text style={[styles.sortText, sortType === 'oldest' && styles.sortTextActive]}>Terlama</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
+
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
-      
+    <View style={styles.container}>
+      <StatusBar style="dark" translucent={true} backgroundColor="transparent" />
+
       {/* HEADER */}
-      <View style={styles.header}>
-        <View style={styles.headerContent}>
-          <View style={styles.headerLeft}>
-            <TouchableOpacity 
-              style={styles.backBtn}
-              onPress={() => router.back()}
-            >
-              <Ionicons name="arrow-back" size={24} color="#004643" />
-            </TouchableOpacity>
-            <View style={styles.headerTitleContainer}>
-              <Ionicons name="people" size={20} color="#004643" style={styles.headerIcon} />
-              <Text style={styles.headerTitle}>Data Pegawai</Text>
-            </View>
-          </View>
-          <View style={styles.headerStats}>
-            <Text style={styles.statsText}>{filteredPegawai.length} Pegawai</Text>
-          </View>
-        </View>
-      </View>
-      
+      <AppHeader 
+        title="Data Pegawai"
+        showBack={true}
+        showStats={true}
+        statsText={`${filteredPegawai.length} Pegawai`}
+      />
+
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#004643" />
         </View>
       ) : (
-        <View style={styles.contentContainer}>
-          {/* Search Container */}
-          <View style={styles.searchContainer}>
-            <View style={styles.searchInputWrapper}>
-              <Ionicons name="search-outline" size={20} color="#666" />
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Cari nama, email, jabatan, atau NIP..."
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-                placeholderTextColor="#999"
-              />
-              {searchQuery.length > 0 && (
-                <TouchableOpacity onPress={() => setSearchQuery('')}>
-                  <Ionicons name="close-circle" size={20} color="#999" />
-                </TouchableOpacity>
-              )}
+        <View style={styles.contentWrapper}>
+          {/* Fixed Search and Sort */}
+          <View style={styles.fixedControls}>
+            {/* Search Container */}
+            <View style={styles.searchContainer}>
+              <View style={styles.searchInputWrapper}>
+                <Ionicons name="search-outline" size={20} color="#666" style={styles.searchIcon} />
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="Cari pegawai"
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  placeholderTextColor="#999"
+                />
+                {searchQuery.length > 0 && (
+                  <TouchableOpacity 
+                    onPress={() => setSearchQuery('')}
+                    style={styles.clearBtn}
+                  >
+                    <Ionicons name="close-circle" size={20} color="#999" />
+                  </TouchableOpacity>
+                )}
+              </View>
             </View>
+
+
           </View>
 
-          {/* Filter Card */}
-          <View style={styles.filterCard}>
-            <View style={styles.filterHeader}>
-              <Ionicons name="funnel-outline" size={20} color="#004643" />
-              <Text style={styles.filterTitle}>Urutkan Data</Text>
-            </View>
-            
-            <View style={styles.sortContainer}>
-              <TouchableOpacity 
-                style={[styles.sortBtn, sortType === 'alphabetical' && styles.sortBtnActive]}
-                onPress={() => handleSort('alphabetical')}
-              >
-                <Ionicons name="text-outline" size={16} color={sortType === 'alphabetical' ? '#fff' : '#666'} />
-                <Text style={[styles.sortText, sortType === 'alphabetical' && styles.sortTextActive]}>A-Z</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={[styles.sortBtn, sortType === 'newest' && styles.sortBtnActive]}
-                onPress={() => handleSort('newest')}
-              >
-                <Ionicons name="arrow-down-outline" size={16} color={sortType === 'newest' ? '#fff' : '#666'} />
-                <Text style={[styles.sortText, sortType === 'newest' && styles.sortTextActive]}>Terbaru</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={[styles.sortBtn, sortType === 'oldest' && styles.sortBtnActive]}
-                onPress={() => handleSort('oldest')}
-              >
-                <Ionicons name="arrow-up-outline" size={16} color={sortType === 'oldest' ? '#fff' : '#666'} />
-                <Text style={[styles.sortText, sortType === 'oldest' && styles.sortTextActive]}>Terlama</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
+          {/* Scrollable List */}
           <FlatList
             data={currentData}
-            keyExtractor={(item) => item.id_pegawai?.toString() || item.id_user?.toString() || Math.random().toString()}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              colors={['#004643']}
-              tintColor="#004643"
-            />
-          }
-          ListFooterComponent={() => {
-            if (totalPages <= 1) return null;
-            return (
-              <View style={styles.paginationContainer}>
-                <TouchableOpacity 
-                  style={[styles.pageBtn, currentPage === 1 && styles.pageBtnDisabled]}
-                  onPress={() => setCurrentPage(currentPage - 1)}
-                  disabled={currentPage === 1}
-                >
-                  <Ionicons name="chevron-back" size={16} color={currentPage === 1 ? '#ccc' : '#004643'} />
-                </TouchableOpacity>
-                
-                <View style={styles.pageNumbers}>
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                    <TouchableOpacity
-                      key={page}
-                      style={[styles.pageNumber, currentPage === page && styles.pageNumberActive]}
-                      onPress={() => setCurrentPage(page)}
-                    >
-                      <Text style={[styles.pageNumberText, currentPage === page && styles.pageNumberTextActive]}>
-                        {page}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
+            keyExtractor={(item) =>
+              item.id_pegawai?.toString() ||
+              item.id_user?.toString() ||
+              Math.random().toString()
+            }
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                colors={["#004643"]}
+                tintColor="#004643"
+              />
+            }
+            style={styles.flatList}
+            ListFooterComponent={() => {
+              if (totalPages <= 1) return null;
+              return (
+                <View style={styles.paginationContainer}>
+                  <TouchableOpacity
+                    style={[
+                      styles.pageBtn,
+                      currentPage === 1 && styles.pageBtnDisabled,
+                    ]}
+                    onPress={() => setCurrentPage(currentPage - 1)}
+                    disabled={currentPage === 1}
+                  >
+                    <Ionicons
+                      name="chevron-back"
+                      size={16}
+                      color={currentPage === 1 ? "#ccc" : "#004643"}
+                    />
+                  </TouchableOpacity>
+
+                  <View style={styles.pageNumbers}>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                      (page) => (
+                        <TouchableOpacity
+                          key={page}
+                          style={[
+                            styles.pageNumber,
+                            currentPage === page && styles.pageNumberActive,
+                          ]}
+                          onPress={() => setCurrentPage(page)}
+                        >
+                          <Text
+                            style={[
+                              styles.pageNumberText,
+                              currentPage === page &&
+                                styles.pageNumberTextActive,
+                            ]}
+                          >
+                            {page}
+                          </Text>
+                        </TouchableOpacity>
+                      ),
+                    )}
+                  </View>
+
+                  <TouchableOpacity
+                    style={[
+                      styles.pageBtn,
+                      currentPage === totalPages && styles.pageBtnDisabled,
+                    ]}
+                    onPress={() => setCurrentPage(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                  >
+                    <Ionicons
+                      name="chevron-forward"
+                      size={16}
+                      color={currentPage === totalPages ? "#ccc" : "#004643"}
+                    />
+                  </TouchableOpacity>
                 </View>
-                
-                <TouchableOpacity 
-                  style={[styles.pageBtn, currentPage === totalPages && styles.pageBtnDisabled]}
-                  onPress={() => setCurrentPage(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                >
-                  <Ionicons name="chevron-forward" size={16} color={currentPage === totalPages ? '#ccc' : '#004643'} />
-                </TouchableOpacity>
-              </View>
-            );
-          }}
-          renderItem={({ item }) => (
-            <View style={styles.pegawaiCard}>
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>{item.nama_lengkap?.charAt(0) || 'P'}</Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.pegawaiName}>{item.nama_lengkap}</Text>
-                <Text style={styles.pegawaiEmail}>{item.email || 'Email belum diisi'}</Text>
-                <Text style={styles.pegawaiNip}>NIP: {item.nip || 'Belum diisi'}</Text>
-              </View>
-              <View style={styles.pegawaiActions}>
-                <TouchableOpacity 
-                  style={[styles.statusBadge, {
-                    backgroundColor: (item.email && item.email.trim() !== '' && 
-                                    item.has_password === true && 
-                                    item.nama_lengkap && item.nama_lengkap.trim() !== '' && 
-                                    item.nip && item.nip.trim() !== '') ? '#E8F5E9' : '#FFEBEE'
-                  }]}
-                  onPress={() => {
-                    if (!(item.email && item.email.trim() !== '' && 
-                          item.has_password === true && 
-                          item.nama_lengkap && item.nama_lengkap.trim() !== '' && 
-                          item.nip && item.nip.trim() !== '')) {
-                      const missing = [];
-                      if (!item.email || item.email.trim() === '') missing.push('Email');
-                      if (item.has_password !== true) missing.push('Password');
-                      if (!item.nama_lengkap || item.nama_lengkap.trim() === '') missing.push('Nama Lengkap');
-                      if (!item.nip || item.nip.trim() === '') missing.push('NIP');
-                      Alert.alert(
-                        'Informasi Belum Lengkap',
-                        `Data yang kurang: ${missing.join(', ')}`,
-                        [{ text: 'OK' }]
-                      );
-                    }
-                  }}
-                >
-                  <Text style={[styles.statusText, {
-                    color: (item.email && item.email.trim() !== '' && 
-                           item.has_password === true && 
-                           item.nama_lengkap && item.nama_lengkap.trim() !== '' && 
-                           item.nip && item.nip.trim() !== '') ? '#2E7D32' : '#F44336'
-                  }]}>
-                    {(item.email && item.email.trim() !== '' && 
-                      item.has_password === true && 
-                      item.nama_lengkap && item.nama_lengkap.trim() !== '' && 
-                      item.nip && item.nip.trim() !== '') ? 'Lengkap' : 'Belum Lengkap'}
+              );
+            }}
+            renderItem={({ item }) => (
+              <View style={styles.pegawaiCard}>
+                <View style={styles.avatar}>
+                  <Text style={styles.avatarText}>
+                    {item.nama_lengkap?.charAt(0) || "P"}
                   </Text>
-                </TouchableOpacity>
-                <View style={styles.actionButtons}>
-                  <TouchableOpacity 
-                    style={styles.detailBtn}
-                    onPress={() => router.push(`/pegawai-akun/detail/${item.id_pegawai || item.id_user}` as any)}
-                  >
-                    <Ionicons name="eye-outline" size={15} color="#2196F3" />
-                  </TouchableOpacity>
-                  <TouchableOpacity 
-                    style={styles.editBtn}
-                    onPress={() => router.push(`/pegawai-akun/detail/edit/${item.id_pegawai || item.id_user}` as any)}
-                  >
-                    <Ionicons name="create-outline" size={15} color="#FF9800" />
-                  </TouchableOpacity>
-                  <TouchableOpacity 
-                    style={styles.deleteBtn}
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.pegawaiName}>{item.nama_lengkap}</Text>
+                  <Text style={styles.pegawaiEmail}>
+                    {item.email || "Email belum diisi"}
+                  </Text>
+                  <Text style={styles.pegawaiNip}>
+                    NIP: {item.nip || "Belum diisi"}
+                  </Text>
+                </View>
+                <View style={styles.pegawaiActions}>
+                  <TouchableOpacity
+                    style={[
+                      styles.statusBadge,
+                      {
+                        backgroundColor:
+                          item.email &&
+                          item.email.trim() !== "" &&
+                          item.has_password === true &&
+                          item.nama_lengkap &&
+                          item.nama_lengkap.trim() !== "" &&
+                          item.nip &&
+                          item.nip.trim() !== ""
+                            ? "#E8F5E9"
+                            : "#FFEBEE",
+                      },
+                    ]}
                     onPress={() => {
-                      Alert.alert(
-                        'Konfirmasi Hapus',
-                        `Apakah Anda yakin ingin menghapus data ${item.nama_lengkap}?`,
-                        [
-                          {
-                            text: 'Batal',
-                            style: 'cancel'
-                          },
-                          {
-                            text: 'Hapus',
-                            style: 'destructive',
-                            onPress: () => deletePegawai(item.id_pegawai || item.id_user || 0, item.nama_lengkap)
-                          }
-                        ]
-                      );
+                      if (
+                        !(
+                          item.email &&
+                          item.email.trim() !== "" &&
+                          item.has_password === true &&
+                          item.nama_lengkap &&
+                          item.nama_lengkap.trim() !== "" &&
+                          item.nip &&
+                          item.nip.trim() !== ""
+                        )
+                      ) {
+                        const missing = [];
+                        if (!item.email || item.email.trim() === "")
+                          missing.push("Email");
+                        if (item.has_password !== true)
+                          missing.push("Password");
+                        if (
+                          !item.nama_lengkap ||
+                          item.nama_lengkap.trim() === ""
+                        )
+                          missing.push("Nama Lengkap");
+                        if (!item.nip || item.nip.trim() === "")
+                          missing.push("NIP");
+                        Alert.alert(
+                          "Informasi Belum Lengkap",
+                          `Data yang kurang: ${missing.join(", ")}`,
+                          [{ text: "OK" }],
+                        );
+                      }
                     }}
                   >
-                    <Ionicons name="trash-outline" size={15} color="#F44336" />
+                    <Text
+                      style={[
+                        styles.statusText,
+                        {
+                          color:
+                            item.email &&
+                            item.email.trim() !== "" &&
+                            item.has_password === true &&
+                            item.nama_lengkap &&
+                            item.nama_lengkap.trim() !== "" &&
+                            item.nip &&
+                            item.nip.trim() !== ""
+                              ? "#2E7D32"
+                              : "#F44336",
+                        },
+                      ]}
+                    >
+                      {item.email &&
+                      item.email.trim() !== "" &&
+                      item.has_password === true &&
+                      item.nama_lengkap &&
+                      item.nama_lengkap.trim() !== "" &&
+                      item.nip &&
+                      item.nip.trim() !== ""
+                        ? "Lengkap"
+                        : "Belum Lengkap"}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.moreBtn}
+                    onPress={() => {
+                      setSelectedPegawai(item);
+                      setShowActionModal(true);
+                    }}
+                  >
+                    <Ionicons name="ellipsis-vertical" size={18} color="#666" />
                   </TouchableOpacity>
                 </View>
               </View>
-            </View>
-          )}
-            contentContainerStyle={styles.listContent}
+            )}
+            contentInsetAdjustmentBehavior="never"
+            contentContainerStyle={[styles.listContent, { 
+              paddingBottom: Platform.OS === 'android' ? 0 : 20 
+            }]}
             showsVerticalScrollIndicator={false}
             ListEmptyComponent={
               <View style={styles.emptyContainer}>
@@ -416,222 +430,338 @@ export default function DataPegawaiAdminScreen() {
           />
         </View>
       )}
-      
-      <TouchableOpacity 
+
+      <TouchableOpacity
         style={styles.floatingAddBtn}
-        onPress={() => router.push('/pegawai-akun/add-data-pegawai' as any)}
+        onPress={() => router.push("/pegawai-akun/add-data-pegawai" as any)}
       >
         <Ionicons name="add" size={28} color="#fff" />
       </TouchableOpacity>
-    </SafeAreaView>
+
+      {/* Action Modal */}
+      <Modal
+        visible={showActionModal}
+        transparent={true}
+        animationType="none"
+        onRequestClose={() => setShowActionModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.bottomSheetContainer}>
+            <Animated.View 
+              style={[
+                styles.modalContent,
+                {
+                  transform: [{ translateY }],
+                },
+              ]}
+            >
+              <View style={styles.modalHeader} {...panResponder.panHandlers}>
+                <View style={styles.modalHandle} />
+              </View>
+              
+              <TouchableOpacity
+                style={styles.actionItem}
+                onPress={() => {
+                  setShowActionModal(false);
+                  router.push(
+                    `/pegawai-akun/detail/${selectedPegawai?.id_pegawai || selectedPegawai?.id_user}` as any
+                  );
+                }}
+              >
+                <Ionicons name="eye-outline" size={20} color="#2196F3" />
+                <Text style={[styles.actionText, { color: "#2196F3" }]}>Lihat Detail</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={styles.actionItem}
+                onPress={() => {
+                  setShowActionModal(false);
+                  router.push(
+                    `/pegawai-akun/detail/edit/${selectedPegawai?.id_pegawai || selectedPegawai?.id_user}` as any
+                  );
+                }}
+              >
+                <Ionicons name="create-outline" size={20} color="#FF9800" />
+                <Text style={[styles.actionText, { color: "#FF9800" }]}>Edit Data</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={styles.actionItem}
+                onPress={() => {
+                  setShowActionModal(false);
+                  Alert.alert(
+                    "Konfirmasi Hapus",
+                    `Apakah Anda yakin ingin menghapus data ${selectedPegawai?.nama_lengkap}?`,
+                    [
+                      { text: "Batal", style: "cancel" },
+                      {
+                        text: "Hapus",
+                        style: "destructive",
+                        onPress: () =>
+                          deletePegawai(
+                            selectedPegawai?.id_pegawai || selectedPegawai?.id_user || 0,
+                            selectedPegawai?.nama_lengkap || ""
+                          ),
+                      },
+                    ]
+                  );
+                }}
+              >
+                <Ionicons name="trash-outline" size={20} color="#F44336" />
+                <Text style={[styles.actionText, { color: "#F44336" }]}>Hapus Data</Text>
+              </TouchableOpacity>
+            </Animated.View>
+          </View>
+        </View>
+      </Modal>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFB' },
-  header: { 
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 1000,
-    backgroundColor: '#fff',
-    paddingTop: Platform.OS === 'ios' ? 40 : 50,
-    paddingBottom: 15,
-    paddingHorizontal: 20,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+  container: { 
+    flex: 1, 
+    backgroundColor: "#fff",
   },
-  contentContainer: {
+
+  contentWrapper: {
     flex: 1,
-    marginTop: Platform.OS === 'ios' ? 90 : 120
+    backgroundColor: "#F8FAFB",
   },
-  headerTitleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  fixedControls: {
+    paddingTop: 8,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F0F0F0",
+    backgroundColor: "#FAFBFC",
   },
-  headerIcon: {
-    marginRight: 8,
+  flatList: {
+    flex: 1,
   },
   searchContainer: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 15,
     paddingVertical: 8,
-    backgroundColor: '#F8FAFB'
+    backgroundColor: "#F8FAFB"
   },
   searchInputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff",
     borderRadius: 12,
     paddingHorizontal: 15,
     elevation: 2,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
-    shadowRadius: 2,
-    gap: 10
+    shadowRadius: 2
   },
-  filterCard: {
-    backgroundColor: '#fff',
-    marginHorizontal: 20,
-    marginVertical: 5,
-    borderRadius: 16,
-    padding: 15,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4
+  searchIcon: {
+    marginRight: 10
   },
-  filterHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12
-  },
-  filterTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginLeft: 8
-  },
-  headerContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  searchInput: { 
-    flex: 1, 
-    fontSize: 16, 
-    color: '#333',
-    paddingVertical: 12
+  clearBtn: {
+    padding: 4
   },
   sortContainer: {
-    flexDirection: 'row',
-    gap: 8,
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 10,
+    paddingHorizontal: 15,
+    marginBottom: 8,
+  },
+
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: "#333",
+    paddingVertical: 12
   },
   sortBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    backgroundColor: '#F5F5F5',
-    gap: 4,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: "#F8F9FA",
+    borderWidth: 1,
+    borderColor: "#E5E5E5",
+    gap: 6,
+    minWidth: 70,
+    justifyContent: "center",
   },
-  backBtn: {
-    padding: 10,
-    marginRight: 15,
-    borderRadius: 10,
-    backgroundColor: '#F5F5F5'
+
+  sortBtnActive: { 
+    backgroundColor: "#004643", 
+    borderColor: "#004643",
   },
-  sortBtnActive: { backgroundColor: '#004643' },
-  sortText: { fontSize: 12, color: '#666', fontWeight: '500' },
-  sortTextActive: { color: '#fff' },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1
+  sortText: { 
+    fontSize: 13, 
+    color: "#666", 
+    fontWeight: "600" 
   },
-  headerTitle: { 
-    fontSize: 20, 
-    fontWeight: 'bold', 
-    color: '#004643'
-  },
-  headerStats: { backgroundColor: '#E6F0EF', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12 },
-  statsText: { fontSize: 12, fontWeight: 'bold', color: '#004643' },
-  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  listContent: { paddingHorizontal: 20, paddingTop: 10, paddingBottom: 20 },
-  pegawaiCard: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    backgroundColor: '#fff', 
-    padding: 16, 
-    borderRadius: 16, 
+  sortTextActive: { color: "#fff" },
+
+  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
+  listContent: { paddingHorizontal: 5, paddingTop: 10, paddingBottom: 20 },
+  pegawaiCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    padding: 15,
+    borderRadius: 12,
     marginBottom: 12,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    marginHorizontal: 15,
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
+  },
+  avatar: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: "#E6F0EF",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 16,
+  },
+  avatarText: { color: "#004643", fontWeight: "bold", fontSize: 20 },
+  pegawaiName: {
+    fontWeight: "bold",
+    fontSize: 16,
+    color: "#333",
+    marginBottom: 2,
+  },
+  pegawaiEmail: { color: "#888", fontSize: 12, marginBottom: 2 },
+  pegawaiNip: { color: "#666", fontSize: 12, marginBottom: 2 },
+  pegawaiActions: { alignItems: "flex-end", justifyContent: "space-between" },
+  moreBtn: { 
+    padding: 8, 
+    borderRadius: 8, 
+    backgroundColor: "#F5F5F5",
+    marginTop: 8
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  statusText: { fontSize: 10, fontWeight: "bold" },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingTop: 100,
+  },
+  emptyText: { fontSize: 16, color: "#ccc", marginTop: 16 },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  overlayTouchable: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  bottomSheetContainer: {
+    flex: 1,
+    justifyContent: "flex-end",
+  },
+  modalContent: {
+    backgroundColor: "#fff",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingBottom: 20,
+    elevation: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.1,
-    shadowRadius: 4
+    shadowRadius: 8,
   },
-  avatar: { 
-    width: 50, 
-    height: 50, 
-    borderRadius: 25, 
-    backgroundColor: '#E6F0EF', 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    marginRight: 16 
+  modalHeader: {
+    alignItems: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 20,
   },
-  avatarText: { color: '#004643', fontWeight: 'bold', fontSize: 20 },
-  pegawaiName: { fontWeight: 'bold', fontSize: 16, color: '#333', marginBottom: 2 },
-  pegawaiEmail: { color: '#888', fontSize: 12, marginBottom: 2 },
-  pegawaiNip: { color: '#666', fontSize: 12, marginBottom: 2 },
-  pegawaiActions: { alignItems: 'flex-end', justifyContent: 'space-between' },
-  actionButtons: { flexDirection: 'row', gap: 5 },
-  detailBtn: { padding: 6, borderRadius: 6, backgroundColor: '#E3F2FD' },
-  editBtn: { padding: 6, borderRadius: 6, backgroundColor: '#FFF3E0' },
-  statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, marginBottom: 8 },
-  statusText: { fontSize: 10, fontWeight: 'bold' },
-  emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 100 },
-  emptyText: { fontSize: 16, color: '#ccc', marginTop: 16 },
-  deleteBtn: { padding: 6, borderRadius: 6, backgroundColor: '#FFEBEE' },
+  modalHandle: {
+    width: 36,
+    height: 4,
+    backgroundColor: "#C4C4C4",
+    borderRadius: 2,
+    marginBottom: 8,
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#333",
+  },
+  actionItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    gap: 16,
+    borderRadius: 12,
+    marginHorizontal: 16,
+    marginBottom: 4,
+  },
+  actionText: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
   floatingAddBtn: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 30,
     right: 20,
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#004643',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#004643",
+    justifyContent: "center",
+    alignItems: "center",
     elevation: 8,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
-    shadowRadius: 8
+    shadowRadius: 8,
   },
 
   paginationContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
     paddingVertical: 20,
-    marginTop: 10
+    marginTop: 10,
   },
   pageBtn: {
     padding: 8,
     borderRadius: 8,
-    backgroundColor: '#F5F5F5'
+    backgroundColor: "#F5F5F5",
   },
   pageBtnDisabled: {
-    backgroundColor: '#F0F0F0'
+    backgroundColor: "#F0F0F0",
   },
   pageNumbers: {
-    flexDirection: 'row',
-    marginHorizontal: 15
+    flexDirection: "row",
+    marginHorizontal: 15,
   },
   pageNumber: {
     paddingHorizontal: 12,
     paddingVertical: 8,
     marginHorizontal: 2,
     borderRadius: 8,
-    backgroundColor: '#F5F5F5'
+    backgroundColor: "#F5F5F5",
   },
   pageNumberActive: {
-    backgroundColor: '#004643'
+    backgroundColor: "#004643",
   },
   pageNumberText: {
     fontSize: 14,
-    color: '#666',
-    fontWeight: '500'
+    color: "#666",
+    fontWeight: "500",
   },
   pageNumberTextActive: {
-    color: '#fff',
-    fontWeight: 'bold'
-  }
+    color: "#fff",
+    fontWeight: "bold",
+  },
 });

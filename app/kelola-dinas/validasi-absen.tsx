@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, SafeAreaView, StatusBar, ScrollView, TouchableO
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { KelolaDinasAPI } from '../../constants/config';
+import { AppHeader } from '../../components';
 
 interface AbsensiValidation {
   id: number;
@@ -230,17 +231,12 @@ export default function ValidasiAbsenScreen() {
       <StatusBar barStyle="dark-content" />
       
       {/* HEADER */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <TouchableOpacity 
-            style={styles.backBtn}
-            onPress={() => router.back()}
-          >
-            <Ionicons name="arrow-back" size={24} color="#004643" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Validasi Absensi</Text>
-        </View>
-      </View>
+      <AppHeader 
+        title="Validasi Absensi"
+        showBack={true}
+        showStats={true}
+        statsText={`${totalRecords} Absensi`}
+      />
 
       <View style={styles.contentContainer}>
 
@@ -343,43 +339,9 @@ export default function ValidasiAbsenScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFB' },
-  header: { 
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 1000,
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    paddingHorizontal: 20,
-    paddingTop: 50,
-    paddingBottom: 15,
-    backgroundColor: '#fff',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4
-  },
   contentContainer: {
     flex: 1,
-    marginTop: 120
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1
-  },
-  backBtn: {
-    padding: 10,
-    marginRight: 15,
-    borderRadius: 10,
-    backgroundColor: '#F5F5F5'
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#004643',
+    paddingTop: 10,
   },
   searchContainer: {
     paddingHorizontal: 20,

@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, StatusBar, ScrollView, TouchableOpacity, TextInput, Alert, Modal, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, StatusBar, ScrollView, TouchableOpacity, TextInput, Alert, Modal, ActivityIndicator, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { PengaturanAPI } from '../../constants/config';
 import * as Location from 'expo-location';
-import MapView, { Marker } from 'react-native-maps';
 import { NetworkDiagnostic } from '../../components/NetworkDiagnostic';
 
 export default function TambahLokasiScreen() {
@@ -315,7 +314,7 @@ export default function TambahLokasiScreen() {
     }
 
     if (!formData.latitude || !formData.longitude) {
-      Alert.alert('Info', 'Lokasi wajib dipilih di peta');
+      Alert.alert('Info', 'Koordinat latitude dan longitude wajib diisi');
       return;
     }
 
@@ -460,23 +459,37 @@ export default function TambahLokasiScreen() {
         </View>
 
         <View style={styles.formGroup}>
-          <TouchableOpacity 
-            style={styles.mapBtn} 
-            onPress={() => setShowMapModal(true)}
-          >
-            <Ionicons name="map-outline" size={20} color="#004643" />
-            <Text style={styles.mapBtnText}>
-              {formData.latitude ? 'Lokasi Dipilih' : 'Pilih Lokasi di Peta'}
-            </Text>
-            {formData.latitude && (
-              <Ionicons name="checkmark-circle" size={16} color="#4CAF50" />
-            )}
-          </TouchableOpacity>
-          {formData.latitude && formData.longitude && (
-            <Text style={styles.coordText}>
-              {formData.latitude.toFixed(6)}, {formData.longitude.toFixed(6)}
-            </Text>
-          )}
+          <Text style={styles.label}>Latitude *</Text>
+          <View style={styles.inputWrapper}>
+            <Ionicons name="navigate-outline" size={20} color="#666" />
+            <TextInput
+              style={styles.input}
+              placeholder="Contoh: -6.2088"
+              value={formData.latitude?.toString() || ''}
+              onChangeText={(text) => {
+                const num = parseFloat(text);
+                setFormData({ ...formData, latitude: isNaN(num) ? null : num });
+              }}
+              keyboardType="numeric"
+            />
+          </View>
+        </View>
+
+        <View style={styles.formGroup}>
+          <Text style={styles.label}>Longitude *</Text>
+          <View style={styles.inputWrapper}>
+            <Ionicons name="navigate-outline" size={20} color="#666" />
+            <TextInput
+              style={styles.input}
+              placeholder="Contoh: 106.8456"
+              value={formData.longitude?.toString() || ''}
+              onChangeText={(text) => {
+                const num = parseFloat(text);
+                setFormData({ ...formData, longitude: isNaN(num) ? null : num });
+              }}
+              keyboardType="numeric"
+            />
+          </View>
         </View>
 
         <View style={styles.formGroup}>
@@ -521,112 +534,6 @@ export default function TambahLokasiScreen() {
           )}
         </TouchableOpacity>
       </View>
-
-      <Modal visible={showMapModal} animationType="slide">
-        <SafeAreaView style={styles.mapModalContainer}>
-          <View style={styles.mapHeader}>
-            <TouchableOpacity 
-              style={styles.backButton}
-              onPress={() => setShowMapModal(false)}
-            >
-              <Ionicons name="arrow-back" size={24} color="#004643" />
-            </TouchableOpacity>
-            <Text style={styles.mapTitle}>Pilih Lokasi</Text>
-          </View>
-
-          {/* Search Bar */}
-          <View style={styles.searchContainer}>
-            <View style={styles.searchInputWrapper}>
-              <Ionicons name="search" size={20} color="#666" />
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Cari nama tempat atau koordinat (-6.2088, 106.8456)"
-                value={searchQuery}
-                onChangeText={handleSearchInput}
-              />
-              {searchLoading && <ActivityIndicator size="small" color="#004643" />}
-            </View>
-            
-            {/* Search Results */}
-            {searchResults.length > 0 && (
-              <View style={styles.searchResults}>
-                {searchResults.map((result, index) => (
-                  <TouchableOpacity
-                    key={index}
-                    style={styles.searchResultItem}
-                    onPress={() => selectSearchResult(result)}
-                  >
-                    <Ionicons name="location-outline" size={16} color="#666" />
-                    <View style={styles.searchResultContent}>
-                      <Text style={styles.searchResultName}>
-                        {result.displayName}
-                      </Text>
-                      <Text style={styles.searchResultAddress}>
-                        {result.fullAddress}
-                      </Text>
-                      <View style={styles.searchResultMeta}>
-                        <Text style={styles.searchResultCoord}>
-                          {result.latitude.toFixed(6)}, {result.longitude.toFixed(6)}
-                        </Text>
-                        {result.source === 'coordinate' && (
-                          <Text style={styles.searchResultSource}>
-                            📍 Koordinat
-                          </Text>
-                        )}
-                      </View>
-                    </View>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
-          </View>
-
-          <MapView
-            style={styles.map}
-            region={mapRegion}
-            onPress={handleMapPress}
-          >
-            {markerPosition && (
-              <Marker
-                coordinate={markerPosition}
-                title="Lokasi Dipilih"
-                description="Tap 'Konfirmasi' untuk menggunakan lokasi ini"
-              />
-            )}
-            {currentLocation && (
-              <Marker
-                coordinate={currentLocation}
-                title="Lokasi Anda"
-                pinColor="blue"
-              />
-            )}
-          </MapView>
-          
-          {markerPosition && (
-            <View style={styles.mapActions}>
-              <TouchableOpacity 
-                style={styles.confirmLocationBtn}
-                onPress={confirmLocation}
-              >
-                <Ionicons name="checkmark-circle" size={20} color="#fff" />
-                <Text style={styles.confirmLocationText}>Konfirmasi Lokasi</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={styles.cancelLocationBtn}
-                onPress={() => setMarkerPosition(null)}
-              >
-                <Ionicons name="close-circle" size={20} color="#666" />
-                <Text style={styles.cancelLocationText}>Batal</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-          
-          <View style={styles.mapInfo}>
-            <Text style={styles.mapInfoText}>Tap pada peta untuk memilih lokasi</Text>
-          </View>
-        </SafeAreaView>
-      </Modal>
     </SafeAreaView>
   );
 }
@@ -988,5 +895,20 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 12,
     textAlign: 'center'
+  },
+  webMapPlaceholder: {
+    backgroundColor: '#F5F5F5',
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  webMapText: {
+    fontSize: 16,
+    color: '#666',
+    fontWeight: '600'
+  },
+  webMapSubtext: {
+    fontSize: 12,
+    color: '#999',
+    marginTop: 4
   }
 });

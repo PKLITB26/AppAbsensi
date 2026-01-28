@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, StatusBar, ScrollView, TouchableOpacity, TextInput, Alert, Modal } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, StatusBar, ScrollView, TouchableOpacity, TextInput, Alert, Modal, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { PengaturanAPI } from '../../constants/config';
@@ -103,7 +103,7 @@ export default function EditLokasiScreen() {
           <Ionicons name="information-circle" size={20} color="#004643" />
           <View style={styles.infoContent}>
             <Text style={styles.infoText}>
-              Edit informasi lokasi absensi. Fitur peta tidak tersedia di web.
+              Edit informasi lokasi absensi. {Platform.OS === 'web' ? 'Fitur peta tidak tersedia di web.' : 'Gunakan input manual untuk koordinat.'}
             </Text>
           </View>
         </View>

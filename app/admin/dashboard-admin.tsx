@@ -328,7 +328,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between', 
     alignItems: 'flex-start', 
     paddingHorizontal: 20, 
-    paddingTop: Platform.OS === 'ios' ? 10 : 30, 
+    paddingTop: Platform.OS === 'ios' ? 60 : 40, 
     marginBottom: 20 
   },
   adminInfo: { flex: 1 },
@@ -449,10 +449,25 @@ const styles = StyleSheet.create({
   menuSection: { marginTop: 30, paddingHorizontal: 20 },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
   sectionTitle: { fontSize: 16, fontWeight: 'bold', color: '#333' },
-  mainMenuRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 },
-  mainMenuItem: { width: '23%', alignItems: 'center' },
+  mainMenuRow: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    marginBottom: 20,
+    paddingHorizontal: Platform.OS === 'ios' ? 5 : 0,
+  },
+  mainMenuItem: { 
+    width: Platform.OS === 'ios' ? '22%' : '23%', 
+    alignItems: 'center' 
+  },
   settingsRow: { flexDirection: 'row', justifyContent: 'flex-start', marginTop: 10 },
-  menuIconCircle: { width: 56, height: 56, borderRadius: 16, justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
+  menuIconCircle: { 
+    width: Platform.OS === 'ios' ? 52 : 56, 
+    height: Platform.OS === 'ios' ? 52 : 56, 
+    borderRadius: 16, 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    marginBottom: 8 
+  },
   menuLabel: { fontSize: 11, color: '#444', fontWeight: '500', textAlign: 'center' },
   recentList: { paddingHorizontal: 20, marginTop: 10 },
   activityCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', padding: 15, borderRadius: 15, marginBottom: 10, borderWidth: 1, borderColor: '#F0F0F0' },
@@ -465,7 +480,7 @@ const styles = StyleSheet.create({
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.3)' },
   notificationDropdown: { 
     position: 'absolute', 
-    top: 65, 
+    top: Platform.OS === 'ios' ? 100 : 80, 
     right: 15, 
     width: 280, 
     backgroundColor: '#fff', 

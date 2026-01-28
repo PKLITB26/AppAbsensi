@@ -9,11 +9,13 @@ import {
   ActivityIndicator,
   StatusBar,
   SafeAreaView,
+  Platform,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet } from 'react-native';
 import { getApiUrl, API_CONFIG } from '../../../constants/config';
+import { AppHeader } from '../../../components';
 
 export default function DetailPegawai() {
   const { id } = useLocalSearchParams();
@@ -96,27 +98,13 @@ export default function DetailPegawai() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
       
-      {/* FIXED HEADER */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <TouchableOpacity 
-            style={styles.backBtn}
-            onPress={() => router.back()}
-          >
-            <Ionicons name="arrow-back" size={24} color="#004643" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Detail Pegawai</Text>
-        </View>
-        <View style={[styles.headerStats, {
-          backgroundColor: isDataComplete(pegawai) ? '#E8F5E9' : '#FFEBEE'
-        }]}>
-          <Text style={[styles.statsText, {
-            color: isDataComplete(pegawai) ? '#2E7D32' : '#F44336'
-          }]}>
-            {isDataComplete(pegawai) ? 'Informasi Lengkap' : 'Belum Lengkap'}
-          </Text>
-        </View>
-      </View>
+      {/* HEADER */}
+      <AppHeader 
+        title="Detail Pegawai"
+        showBack={true}
+        showStats={true}
+        statsText={isDataComplete(pegawai) ? 'Informasi Lengkap' : 'Belum Lengkap'}
+      />
 
       <View style={styles.contentContainer}>
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -357,71 +345,28 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  header: { 
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 1000,
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    paddingHorizontal: 20,
-    paddingTop: 50,
-    paddingBottom: 15,
-    backgroundColor: '#fff',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1
-  },
+
   contentContainer: {
     flex: 1,
-    marginTop: 120
   },
-  headerTitle: { 
-    fontSize: 20, 
-    fontWeight: 'bold', 
-    color: '#004643'
-  },
-  headerStats: {
-    backgroundColor: '#E6F0EF',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12
-  },
-  statsText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#004643'
-  },
+
   content: {
     flex: 1,
   },
   profileSection: {
     backgroundColor: '#fff',
-    marginTop: 15,
-    marginHorizontal: 20,
+    marginTop: 10,
+    marginHorizontal: 15,
     marginBottom: 20,
     paddingVertical: 16,
-    borderRadius: 16,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    borderTopWidth: 3,
-    borderTopColor: '#004643',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
   },
   profileCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: 15,
   },
   photoContainer: {
     marginRight: 16,
@@ -463,29 +408,22 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   infoSection: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 5,
     paddingBottom: 20,
   },
   infoCard: {
     backgroundColor: '#fff',
-    borderRadius: 16,
-    marginBottom: 16,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    borderLeftWidth: 4,
-    borderLeftColor: '#E6F0EF',
+    borderRadius: 12,
+    marginBottom: 12,
+    marginHorizontal: 15,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
   },
   cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: 15,
     paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
-    backgroundColor: '#FAFBFC',
   },
   cardTitle: {
     fontSize: 16,
@@ -494,20 +432,15 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   cardContent: {
-    padding: 16,
+    padding: 15,
   },
   infoRow: {
     flexDirection: 'row',
     marginBottom: 12,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F5F5F5',
   },
   infoRowLast: {
     flexDirection: 'row',
     marginBottom: 0,
-    paddingBottom: 0,
-    borderBottomWidth: 0,
   },
   infoItem: {
     flex: 1,

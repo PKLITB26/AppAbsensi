@@ -9,11 +9,13 @@ import {
   ActivityIndicator,
   StatusBar,
   SafeAreaView,
+  Platform,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet } from 'react-native';
 import { getApiUrl, API_CONFIG } from '../../../../constants/config';
+import { AppHeader } from '../../../../components';
 
 export default function EditPegawai() {
   const { id } = useLocalSearchParams();
@@ -115,18 +117,11 @@ export default function EditPegawai() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
       
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <TouchableOpacity 
-            style={styles.backBtn}
-            onPress={() => router.back()}
-          >
-            <Ionicons name="arrow-back" size={24} color="#004643" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Edit Pegawai</Text>
-        </View>
-      </View>
+      {/* HEADER */}
+      <AppHeader 
+        title="Edit Pegawai"
+        showBack={true}
+      />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {/* Informasi Pribadi */}
@@ -339,68 +334,28 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
   },
-  header: { 
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 1000,
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    paddingHorizontal: 20,
-    paddingTop: 50,
-    paddingBottom: 15,
-    backgroundColor: '#fff',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1
-  },
-  backBtn: {
-    padding: 10,
-    marginRight: 15,
-    borderRadius: 10,
-    backgroundColor: '#F5F5F5'
-  },
-  headerTitle: { 
-    fontSize: 20, 
-    fontWeight: 'bold', 
-    color: '#004643'
-  },
+
   content: {
     flex: 1,
-    marginTop: 120,
   },
   scrollContent: {
+    paddingTop: 10,
     paddingBottom: 100,
   },
   formCard: {
     backgroundColor: '#fff',
-    marginTop: 15,
-    marginHorizontal: 20,
-    borderRadius: 16,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    borderLeftWidth: 4,
-    borderLeftColor: '#E6F0EF',
+    borderRadius: 12,
+    marginBottom: 12,
+    marginHorizontal: 15,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
   },
   cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: 15,
     paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
-    backgroundColor: '#FAFBFC',
+    backgroundColor: '#F8FAFB',
   },
   cardTitle: {
     fontSize: 16,
@@ -409,7 +364,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   cardContent: {
-    padding: 16,
+    padding: 15,
   },
   inputGroup: {
     marginBottom: 16,

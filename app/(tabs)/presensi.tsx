@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, SafeAreaView, Alert, Modal, Dimensions, Animated } from 'react-native';
-import MapView, { Marker, Circle } from 'react-native-maps';
+import { StyleSheet, View, Text, TouchableOpacity, SafeAreaView, Alert, Modal, Dimensions, Animated, Platform } from 'react-native';
 import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
@@ -308,50 +307,16 @@ export default function PresensiScreen() {
       })()}
 
       <View style={[styles.mapContainer, { height: screenHeight - panelHeight - 90 }]}>
-        {location && (
-          <MapView
-            style={styles.map}
-            initialRegion={{
-              latitude: location.latitude,
-              longitude: location.longitude,
-              latitudeDelta: 0.01,
-              longitudeDelta: 0.01,
-            }}
-            showsUserLocation={true}
-            showsMyLocationButton={true}
-          >
-            <Marker
-              coordinate={{
-                latitude: location.latitude,
-                longitude: location.longitude,
-              }}
-              title="Lokasi Anda"
-              pinColor="blue"
-            />
-            
-            {availableLocations.map((loc) => (
-              <React.Fragment key={loc.id}>
-                <Marker
-                  coordinate={{
-                    latitude: parseFloat(loc.latitude),
-                    longitude: parseFloat(loc.longitude),
-                  }}
-                  title={loc.nama_lokasi}
-                  description={`${loc.alamat} (${loc.jenis_lokasi})`}
-                  pinColor="red"
-                />
-                <Circle
-                  center={{
-                    latitude: parseFloat(loc.latitude),
-                    longitude: parseFloat(loc.longitude),
-                  }}
-                  radius={loc.radius}
-                  strokeColor="#FF0000"
-                  fillColor="rgba(255,0,0,0.2)"
-                />
-              </React.Fragment>
-            ))}
-          </MapView>
+        {Platform.OS === 'web' ? (
+          <View style={[styles.map, styles.webMapPlaceholder]}>
+            <Text style={styles.webMapText}>Peta tidak tersedia di web</Text>
+            <Text style={styles.webMapSubtext}>Gunakan aplikasi mobile untuk fitur peta</Text>
+          </View>
+        ) : (
+          <View style={[styles.map, styles.webMapPlaceholder]}>
+            <Text style={styles.webMapText}>Fitur peta sementara dinonaktifkan</Text>
+            <Text style={styles.webMapSubtext}>Akan segera tersedia</Text>
+          </View>
         )}
       </View>
 
@@ -766,4 +731,19 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 16,
   },
+  webMapPlaceholder: {
+    backgroundColor: '#F5F5F5',
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  webMapText: {
+    fontSize: 16,
+    color: '#666',
+    fontWeight: '600'
+  },
+  webMapSubtext: {
+    fontSize: 12,
+    color: '#999',
+    marginTop: 4
+  }
 });

@@ -1,63 +1,67 @@
-// Konfigurasi API untuk HadirinApp
+// Konfigurasi API untuk HadirinApp - Node.js Backend
+
+// Base URL configuration
+const isDevelopment = __DEV__ || process.env.NODE_ENV === 'development';
+const BASE_URL = isDevelopment ? 'http://10.251.109.84:3000' : 'http://10.251.109.84:3000';
+
+// Debug logging helper
+const debugLog = (message: string, data?: any) => {
+  if (isDevelopment) {
+    console.log(`[HadirinApp Debug] ${message}`, data || '');
+  }
+};
+
 export const API_CONFIG = {
-  BASE_URL: 'http://192.168.1.8/hadirinapp',
+  BASE_URL,
   
-  // Endpoint API
+  // Endpoint API - Node.js Backend LENGKAP
   ENDPOINTS: {
-    // Auth endpoints (untuk semua user)
-    LOGIN: '/auth/api/login.php',
-    PROFILE: '/auth/api/profile.php',
+    // Auth endpoints ✅
+    LOGIN: '/auth/api/login',
+    PROFILE: '/auth/api/profile',
     
-    // Pegawai endpoints - khusus untuk pegawai
-    PEGAWAI_DASHBOARD: '/pegawai/api/dashboard.php',
-    PEGAWAI_PROFILE: '/pegawai/profil/api/profile.php',
-    PEGAWAI_PRESENSI: '/pegawai/presensi/api/presensi.php',
-    PEGAWAI_PENGAJUAN: '/pegawai/pengajuan/api/pengajuan.php',
+    // Admin endpoints ✅
+    ADMIN: '/admin/api/admin',
     
-    // Admin endpoints - semua fitur admin
-    ADMIN: '/admin/api/admin.php',
-    KELOLA_PEGAWAI: '/admin/api/kelola-pegawai.php',
-    CREATE_ADMIN: '/admin/api/create-admin.php',
-    CREATE_ACCOUNTS: '/admin/api/create-accounts.php',
+    // Admin - Pegawai & Akun ✅
+    DATA_PEGAWAI: '/admin/pegawai-akun/api/data-pegawai',
+    DETAIL_PEGAWAI: '/admin/pegawai-akun/api/detail-pegawai',
+    UPDATE_PEGAWAI: '/admin/pegawai-akun/api/update-pegawai',
+    DELETE_PEGAWAI: '/admin/pegawai-akun/api/delete-pegawai',
+    KELOLA_PEGAWAI: '/admin/api/kelola-pegawai',
+    AKUN_LOGIN: '/admin/pegawai-akun/api/akun-login',
+    CHECK_EMAILS: '/admin/pegawai-akun/api/check-emails',
     
-    // Admin - Pegawai & Akun
-    DATA_PEGAWAI: '/admin/pegawai-akun/api/data-pegawai.php',
-    UPDATE_PEGAWAI: '/admin/pegawai-akun/api/update-pegawai.php',
-    DETAIL_PEGAWAI: '/admin/pegawai-akun/api/detail-pegawai.php',
-    DELETE_PEGAWAI: '/admin/pegawai-akun/api/delete-pegawai.php',
-    AKUN_LOGIN: '/admin/pegawai-akun/api/akun-login.php',
-    CHECK_EMAILS: '/admin/pegawai-akun/api/check-emails.php',
+    // Admin - Laporan ✅
+    LAPORAN: '/admin/laporan/api/laporan',
+    DETAIL_ABSEN_PEGAWAI: '/admin/laporan/api/detail-absen-pegawai',
+    DETAIL_LAPORAN: '/admin/laporan/api/detail-laporan',
+    DETAIL_ABSEN: '/admin/laporan/api/detail-absen',
+    EXPORT_PDF: '/admin/laporan/api/export-pdf',
     
-    // Admin - Presensi
-    TRACKING: '/admin/presensi/api/tracking.php',
+    // Admin - Pengaturan ✅
+    LOKASI_KANTOR: '/admin/pengaturan/api/lokasi-kantor',
+    UPDATE_LOKASI: '/admin/pengaturan/api/update-lokasi',
+    JAM_KERJA: '/admin/pengaturan/api/jam-kerja',
+    HARI_LIBUR: '/admin/pengaturan/api/hari-libur',
     
-    // Admin - Persetujuan
-    APPROVAL: '/admin/persetujuan/api/approval.php',
+    // Admin - Presensi ✅
+    TRACKING: '/admin/presensi/api/tracking',
     
-    // Admin - Laporan
-    LAPORAN: '/admin/laporan/api/laporan.php',
-    DETAIL_LAPORAN: '/admin/laporan/api/detail-laporan.php',
-    DETAIL_ABSEN: '/admin/laporan/api/detail-absen.php',
-    DETAIL_ABSEN_PEGAWAI: '/admin/laporan/api/detail-absen-pegawai.php',
-    EXPORT_PDF: '/admin/laporan/api/export-pdf.php',
+    // Admin - Persetujuan ✅
+    APPROVAL: '/admin/persetujuan/api/approval',
     
-    // Admin - Kelola Dinas
-    DINAS_AKTIF: '/admin/kelola-dinas/api/dinas-aktif.php',
-    RIWAYAT_DINAS: '/admin/kelola-dinas/api/riwayat-dinas.php',
-    VALIDASI_ABSEN: '/admin/kelola-dinas/api/validasi-absen.php',
-    CREATE_DINAS: '/admin/kelola-dinas/api/create-dinas.php',
+    // Admin - Kelola Dinas ✅
+    DINAS_AKTIF: '/admin/kelola-dinas/api/dinas-aktif',
+    CREATE_DINAS: '/admin/kelola-dinas/api/create-dinas',
+    RIWAYAT_DINAS: '/admin/kelola-dinas/api/riwayat-dinas',
+    VALIDASI_ABSEN: '/admin/kelola-dinas/api/validasi-absen',
     
-    // Admin - Pengaturan
-    JAM_KERJA: '/admin/pengaturan/api/jam-kerja.php',
-    HARI_LIBUR: '/admin/pengaturan/api/hari-libur.php',
-    LOKASI_KANTOR: '/admin/pengaturan/api/lokasi-kantor.php',
-    
-    // Admin - Notifikasi
-    NOTIFIKASI_ADMIN: '/backend_notifikasi_admin.php',
-    
-    // Legacy endpoints (masih di root)
-    TEST_API: '/test-api.php',
-    TEST_CONNECTION: '/test-connection.php',
+    // Pegawai endpoints ✅
+    PEGAWAI_DASHBOARD: '/pegawai/api/dashboard',
+    PEGAWAI_PRESENSI: '/pegawai/presensi/api/presensi',
+    PEGAWAI_PENGAJUAN: '/pegawai/pengajuan/api/pengajuan',
+    PEGAWAI_PROFILE: '/pegawai/profil/api/profile',
   }
 };
 
@@ -69,7 +73,9 @@ export const getApiUrl = (endpoint: string) => {
 // Helper function untuk fetch dengan error handling
 export const fetchWithRetry = async (url: string, options: any = {}): Promise<Response> => {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+  const timeoutId = setTimeout(() => controller.abort(), 15000);
+  
+  debugLog('API Request', { url, method: options.method || 'GET' });
   
   try {
     const response = await fetch(url, {
@@ -78,12 +84,12 @@ export const fetchWithRetry = async (url: string, options: any = {}): Promise<Re
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'Cache-Control': 'no-cache',
         ...options.headers
       }
     });
     
     clearTimeout(timeoutId);
+    debugLog('API Response', { url, status: response.status });
     
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -92,6 +98,7 @@ export const fetchWithRetry = async (url: string, options: any = {}): Promise<Re
     return response;
   } catch (error: any) {
     clearTimeout(timeoutId);
+    debugLog('API Error', { url, error: error.message });
     
     if (error.name === 'AbortError') {
       throw new Error('Request timeout - Server tidak merespons');
@@ -101,7 +108,7 @@ export const fetchWithRetry = async (url: string, options: any = {}): Promise<Re
   }
 };
 
-// API helper functions
+// API helper functions - Hanya yang sudah dibuat
 export const AuthAPI = {
   login: async (email: string, password: string) => {
     try {
@@ -118,9 +125,40 @@ export const AuthAPI = {
     }
   },
   
-  getProfile: async () => {
+  getProfile: async (user_id: string) => {
     try {
-      const response = await fetchWithRetry(getApiUrl(API_CONFIG.ENDPOINTS.PROFILE));
+      const response = await fetchWithRetry(`${getApiUrl(API_CONFIG.ENDPOINTS.PROFILE)}?user_id=${user_id}`);
+      return response.json();
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error.message || 'Tidak dapat terhubung ke server'
+      };
+    }
+  },
+};
+
+// API untuk admin
+export const AdminAPI = {
+  getAdminData: async (user_id?: string) => {
+    try {
+      const url = user_id ? `${getApiUrl(API_CONFIG.ENDPOINTS.ADMIN)}?user_id=${user_id}` : getApiUrl(API_CONFIG.ENDPOINTS.ADMIN);
+      const response = await fetchWithRetry(url);
+      return response.json();
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error.message || 'Tidak dapat terhubung ke server'
+      };
+    }
+  },
+  
+  updateProfile: async (data: any) => {
+    try {
+      const response = await fetchWithRetry(getApiUrl(API_CONFIG.ENDPOINTS.ADMIN), {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
       return response.json();
     } catch (error: any) {
       return {
@@ -142,35 +180,6 @@ export const PegawaiAPI = {
         success: false,
         message: error.message || 'Tidak dapat terhubung ke server',
         data: null
-      };
-    }
-  },
-  
-  getProfile: async (user_id: string) => {
-    try {
-      const url = `${getApiUrl(API_CONFIG.ENDPOINTS.PEGAWAI_PROFILE)}?user_id=${user_id}`;
-      const response = await fetchWithRetry(url);
-      return response.json();
-    } catch (error: any) {
-      return {
-        success: false,
-        message: error.message || 'Tidak dapat terhubung ke server',
-        data: null
-      };
-    }
-  },
-  
-  updateProfile: async (data: any) => {
-    try {
-      const response = await fetchWithRetry(getApiUrl(API_CONFIG.ENDPOINTS.PEGAWAI_PROFILE), {
-        method: 'PUT',
-        body: JSON.stringify(data),
-      });
-      return response.json();
-    } catch (error: any) {
-      return {
-        success: false,
-        message: error.message || 'Tidak dapat terhubung ke server'
       };
     }
   },
@@ -237,6 +246,7 @@ export const PegawaiAPI = {
   },
 };
 
+// API untuk pegawai akun management
 export const PegawaiAkunAPI = {
   getDataPegawai: async () => {
     try {
@@ -247,12 +257,21 @@ export const PegawaiAkunAPI = {
     }
   },
   
-  deletePegawai: async (id: number) => {
+  getDetailPegawai: async (id: number) => {
     try {
-      const response = await fetchWithRetry(getApiUrl(API_CONFIG.ENDPOINTS.DELETE_PEGAWAI), {
-        method: 'DELETE',
+      const response = await fetchWithRetry(`${getApiUrl(API_CONFIG.ENDPOINTS.DETAIL_PEGAWAI)}/${id}`);
+      return response.json();
+    } catch (error) {
+      return { success: false, message: 'Tidak dapat terhubung ke server', data: null };
+    }
+  },
+  
+  createPegawai: async (data: any) => {
+    try {
+      const response = await fetchWithRetry(getApiUrl(API_CONFIG.ENDPOINTS.DATA_PEGAWAI), {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id }),
+        body: JSON.stringify(data),
       });
       return response.json();
     } catch (error) {
@@ -260,71 +279,33 @@ export const PegawaiAkunAPI = {
     }
   },
   
-  getAkunLogin: async () => {
+  updatePegawai: async (id: number, data: any) => {
     try {
-      const response = await fetchWithRetry(getApiUrl(API_CONFIG.ENDPOINTS.AKUN_LOGIN));
+      const response = await fetchWithRetry(`${getApiUrl(API_CONFIG.ENDPOINTS.UPDATE_PEGAWAI)}/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
       return response.json();
     } catch (error) {
-      return { success: false, message: 'Tidak dapat terhubung ke server', data: [] };
+      return { success: false, message: 'Tidak dapat terhubung ke server' };
     }
   },
   
-  checkEmails: async () => {
+  deletePegawai: async (id: number) => {
     try {
-      const response = await fetchWithRetry(getApiUrl(API_CONFIG.ENDPOINTS.CHECK_EMAILS));
+      const response = await fetchWithRetry(`${getApiUrl(API_CONFIG.ENDPOINTS.DELETE_PEGAWAI)}/${id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+      });
       return response.json();
     } catch (error) {
-      return { success: false, message: 'Tidak dapat terhubung ke server', data: [] };
+      return { success: false, message: 'Tidak dapat terhubung ke server' };
     }
   },
 };
 
-export const PresensiAPI = {
-  getTracking: async () => {
-    try {
-      const response = await fetchWithRetry(getApiUrl(API_CONFIG.ENDPOINTS.TRACKING));
-      return response.json();
-    } catch (error) {
-      return { success: false, message: 'Tidak dapat terhubung ke server', data: [] };
-    }
-  },
-};
-
-export const AdminAPI = {
-  getApproval: async () => {
-    try {
-      const response = await fetchWithRetry(getApiUrl(API_CONFIG.ENDPOINTS.APPROVAL));
-      return response.json();
-    } catch (error) {
-      return { success: false, message: 'Tidak dapat terhubung ke server', data: [] };
-    }
-  },
-};
-
-export const LaporanAPI = {
-  getLaporan: async (params: any = {}) => {
-    try {
-      const queryParams = new URLSearchParams(params);
-      const url = `${getApiUrl(API_CONFIG.ENDPOINTS.LAPORAN)}?${queryParams.toString()}`;
-      const response = await fetchWithRetry(url);
-      return response.json();
-    } catch (error) {
-      return { success: false, message: 'Tidak dapat terhubung ke server', data: [] };
-    }
-  },
-  
-  exportPDF: async (params: any = {}) => {
-    try {
-      const queryParams = new URLSearchParams(params);
-      const url = `${getApiUrl(API_CONFIG.ENDPOINTS.EXPORT_PDF)}?${queryParams.toString()}`;
-      const response = await fetchWithRetry(url);
-      return response.blob();
-    } catch (error) {
-      throw error;
-    }
-  },
-};
-
+// API untuk kelola dinas
 export const KelolaDinasAPI = {
   getDinasAktif: async () => {
     try {
@@ -332,6 +313,19 @@ export const KelolaDinasAPI = {
       return response.json();
     } catch (error) {
       return { success: false, message: 'Tidak dapat terhubung ke server', data: [] };
+    }
+  },
+  
+  createDinas: async (data: any) => {
+    try {
+      const response = await fetchWithRetry(getApiUrl(API_CONFIG.ENDPOINTS.CREATE_DINAS), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      return response.json();
+    } catch (error) {
+      return { success: false, message: 'Tidak dapat terhubung ke server' };
     }
   },
   
@@ -356,21 +350,23 @@ export const KelolaDinasAPI = {
       return { success: false, message: 'Tidak dapat terhubung ke server', data: [] };
     }
   },
-  
-  createDinas: async (data: any) => {
+};
+
+// API untuk laporan admin
+export const LaporanAPI = {
+  getLaporan: async (params: any = {}) => {
     try {
-      const response = await fetchWithRetry(getApiUrl(API_CONFIG.ENDPOINTS.CREATE_DINAS), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
+      const queryParams = new URLSearchParams(params);
+      const url = `${getApiUrl(API_CONFIG.ENDPOINTS.LAPORAN)}?${queryParams.toString()}`;
+      const response = await fetchWithRetry(url);
       return response.json();
     } catch (error) {
-      return { success: false, message: 'Tidak dapat terhubung ke server' };
+      return { success: false, message: 'Tidak dapat terhubung ke server', data: [] };
     }
   },
 };
 
+// API untuk pengaturan admin
 export const PengaturanAPI = {
   getLokasiKantor: async () => {
     try {
@@ -394,6 +390,31 @@ export const PengaturanAPI = {
     }
   },
   
+  updateLokasiKantor: async (id: number, data: any) => {
+    try {
+      const response = await fetchWithRetry(`${getApiUrl(API_CONFIG.ENDPOINTS.LOKASI_KANTOR)}/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      return response.json();
+    } catch (error) {
+      return { success: false, message: 'Tidak dapat terhubung ke server' };
+    }
+  },
+  
+  deleteLokasiKantor: async (id: number) => {
+    try {
+      const response = await fetchWithRetry(`${getApiUrl(API_CONFIG.ENDPOINTS.LOKASI_KANTOR)}/${id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      return response.json();
+    } catch (error) {
+      return { success: false, message: 'Tidak dapat terhubung ke server' };
+    }
+  },
+  
   getJamKerja: async () => {
     try {
       const response = await fetchWithRetry(getApiUrl(API_CONFIG.ENDPOINTS.JAM_KERJA));
@@ -403,9 +424,84 @@ export const PengaturanAPI = {
     }
   },
   
+  saveJamKerja: async (data: any) => {
+    try {
+      const response = await fetchWithRetry(getApiUrl(API_CONFIG.ENDPOINTS.JAM_KERJA), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      return response.json();
+    } catch (error) {
+      return { success: false, message: 'Tidak dapat terhubung ke server' };
+    }
+  },
+  
   getHariLibur: async () => {
     try {
       const response = await fetchWithRetry(getApiUrl(API_CONFIG.ENDPOINTS.HARI_LIBUR));
+      return response.json();
+    } catch (error) {
+      return { success: false, message: 'Tidak dapat terhubung ke server', data: [] };
+    }
+  },
+  
+  createHariLibur: async (data: any) => {
+    try {
+      const response = await fetchWithRetry(getApiUrl(API_CONFIG.ENDPOINTS.HARI_LIBUR), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      return response.json();
+    } catch (error) {
+      return { success: false, message: 'Tidak dapat terhubung ke server' };
+    }
+  },
+  
+  deleteHariLibur: async (id: number) => {
+    try {
+      const response = await fetchWithRetry(`${getApiUrl(API_CONFIG.ENDPOINTS.HARI_LIBUR)}/${id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      return response.json();
+    } catch (error) {
+      return { success: false, message: 'Tidak dapat terhubung ke server' };
+    }
+  },
+};
+
+// API untuk approval admin
+export const AdminAPI2 = {
+  getApproval: async () => {
+    try {
+      const response = await fetchWithRetry(getApiUrl(API_CONFIG.ENDPOINTS.APPROVAL));
+      return response.json();
+    } catch (error) {
+      return { success: false, message: 'Tidak dapat terhubung ke server', data: [] };
+    }
+  },
+  
+  updateApproval: async (id: number, data: any) => {
+    try {
+      const response = await fetchWithRetry(`${getApiUrl(API_CONFIG.ENDPOINTS.APPROVAL)}/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      return response.json();
+    } catch (error) {
+      return { success: false, message: 'Tidak dapat terhubung ke server' };
+    }
+  },
+};
+
+// API untuk tracking presensi
+export const PresensiAPI = {
+  getTracking: async () => {
+    try {
+      const response = await fetchWithRetry(getApiUrl(API_CONFIG.ENDPOINTS.TRACKING));
       return response.json();
     } catch (error) {
       return { success: false, message: 'Tidak dapat terhubung ke server', data: [] };

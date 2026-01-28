@@ -1,9 +1,21 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, StatusBar, ScrollView, TouchableOpacity, Switch, Alert, KeyboardAvoidingView, Platform, Modal, TextInput } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import DateTimePickerModal from 'react-native-modal-datetime-picker';
-import { PengaturanAPI } from '../../constants/config';
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import { useEffect, useState } from "react";
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import DateTimePickerModal from "react-native-modal-datetime-picker";
+import { PengaturanAPI } from "../../constants/config";
 
 interface JamKerjaHari {
   hari: string;
@@ -18,20 +30,62 @@ export default function JamKerjaScreen() {
   const [loading, setLoading] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editIndex, setEditIndex] = useState(-1);
-  const [editJamMasuk, setEditJamMasuk] = useState('');
-  const [editBatasAbsen, setEditBatasAbsen] = useState('');
-  const [editJamPulang, setEditJamPulang] = useState('');
+  const [editJamMasuk, setEditJamMasuk] = useState("");
+  const [editBatasAbsen, setEditBatasAbsen] = useState("");
+  const [editJamPulang, setEditJamPulang] = useState("");
   const [showJamMasukPicker, setShowJamMasukPicker] = useState(false);
   const [showBatasAbsenPicker, setShowBatasAbsenPicker] = useState(false);
   const [showJamPulangPicker, setShowJamPulangPicker] = useState(false);
   const [jamKerjaList, setJamKerjaList] = useState<JamKerjaHari[]>([
-    { hari: 'Senin', jam_masuk: '08:00', batas_absen: '08:30', jam_pulang: '17:00', is_kerja: true },
-    { hari: 'Selasa', jam_masuk: '08:00', batas_absen: '08:30', jam_pulang: '17:00', is_kerja: true },
-    { hari: 'Rabu', jam_masuk: '08:00', batas_absen: '08:30', jam_pulang: '17:00', is_kerja: true },
-    { hari: 'Kamis', jam_masuk: '08:00', batas_absen: '08:30', jam_pulang: '17:00', is_kerja: true },
-    { hari: 'Jumat', jam_masuk: '08:00', batas_absen: '08:30', jam_pulang: '16:30', is_kerja: true },
-    { hari: 'Sabtu', jam_masuk: '08:00', batas_absen: '08:30', jam_pulang: '12:00', is_kerja: false },
-    { hari: 'Minggu', jam_masuk: '08:00', batas_absen: '08:30', jam_pulang: '17:00', is_kerja: false }
+    {
+      hari: "Senin",
+      jam_masuk: "08:00",
+      batas_absen: "08:30",
+      jam_pulang: "17:00",
+      is_kerja: true,
+    },
+    {
+      hari: "Selasa",
+      jam_masuk: "08:00",
+      batas_absen: "08:30",
+      jam_pulang: "17:00",
+      is_kerja: true,
+    },
+    {
+      hari: "Rabu",
+      jam_masuk: "08:00",
+      batas_absen: "08:30",
+      jam_pulang: "17:00",
+      is_kerja: true,
+    },
+    {
+      hari: "Kamis",
+      jam_masuk: "08:00",
+      batas_absen: "08:30",
+      jam_pulang: "17:00",
+      is_kerja: true,
+    },
+    {
+      hari: "Jumat",
+      jam_masuk: "08:00",
+      batas_absen: "08:30",
+      jam_pulang: "16:30",
+      is_kerja: true,
+    },
+    {
+      hari: "Sabtu",
+      jam_masuk: "08:00",
+      batas_absen: "08:30",
+      jam_pulang: "12:00",
+      is_kerja: false,
+    },
+    {
+      hari: "Minggu",
+      jam_masuk: "08:00",
+      batas_absen: "08:30",
+      jam_pulang: "17:00",
+      is_kerja: false,
+    },
   ]);
 
   useEffect(() => {
@@ -46,7 +100,7 @@ export default function JamKerjaScreen() {
         setJamKerjaList(response.data);
       }
     } catch (error) {
-      console.error('Error fetching jam kerja:', error);
+      console.error("Error fetching jam kerja:", error);
     } finally {
       setLoading(false);
     }
@@ -68,7 +122,7 @@ export default function JamKerjaScreen() {
 
   const handleSaveEdit = () => {
     if (!editJamMasuk || !editBatasAbsen || !editJamPulang) {
-      Alert.alert('Error', 'Semua jam harus diisi');
+      Alert.alert("Error", "Semua jam harus diisi");
       return;
     }
     const updated = [...jamKerjaList];
@@ -80,7 +134,7 @@ export default function JamKerjaScreen() {
   };
 
   const formatJam = (text: string) => {
-    const cleaned = text.replace(/\D/g, '');
+    const cleaned = text.replace(/\D/g, "");
     if (cleaned.length >= 3) {
       return `${cleaned.slice(0, 2)}:${cleaned.slice(2, 4)}`;
     }
@@ -88,8 +142,8 @@ export default function JamKerjaScreen() {
   };
 
   const formatTime = (time: Date) => {
-    const hours = String(time.getHours()).padStart(2, '0');
-    const minutes = String(time.getMinutes()).padStart(2, '0');
+    const hours = String(time.getHours()).padStart(2, "0");
+    const minutes = String(time.getMinutes()).padStart(2, "0");
     return `${hours}:${minutes}`;
   };
 
@@ -114,35 +168,37 @@ export default function JamKerjaScreen() {
   const handleSave = async () => {
     try {
       setLoading(true);
-      const response = await PengaturanAPI.saveJamKerja({ jam_kerja: jamKerjaList });
-      
+      const response = await PengaturanAPI.saveJamKerja({
+        jam_kerja: jamKerjaList,
+      });
+
       if (response.success) {
-        Alert.alert('Sukses', 'Pengaturan jam kerja berhasil disimpan', [
-          { 
-            text: 'OK', 
-            onPress: () => router.back()
-          }
+        Alert.alert("Sukses", "Pengaturan jam kerja berhasil disimpan", [
+          {
+            text: "OK",
+            onPress: () => router.back(),
+          },
         ]);
       } else {
-        Alert.alert('Error', response.message || 'Gagal menyimpan pengaturan');
+        Alert.alert("Error", response.message || "Gagal menyimpan pengaturan");
       }
     } catch (error) {
-      Alert.alert('Error', 'Terjadi kesalahan saat menyimpan');
+      Alert.alert("Error", "Terjadi kesalahan saat menyimpan");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <KeyboardAvoidingView 
+    <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
     >
       {/* FIXED HEADER */}
       <View style={styles.fixedHeader}>
         <View style={styles.headerLeft}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.backBtn}
             onPress={() => router.back()}
           >
@@ -153,68 +209,78 @@ export default function JamKerjaScreen() {
       </View>
 
       <View style={styles.contentWrapper}>
-        <ScrollView style={styles.contentContainer} showsVerticalScrollIndicator={false}>
-        <View style={styles.content}>
-        <View style={styles.infoCard}>
-          <Ionicons name="information-circle" size={20} color="#004643" />
-          <Text style={styles.infoText}>
-            Atur jam kerja per hari. Hari libur akan ditandai merah di kalender
-          </Text>
-        </View>
-
-        {jamKerjaList.map((item, index) => (
-          <View key={index} style={styles.hariCard}>
-            <View style={styles.hariInfo}>
-              <View style={styles.hariLeft}>
-                <Text style={styles.hariNama}>{item.hari}</Text>
-                <Text style={styles.hariJam}>
-                  {item.is_kerja ? `${item.jam_masuk} - ${item.jam_pulang}` : 'Libur'}
-                </Text>
-                {item.is_kerja && (
-                  <Text style={styles.hariBatas}>
-                    Batas absen: {item.batas_absen}
-                  </Text>
-                )}
-              </View>
-              
-              <View style={styles.hariRight}>
-                <Switch
-                  value={item.is_kerja}
-                  onValueChange={() => toggleHariKerja(index)}
-                  trackColor={{ false: '#E0E0E0', true: '#A8D5BA' }}
-                  thumbColor={item.is_kerja ? '#004643' : '#f4f3f4'}
-                />
-                
-                <TouchableOpacity 
-                  style={[styles.editBtn, !item.is_kerja && styles.editBtnDisabled]}
-                  onPress={() => item.is_kerja && handleEditJam(item, index)}
-                  disabled={!item.is_kerja}
-                >
-                  <Ionicons 
-                    name="create-outline" 
-                    size={20} 
-                    color={item.is_kerja ? '#004643' : '#ccc'} 
-                  />
-                </TouchableOpacity>
-              </View>
+        <ScrollView
+          style={styles.contentContainer}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.content}>
+            <View style={styles.infoCard}>
+              <Ionicons name="information-circle" size={20} color="#004643" />
+              <Text style={styles.infoText}>
+                Atur jam kerja per hari. Hari libur akan ditandai merah di
+                kalender
+              </Text>
             </View>
-          </View>
-        ))}
 
-        </View>
+            {jamKerjaList.map((item, index) => (
+              <View key={index} style={styles.hariCard}>
+                <View style={styles.hariInfo}>
+                  <View style={styles.hariLeft}>
+                    <Text style={styles.hariNama}>{item.hari}</Text>
+                    <Text style={styles.hariJam}>
+                      {item.is_kerja
+                        ? `${item.jam_masuk} - ${item.jam_pulang}`
+                        : "Libur"}
+                    </Text>
+                    {item.is_kerja && (
+                      <Text style={styles.hariBatas}>
+                        Batas absen: {item.batas_absen}
+                      </Text>
+                    )}
+                  </View>
+
+                  <View style={styles.hariRight}>
+                    <Switch
+                      value={item.is_kerja}
+                      onValueChange={() => toggleHariKerja(index)}
+                      trackColor={{ false: "#E0E0E0", true: "#A8D5BA" }}
+                      thumbColor={item.is_kerja ? "#004643" : "#f4f3f4"}
+                    />
+
+                    <TouchableOpacity
+                      style={[
+                        styles.editBtn,
+                        !item.is_kerja && styles.editBtnDisabled,
+                      ]}
+                      onPress={() =>
+                        item.is_kerja && handleEditJam(item, index)
+                      }
+                      disabled={!item.is_kerja}
+                    >
+                      <Ionicons
+                        name="create-outline"
+                        size={20}
+                        color={item.is_kerja ? "#004643" : "#ccc"}
+                      />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+            ))}
+          </View>
         </ScrollView>
       </View>
 
       {/* Sticky Save Button */}
       <View style={styles.stickyFooter}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.saveBtn, loading && styles.saveBtnDisabled]}
           onPress={handleSave}
           disabled={loading}
         >
           <Ionicons name="checkmark-circle" size={20} color="#fff" />
           <Text style={styles.saveBtnText}>
-            {loading ? 'Menyimpan...' : 'Simpan'}
+            {loading ? "Menyimpan..." : "Simpan"}
           </Text>
         </TouchableOpacity>
       </View>
@@ -224,9 +290,10 @@ export default function JamKerjaScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
             <Text style={styles.modalTitle}>
-              Edit Jam Kerja {editIndex >= 0 ? jamKerjaList[editIndex].hari : ''}
+              Edit Jam Kerja{" "}
+              {editIndex >= 0 ? jamKerjaList[editIndex].hari : ""}
             </Text>
-            
+
             <View style={styles.modalInputGroup}>
               <Text style={styles.modalLabel}>Jam Masuk</Text>
               <View style={styles.modalInputWrapper}>
@@ -239,7 +306,10 @@ export default function JamKerjaScreen() {
                   keyboardType="numeric"
                   maxLength={5}
                 />
-                <TouchableOpacity onPress={() => setShowJamMasukPicker(true)} style={styles.timeButton}>
+                <TouchableOpacity
+                  onPress={() => setShowJamMasukPicker(true)}
+                  style={styles.timeButton}
+                >
                   <Ionicons name="time" size={20} color="#004643" />
                 </TouchableOpacity>
               </View>
@@ -257,7 +327,10 @@ export default function JamKerjaScreen() {
                   keyboardType="numeric"
                   maxLength={5}
                 />
-                <TouchableOpacity onPress={() => setShowBatasAbsenPicker(true)} style={styles.timeButton}>
+                <TouchableOpacity
+                  onPress={() => setShowBatasAbsenPicker(true)}
+                  style={styles.timeButton}
+                >
                   <Ionicons name="time" size={20} color="#004643" />
                 </TouchableOpacity>
               </View>
@@ -275,20 +348,23 @@ export default function JamKerjaScreen() {
                   keyboardType="numeric"
                   maxLength={5}
                 />
-                <TouchableOpacity onPress={() => setShowJamPulangPicker(true)} style={styles.timeButton}>
+                <TouchableOpacity
+                  onPress={() => setShowJamPulangPicker(true)}
+                  style={styles.timeButton}
+                >
                   <Ionicons name="time" size={20} color="#004643" />
                 </TouchableOpacity>
               </View>
             </View>
 
             <View style={styles.modalButtons}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.modalBtnCancel}
                 onPress={() => setShowEditModal(false)}
               >
                 <Text style={styles.modalBtnCancelText}>Batal</Text>
               </TouchableOpacity>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.modalBtnSave}
                 onPress={handleSaveEdit}
               >
@@ -331,223 +407,221 @@ export default function JamKerjaScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFB' },
+  container: { flex: 1, backgroundColor: "#F8FAFB" },
   fixedHeader: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     zIndex: 1000,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 20,
     paddingTop: 50,
     paddingBottom: 15,
-    backgroundColor: '#fff',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4
+    backgroundColor: "#F8FAFB",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E0E0E0",
   },
   contentWrapper: {
     flex: 1,
-    marginTop: 120
+    marginTop: 120,
   },
   headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
   },
   backBtn: {
     padding: 10,
     marginRight: 15,
     borderRadius: 10,
-    backgroundColor: '#F5F5F5'
+    backgroundColor: "#F5F5F5",
   },
-  headerTitle: { 
-    fontSize: 20, 
-    fontWeight: 'bold', 
-    color: '#004643' 
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#004643",
   },
   contentContainer: {
-    flex: 1
+    flex: 1,
   },
   content: {
     flex: 1,
     paddingHorizontal: 5,
     paddingTop: 15,
-    paddingBottom: 100
+    paddingBottom: 100,
   },
   infoCard: {
-    flexDirection: 'row',
-    backgroundColor: '#F0F8F7',
+    flexDirection: "row",
+    backgroundColor: "#F0F8F7",
     padding: 16,
     borderRadius: 12,
     marginBottom: 16,
-    marginHorizontal: 20,
-    alignItems: 'flex-start'
+    marginHorizontal: 15,
+    alignItems: "flex-start",
   },
   infoText: {
     flex: 1,
     fontSize: 12,
-    color: '#004643',
+    color: "#004643",
     marginLeft: 12,
-    lineHeight: 16
+    lineHeight: 16,
   },
   hariCard: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderRadius: 12,
     padding: 15,
     marginBottom: 12,
+    marginHorizontal: 15,
     borderWidth: 1,
-    borderColor: '#E0E0E0'
+    borderColor: "#E0E0E0",
   },
   hariInfo: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center'
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   hariLeft: {
-    flex: 1
+    flex: 1,
   },
   hariNama: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 4
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 4,
   },
   hariJam: {
     fontSize: 14,
-    color: '#666'
+    color: "#666",
   },
   hariBatas: {
     fontSize: 12,
-    color: '#999',
-    marginTop: 2
+    color: "#999",
+    marginTop: 2,
   },
   hariRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 15,
     minWidth: 100,
-    justifyContent: 'flex-end'
+    justifyContent: "flex-end",
   },
   editBtn: {
     padding: 8,
-    backgroundColor: '#F0F8F7',
+    backgroundColor: "#F0F8F7",
     borderRadius: 8,
     width: 36,
     height: 36,
-    alignItems: 'center',
-    justifyContent: 'center'
+    alignItems: "center",
+    justifyContent: "center",
   },
   editBtnDisabled: {
-    backgroundColor: '#F5F5F5'
+    backgroundColor: "#F5F5F5",
   },
   saveBtn: {
-    flexDirection: 'row',
-    backgroundColor: '#004643',
+    flexDirection: "row",
+    backgroundColor: "#004643",
     paddingVertical: 16,
     borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center'
+    alignItems: "center",
+    justifyContent: "center",
   },
   saveBtnDisabled: {
-    backgroundColor: '#999'
+    backgroundColor: "#999",
   },
   saveBtnText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 16,
-    fontWeight: 'bold',
-    marginLeft: 8
+    fontWeight: "bold",
+    marginLeft: 8,
   },
   stickyFooter: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(248, 250, 251, 0.98)',
+    backgroundColor: "rgba(248, 250, 251, 0.98)",
     paddingHorizontal: 20,
     paddingTop: 15,
-    paddingBottom: 30
+    paddingBottom: 30,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center'
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   modalContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderRadius: 15,
     padding: 20,
-    width: '85%'
+    width: "85%",
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#004643',
+    fontWeight: "bold",
+    color: "#004643",
     marginBottom: 20,
-    textAlign: 'center'
+    textAlign: "center",
   },
   modalInputGroup: {
-    marginBottom: 15
+    marginBottom: 15,
   },
   modalLabel: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 8
+    fontWeight: "600",
+    color: "#333",
+    marginBottom: 8,
   },
   modalInputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F8FAFB',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F8FAFB",
     borderRadius: 10,
     paddingHorizontal: 15,
     borderWidth: 1,
-    borderColor: '#E0E0E0'
+    borderColor: "#E0E0E0",
   },
   modalInput: {
     flex: 1,
     fontSize: 16,
-    color: '#333',
+    color: "#333",
     paddingVertical: 12,
-    marginLeft: 10
+    marginLeft: 10,
   },
   timeButton: {
     padding: 8,
     borderRadius: 6,
-    backgroundColor: '#F0F8F0'
+    backgroundColor: "#F0F8F0",
   },
   modalButtons: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 10,
-    marginTop: 20
+    marginTop: 20,
   },
   modalBtnCancel: {
     flex: 1,
     paddingVertical: 12,
     borderRadius: 10,
-    backgroundColor: '#F5F5F5',
-    alignItems: 'center'
+    backgroundColor: "#F5F5F5",
+    alignItems: "center",
   },
   modalBtnCancelText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#666'
+    fontWeight: "600",
+    color: "#666",
   },
   modalBtnSave: {
     flex: 1,
     paddingVertical: 12,
     borderRadius: 10,
-    backgroundColor: '#004643',
-    alignItems: 'center'
+    backgroundColor: "#004643",
+    alignItems: "center",
   },
   modalBtnSaveText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#fff'
-  }
+    fontWeight: "600",
+    color: "#fff",
+  },
 });

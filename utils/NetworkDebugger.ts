@@ -7,17 +7,20 @@ export const NetworkDebugger = {
     try {
       console.log('Testing connection to:', API_CONFIG.BASE_URL);
       
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      
       const response = await fetch(`${API_CONFIG.BASE_URL}/test-connection.php`, {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json',
         },
-        timeout: 10000,
+        signal: controller.signal,
       });
       
+      clearTimeout(timeoutId);
       console.log('Response status:', response.status);
-      console.log('Response headers:', response.headers);
       
       if (response.ok) {
         const data = await response.json();
@@ -27,7 +30,7 @@ export const NetworkDebugger = {
         console.log('Connection test failed with status:', response.status);
         return { success: false, error: `HTTP ${response.status}` };
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Connection test error:', error);
       return { success: false, error: error.message };
     }
@@ -38,7 +41,6 @@ export const NetworkDebugger = {
     return {
       baseUrl: API_CONFIG.BASE_URL,
       timestamp: new Date().toISOString(),
-      userAgent: navigator.userAgent || 'React Native',
     };
   },
 

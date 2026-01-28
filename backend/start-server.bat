@@ -1,0 +1,1 @@
+@echo off\necho ========================================\necho   HadirinApp Backend Node.js Server\necho ========================================\necho.\necho Starting server...\necho.\ncd /d \"%~dp0\"\nnpm start\npause

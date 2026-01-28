@@ -14,6 +14,7 @@ import {
   View,
 } from "react-native";
 import { KelolaDinasAPI } from "../../constants/config";
+import { AppHeader } from "../../components";
 
 interface RiwayatDinas {
   id: number;
@@ -374,96 +375,97 @@ export default function RiwayatDinasScreen() {
       <StatusBar barStyle="dark-content" />
 
       {/* HEADER */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <TouchableOpacity
-            style={styles.backBtn}
-            onPress={() => router.back()}
-          >
-            <Ionicons name="arrow-back" size={24} color="#004643" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Riwayat Dinas</Text>
-        </View>
-      </View>
+      <AppHeader 
+        title="Riwayat Dinas"
+        showBack={true}
+        showStats={true}
+        statsText={`${totalRecords} Riwayat`}
+      />
 
       <View style={styles.contentContainer}>
-        {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <View style={styles.searchInputWrapper}>
-            <Ionicons name="search-outline" size={20} color="#666" />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Cari nama kegiatan atau nomor SPT..."
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              placeholderTextColor="#999"
-            />
-            {searchQuery.length > 0 && (
-              <TouchableOpacity onPress={() => setSearchQuery("")}>
-                <Ionicons name="close-circle" size={20} color="#999" />
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
-
-        {/* Date Filter */}
-        <View style={styles.filterCard}>
-          <View style={styles.filterHeader}>
-            <Ionicons name="calendar-outline" size={20} color="#004643" />
-            <Text style={styles.filterTitle}>Filter Tanggal</Text>
-          </View>
-
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.filterChips}
-          >
-            {[
-              { key: "semua", label: "Semua" },
-              { key: "hari_ini", label: "Hari Ini" },
-              { key: "minggu_ini", label: "Minggu Ini" },
-              { key: "bulan_ini", label: "Bulan Ini" },
-              { key: "tanggal_tertentu", label: "Pilih Tanggal" },
-            ].map((filter) => (
-              <TouchableOpacity
-                key={filter.key}
-                style={[
-                  styles.filterChip,
-                  selectedDateFilter === filter.key && styles.filterChipActive,
-                ]}
-                onPress={() => {
-                  if (filter.key === "tanggal_tertentu") {
-                    setShowCalendar(true);
-                  } else {
-                    setSelectedDateFilter(filter.key);
-                  }
-                }}
-              >
-                <Text
-                  style={[
-                    styles.filterChipText,
-                    selectedDateFilter === filter.key &&
-                      styles.filterChipTextActive,
-                  ]}
+        {/* Fixed Search and Sort */}
+        <View style={styles.fixedControls}>
+          {/* Search Container */}
+          <View style={styles.searchContainer}>
+            <View style={styles.searchInputWrapper}>
+              <Ionicons name="search-outline" size={20} color="#666" style={styles.searchIcon} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Cari nama kegiatan atau nomor SPT..."
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                placeholderTextColor="#999"
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity 
+                  onPress={() => setSearchQuery('')}
+                  style={styles.clearBtn}
                 >
-                  {filter.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+                  <Ionicons name="close-circle" size={20} color="#999" />
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
 
-          {selectedDateFilter === "tanggal_tertentu" && (
-            <View style={styles.selectedDateInfo}>
-              <Text style={styles.selectedDateText}>
-                Tanggal terpilih: {selectedDate.toLocaleDateString("id-ID")}
+          {/* Date Filter */}
+          <View style={styles.filterCard}>
+            <View style={styles.filterHeader}>
+              <Ionicons name="calendar-outline" size={20} color="#004643" />
+              <Text style={styles.filterTitle}>Filter Tanggal</Text>
+            </View>
+
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.filterChips}
+            >
+              {[
+                { key: "semua", label: "Semua" },
+                { key: "hari_ini", label: "Hari Ini" },
+                { key: "minggu_ini", label: "Minggu Ini" },
+                { key: "bulan_ini", label: "Bulan Ini" },
+                { key: "tanggal_tertentu", label: "Pilih Tanggal" },
+              ].map((filter) => (
+                <TouchableOpacity
+                  key={filter.key}
+                  style={[
+                    styles.filterChip,
+                    selectedDateFilter === filter.key && styles.filterChipActive,
+                  ]}
+                  onPress={() => {
+                    if (filter.key === "tanggal_tertentu") {
+                      setShowCalendar(true);
+                    } else {
+                      setSelectedDateFilter(filter.key);
+                    }
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.filterChipText,
+                      selectedDateFilter === filter.key &&
+                        styles.filterChipTextActive,
+                    ]}
+                  >
+                    {filter.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            {selectedDateFilter === "tanggal_tertentu" && (
+              <View style={styles.selectedDateInfo}>
+                <Text style={styles.selectedDateText}>
+                  Tanggal terpilih: {selectedDate.toLocaleDateString("id-ID")}
+                </Text>
+              </View>
+            )}
+
+            <View style={styles.resultSummary}>
+              <Text style={styles.resultText}>
+                Ditemukan {totalRecords} riwayat dinas
               </Text>
             </View>
-          )}
-
-          <View style={styles.resultSummary}>
-            <Text style={styles.resultText}>
-              Ditemukan {totalRecords} riwayat dinas
-            </Text>
           </View>
         </View>
 
@@ -472,6 +474,7 @@ export default function RiwayatDinasScreen() {
           data={currentData}
           keyExtractor={(item) => item.id.toString()}
           renderItem={renderRiwayatCard}
+          style={styles.flatList}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
           refreshing={loading}
@@ -556,43 +559,18 @@ export default function RiwayatDinasScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F8FAFB" },
-  header: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 1000,
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingTop: 50,
-    paddingBottom: 15,
-    backgroundColor: "#fff",
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  headerLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-  },
   contentContainer: {
     flex: 1,
-    marginTop: 120,
   },
-  backBtn: {
-    padding: 10,
-    marginRight: 15,
-    borderRadius: 10,
-    backgroundColor: "#F5F5F5",
+  fixedControls: {
+    paddingTop: 8,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F0F0F0",
+    backgroundColor: "#FAFBFC",
   },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#004643",
+  flatList: {
+    flex: 1,
   },
 
   searchContainer: {
@@ -611,7 +589,9 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
-    gap: 10,
+  },
+  searchIcon: {
+    marginRight: 10
   },
   searchInput: {
     flex: 1,
@@ -619,18 +599,18 @@ const styles = StyleSheet.create({
     color: "#333",
     paddingVertical: 12,
   },
+  clearBtn: {
+    padding: 4
+  },
 
   filterCard: {
     backgroundColor: "#fff",
     marginHorizontal: 15,
     marginVertical: 5,
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 15,
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
   },
   filterHeader: {
     flexDirection: "row",
@@ -690,20 +670,18 @@ const styles = StyleSheet.create({
   },
 
   listContent: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 5,
     paddingTop: 10,
     paddingBottom: 20,
   },
   dinasCard: {
     backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 15,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    borderRadius: 12,
+    padding: 15,
+    marginBottom: 12,
+    marginHorizontal: 15,
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
   },
   cardHeader: {
     flexDirection: "row",

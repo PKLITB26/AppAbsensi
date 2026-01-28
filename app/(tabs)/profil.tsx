@@ -2,8 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import { Alert, Image, Modal, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PegawaiAPI } from '../../constants/config';
+import { AuthStorage } from '../../utils/AuthStorage';
 
 interface UserProfile {
   id_user: number;
@@ -21,6 +21,7 @@ interface UserProfile {
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [editModal, setEditModal] = useState(false);
@@ -41,45 +42,58 @@ export default function ProfileScreen() {
   });
 
   useEffect(() => {
-    fetchProfile();
+    loadUserData();
   }, []);
 
-  const fetchProfile = async () => {
+  const loadUserData = async () => {
+    try {
+      const userData = await AuthStorage.getUser();
+      if (userData) {
+        setUser(userData);
+        fetchProfile(userData);
+      } else {
+        router.replace('/');
+      }
+    } catch (error) {
+      console.error('Error loading user data:', error);
+      router.replace('/');
+    }
+  };
+
+  const fetchProfile = async (userData?: any) => {
     try {
       console.log('Fetching profile...');
-      const userData = await AsyncStorage.getItem('userData');
       
-      if (!userData) {
-        console.log('No userData in AsyncStorage, redirecting to login');
+      const currentUser = userData || user;
+      
+      if (!currentUser) {
+        console.log('No user data, redirecting to login');
         Alert.alert('Error', 'Silakan login ulang');
         router.replace('/');
         return;
       }
       
-      const user = JSON.parse(userData);
-      console.log('Full user data from AsyncStorage:', user);
+      console.log('User data from AsyncStorage:', currentUser);
       
       // Coba berbagai kemungkinan field untuk user ID
-      const userId = user.id_user || user.id || user.user_id;
+      const userId = currentUser.id_user || currentUser.id;
       console.log('Extracted user ID:', userId);
-      console.log('User ID type:', typeof userId);
-      console.log('Available keys in user object:', Object.keys(user));
       
       if (!userId) {
         console.log('No valid user ID found, using fallback data only');
-        // Jangan redirect, gunakan data fallback saja
+        // Gunakan data dari AsyncStorage sebagai fallback
         const fallbackProfile = {
-          id_user: 0, // dummy ID
-          nama_lengkap: user.nama_lengkap || user.nama || user.email?.split('@')[0] || 'User',
-          email: user.email || 'No email',
-          jabatan: user.jabatan || 'Staff',
-          nip: user.nip || 'Belum ada NIP',
-          no_telepon: user.no_telepon || 'Belum diisi',
-          divisi: user.divisi || 'Umum',
-          jenis_kelamin: user.jenis_kelamin || 'Belum diisi',
-          alamat: user.alamat || 'Belum diisi',
-          tanggal_lahir: user.tanggal_lahir || 'Belum diisi',
-          foto_profil: user.foto_profil || null
+          id_user: 0,
+          nama_lengkap: currentUser.nama_lengkap || 'User',
+          email: currentUser.email || 'No email',
+          jabatan: currentUser.jabatan || 'Staff',
+          nip: currentUser.nip || 'Belum ada NIP',
+          no_telepon: currentUser.no_telepon || 'Belum diisi',
+          divisi: currentUser.divisi || 'Umum',
+          jenis_kelamin: currentUser.jenis_kelamin || 'Belum diisi',
+          alamat: currentUser.alamat || 'Belum diisi',
+          tanggal_lahir: currentUser.tanggal_lahir || 'Belum diisi',
+          foto_profil: null
         };
         
         setProfile(fallbackProfile);
@@ -105,19 +119,9 @@ export default function ProfileScreen() {
       try {
         const result = await PegawaiAPI.getProfile(userId.toString());
         console.log('Server response:', result);
-        console.log('Debug info:', result.debug);
         
         if (result.success && result.data) {
           console.log('Profile data from server:', result.data);
-          console.log('Debug info:', result.debug);
-          
-          // Update AsyncStorage dengan data terbaru dari server
-          const updatedUserData = {
-            ...user,
-            ...result.data
-          };
-          await AsyncStorage.setItem('userData', JSON.stringify(updatedUserData));
-          
           setProfile(result.data);
           setHasNIP(!!result.data.nip);
           setEditData({
@@ -132,70 +136,25 @@ export default function ProfileScreen() {
             konfirmasi_password: ''
           });
           return;
-        } else {
-          console.log('Server returned success: false or no data:', result.message);
-          // Jika user ID tidak ditemukan, coba dengan ID yang ada di database
-          const knownUserIds = [2, 4, 5, 6, 9, 12]; // ID yang ada di database
-          for (const testId of knownUserIds) {
-            try {
-              const testResult = await PegawaiAPI.getProfile(testId.toString());
-              if (testResult.success && testResult.data) {
-                console.log('Found data with ID:', testId, testResult.data);
-                setProfile(testResult.data);
-                setHasNIP(!!testResult.data.nip);
-                setEditData({
-                  nip: testResult.data.nip || '',
-                  jenis_kelamin: testResult.data.jenis_kelamin || '',
-                  jabatan: testResult.data.jabatan || '',
-                  divisi: testResult.data.divisi || '',
-                  no_telepon: testResult.data.no_telepon || '',
-                  alamat: testResult.data.alamat || '',
-                  tanggal_lahir: testResult.data.tanggal_lahir || '',
-                  password_baru: '',
-                  konfirmasi_password: ''
-                });
-                return;
-              }
-            } catch (e) {
-              console.log('Test ID', testId, 'failed:', e);
-            }
-          }
         }
       } catch (serverError) {
         console.log('Server error, using AsyncStorage data:', serverError);
       }
       
-      // Fallback ke data AsyncStorage jika server error
+      // Fallback ke data AsyncStorage
       console.log('Using fallback data from AsyncStorage');
-      
-      // Gunakan data sample dari database yang kita tahu ada
-      const sampleData = {
-        id_user: userId,
-        nama_lengkap: 'Budi Santoso', // Sample dari database
-        email: user.email || 'budi@itb.ac.id',
-        jabatan: 'Manager IT',
-        nip: 'NIP001',
-        no_telepon: '081234567890',
-        divisi: 'IT',
-        jenis_kelamin: 'Laki-laki',
-        alamat: 'Jl. Merdeka No. 123, Jakarta',
-        tanggal_lahir: '1990-05-15',
-        foto_profil: null
-      };
-      
       const fallbackProfile = {
-        ...sampleData,
-        // Override dengan data user jika ada
-        nama_lengkap: user.nama_lengkap || sampleData.nama_lengkap,
-        email: user.email || sampleData.email,
-        jabatan: user.jabatan || sampleData.jabatan,
-        nip: user.nip || sampleData.nip,
-        no_telepon: user.no_telepon || sampleData.no_telepon,
-        divisi: user.divisi || sampleData.divisi,
-        jenis_kelamin: user.jenis_kelamin || sampleData.jenis_kelamin,
-        alamat: user.alamat || sampleData.alamat,
-        tanggal_lahir: user.tanggal_lahir || sampleData.tanggal_lahir,
-        foto_profil: user.foto_profil || sampleData.foto_profil
+        id_user: parseInt(userId),
+        nama_lengkap: currentUser.nama_lengkap || 'User',
+        email: currentUser.email || 'No email',
+        jabatan: currentUser.jabatan || 'Staff',
+        nip: currentUser.nip || 'Belum ada NIP',
+        no_telepon: currentUser.no_telepon || 'Belum diisi',
+        divisi: currentUser.divisi || 'Umum',
+        jenis_kelamin: currentUser.jenis_kelamin || 'Belum diisi',
+        alamat: currentUser.alamat || 'Belum diisi',
+        tanggal_lahir: currentUser.tanggal_lahir || 'Belum diisi',
+        foto_profil: null
       };
       
       console.log('Fallback profile:', fallbackProfile);
@@ -222,13 +181,11 @@ export default function ProfileScreen() {
 
   const updateProfile = async () => {
     try {
-      const userData = await AsyncStorage.getItem('userData');
-      if (!userData) {
+      if (!user) {
         Alert.alert('Error', 'Silakan login ulang');
         return;
       }
       
-      const user = JSON.parse(userData);
       const userId = user.id_user || user.id;
       if (!userId) {
         Alert.alert('Error', 'Data login tidak valid');
@@ -256,8 +213,7 @@ export default function ProfileScreen() {
 
   const handleLogout = async () => {
     try {
-      await AsyncStorage.removeItem('userData');
-      await AsyncStorage.removeItem('userToken');
+      await AuthStorage.removeUser();
       setLogoutModal(false);
       router.replace('/');
     } catch (error) {

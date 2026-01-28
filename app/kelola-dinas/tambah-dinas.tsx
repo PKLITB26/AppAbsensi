@@ -10,6 +10,7 @@ import * as Location from 'expo-location';
 import MapView, { Marker } from 'react-native-maps';
 import * as DocumentPicker from 'expo-document-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { AppHeader } from '../../components';
 
 export default function TambahDinasScreen() {
   const router = useRouter();
@@ -62,8 +63,6 @@ export default function TambahDinasScreen() {
   const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({});
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
-
-  // New states for improvements
 
   const totalSteps = 5;
 
@@ -403,17 +402,6 @@ export default function TambahDinasScreen() {
     }
   };
 
-  // Progress calculation
-  const calculateProgress = () => {
-    let completedSteps = 0;
-    if (formData.namaKegiatan && formData.nomorSpt) completedSteps++;
-    if (formData.tanggalMulai && formData.tanggalSelesai) completedSteps++;
-    if (formData.jamMulai && formData.jamSelesai) completedSteps++;
-    if (selectedLokasi.length > 0) completedSteps++;
-    if (selectedPegawai.length > 0) completedSteps++;
-    return completedSteps;
-  };
-
   const fetchAvailableLokasi = async () => {
     try {
       const response = await PengaturanAPI.getLokasiKantor();
@@ -675,41 +663,25 @@ export default function TambahDinasScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
     >
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <TouchableOpacity 
-            style={styles.backBtn}
-            onPress={() => router.back()}
-          >
-            <Ionicons name="arrow-back" size={24} color="#004643" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Tambah Dinas Baru</Text>
-        </View>
-      </View>
-
-      {/* Progress Indicator */}
-      <View style={styles.progressContainer}>
-        <View style={styles.progressBar}>
-          <View style={[styles.progressFill, { width: `${(calculateProgress() / totalSteps) * 100}%` }]} />
-        </View>
-      </View>
+      <AppHeader 
+        title="Tambah Dinas Baru"
+        showBack={true}
+      />
 
       <ScrollView style={styles.contentContainer} showsVerticalScrollIndicator={false}>
         <View style={styles.formContainer}>
-        {/* Card 1: Informasi Dasar */}
-        <View style={styles.cardContainer}>
-          <View style={styles.cardHeader}>
-            <Ionicons name="information-circle-outline" size={24} color="#004643" />
-            <Text style={styles.cardTitle}>Informasi Dasar Dinas</Text>
-          </View>
           
-          <View style={styles.cardContent}>
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Nama Kegiatan *</Text>
-              <View style={[styles.inputWrapper, validationErrors.namaKegiatan && styles.inputError]}>
-                <Ionicons name="clipboard-outline" size={20} color="#666" style={styles.inputIcon} />
+          {/* Informasi Dasar */}
+          <View style={styles.formCard}>
+            <View style={styles.cardHeader}>
+              <Ionicons name="information-circle-outline" size={20} color="#004643" />
+              <Text style={styles.cardTitle}>Informasi Dasar Dinas</Text>
+            </View>
+            <View style={styles.cardContent}>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Nama Kegiatan *</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.textInput, validationErrors.namaKegiatan && styles.inputError]}
                   placeholder="Contoh: Rapat Koordinasi Regional"
                   value={formData.namaKegiatan}
                   onChangeText={(text) => {
@@ -717,18 +689,15 @@ export default function TambahDinasScreen() {
                     validateField('namaKegiatan', text);
                   }}
                 />
+                {validationErrors.namaKegiatan && (
+                  <Text style={styles.errorText}>{validationErrors.namaKegiatan}</Text>
+                )}
               </View>
-              {validationErrors.namaKegiatan && (
-                <Text style={styles.errorText}>{validationErrors.namaKegiatan}</Text>
-              )}
-            </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Nomor SPT *</Text>
-              <View style={[styles.inputWrapper, validationErrors.nomorSpt && styles.inputError]}>
-                <Ionicons name="document-text-outline" size={20} color="#666" style={styles.inputIcon} />
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Nomor SPT *</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.textInput, validationErrors.nomorSpt && styles.inputError]}
                   placeholder="Contoh: SPT/001/2024"
                   value={formData.nomorSpt}
                   onChangeText={(text) => {
@@ -736,66 +705,57 @@ export default function TambahDinasScreen() {
                     validateField('nomorSpt', text);
                   }}
                 />
+                {validationErrors.nomorSpt && (
+                  <Text style={styles.errorText}>{validationErrors.nomorSpt}</Text>
+                )}
               </View>
-              {validationErrors.nomorSpt && (
-                <Text style={styles.errorText}>{validationErrors.nomorSpt}</Text>
-              )}
-            </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Jenis Dinas *</Text>
-              <TouchableOpacity 
-                style={styles.dropdownBtn}
-                onPress={() => setShowJenisDinasDropdown(!showJenisDinasDropdown)}
-              >
-                <Ionicons 
-                  name={formData.jenisDinas === 'lokal' ? 'business-outline' : formData.jenisDinas === 'luar_kota' ? 'car-outline' : 'airplane-outline'} 
-                  size={20} 
-                  color="#004643" 
-                />
-                <Text style={styles.dropdownBtnText}>
-                  {formData.jenisDinas === 'lokal' ? 'Dinas Lokal' : 
-                   formData.jenisDinas === 'luar_kota' ? 'Dinas Luar Kota' : 'Dinas Luar Negeri'}
-                </Text>
-                <Ionicons 
-                  name={showJenisDinasDropdown ? "chevron-up" : "chevron-down"} 
-                  size={16} 
-                  color="#666" 
-                />
-              </TouchableOpacity>
-              
-              {showJenisDinasDropdown && (
-                <View style={styles.dropdownContainer}>
-                  {[
-                    { key: 'lokal', label: 'Dinas Lokal', icon: 'business-outline' },
-                    { key: 'luar_kota', label: 'Dinas Luar Kota', icon: 'car-outline' },
-                    { key: 'luar_negeri', label: 'Dinas Luar Negeri', icon: 'airplane-outline' }
-                  ].map((item) => (
-                    <TouchableOpacity
-                      key={item.key}
-                      style={[styles.pegawaiDropdownItem, formData.jenisDinas === item.key && styles.pegawaiSelected]}
-                      onPress={() => {
-                        setFormData({...formData, jenisDinas: item.key});
-                        setShowJenisDinasDropdown(false);
-                      }}
-                    >
-                      <Ionicons name={item.icon as any} size={20} color="#004643" />
-                      <Text style={[styles.pegawaiItemName, {marginLeft: 12, marginBottom: 0}]}>{item.label}</Text>
-                      {formData.jenisDinas === item.key && (
-                        <Ionicons name="checkmark-circle" size={20} color="#004643" />
-                      )}
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              )}
-            </View>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Jenis Dinas *</Text>
+                <TouchableOpacity 
+                  style={styles.dropdownBtn}
+                  onPress={() => setShowJenisDinasDropdown(!showJenisDinasDropdown)}
+                >
+                  <Text style={styles.dropdownBtnText}>
+                    {formData.jenisDinas === 'lokal' ? 'Dinas Lokal' : 
+                     formData.jenisDinas === 'luar_kota' ? 'Dinas Luar Kota' : 'Dinas Luar Negeri'}
+                  </Text>
+                  <Ionicons 
+                    name={showJenisDinasDropdown ? "chevron-up" : "chevron-down"} 
+                    size={16} 
+                    color="#666" 
+                  />
+                </TouchableOpacity>
+                
+                {showJenisDinasDropdown && (
+                  <View style={styles.dropdownContainer}>
+                    {[
+                      { key: 'lokal', label: 'Dinas Lokal' },
+                      { key: 'luar_kota', label: 'Dinas Luar Kota' },
+                      { key: 'luar_negeri', label: 'Dinas Luar Negeri' }
+                    ].map((item) => (
+                      <TouchableOpacity
+                        key={item.key}
+                        style={[styles.dropdownItem, formData.jenisDinas === item.key && styles.dropdownItemSelected]}
+                        onPress={() => {
+                          setFormData({...formData, jenisDinas: item.key});
+                          setShowJenisDinasDropdown(false);
+                        }}
+                      >
+                        <Text style={styles.dropdownItemText}>{item.label}</Text>
+                        {formData.jenisDinas === item.key && (
+                          <Ionicons name="checkmark-circle" size={20} color="#004643" />
+                        )}
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+              </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Deskripsi (Opsional)</Text>
-              <View style={[styles.inputWrapper, styles.textAreaWrapper]}>
-                <Ionicons name="document-outline" size={20} color="#666" style={[styles.inputIcon, styles.textAreaIcon]} />
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Deskripsi</Text>
                 <TextInput
-                  style={[styles.input, styles.textArea]}
+                  style={[styles.textInput, styles.textArea]}
                   placeholder="Deskripsi kegiatan dinas..."
                   value={formData.deskripsi}
                   onChangeText={(text) => setFormData({...formData, deskripsi: text})}
@@ -805,23 +765,19 @@ export default function TambahDinasScreen() {
               </View>
             </View>
           </View>
-        </View>
 
-        {/* Card 2: Waktu & Jadwal */}
-        <View style={styles.cardContainer}>
-          <View style={styles.cardHeader}>
-            <Ionicons name="time-outline" size={24} color="#004643" />
-            <Text style={styles.cardTitle}>Waktu & Jadwal Dinas</Text>
-          </View>
-          
-          <View style={styles.cardContent}>
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Tanggal Mulai *</Text>
-              <View style={styles.dateInputContainer}>
-                <View style={[styles.inputWrapper, validationErrors.tanggalMulai && styles.inputError]}>
-                  <Ionicons name="calendar-outline" size={20} color="#666" style={styles.inputIcon} />
+          {/* Waktu & Jadwal */}
+          <View style={styles.formCard}>
+            <View style={styles.cardHeader}>
+              <Ionicons name="time-outline" size={20} color="#004643" />
+              <Text style={styles.cardTitle}>Waktu & Jadwal Dinas</Text>
+            </View>
+            <View style={styles.cardContent}>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Tanggal Mulai *</Text>
+                <View style={styles.dateInputContainer}>
                   <TextInput
-                    style={styles.input}
+                    style={[styles.textInput, validationErrors.tanggalMulai && styles.inputError]}
                     placeholder="DD/MM/YYYY"
                     value={formData.tanggalMulai}
                     onChangeText={(text) => {
@@ -836,19 +792,16 @@ export default function TambahDinasScreen() {
                     <Ionicons name="calendar" size={20} color="#004643" />
                   </TouchableOpacity>
                 </View>
+                {validationErrors.tanggalMulai && (
+                  <Text style={styles.errorText}>{validationErrors.tanggalMulai}</Text>
+                )}
               </View>
-              {validationErrors.tanggalMulai && (
-                <Text style={styles.errorText}>{validationErrors.tanggalMulai}</Text>
-              )}
-            </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Tanggal Selesai *</Text>
-              <View style={styles.dateInputContainer}>
-                <View style={[styles.inputWrapper, validationErrors.tanggalSelesai && styles.inputError]}>
-                  <Ionicons name="calendar-outline" size={20} color="#666" style={styles.inputIcon} />
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Tanggal Selesai *</Text>
+                <View style={styles.dateInputContainer}>
                   <TextInput
-                    style={styles.input}
+                    style={[styles.textInput, validationErrors.tanggalSelesai && styles.inputError]}
                     placeholder="DD/MM/YYYY"
                     value={formData.tanggalSelesai}
                     onChangeText={(text) => {
@@ -863,19 +816,16 @@ export default function TambahDinasScreen() {
                     <Ionicons name="calendar" size={20} color="#004643" />
                   </TouchableOpacity>
                 </View>
+                {validationErrors.tanggalSelesai && (
+                  <Text style={styles.errorText}>{validationErrors.tanggalSelesai}</Text>
+                )}
               </View>
-              {validationErrors.tanggalSelesai && (
-                <Text style={styles.errorText}>{validationErrors.tanggalSelesai}</Text>
-              )}
-            </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Jam Mulai *</Text>
-              <View style={styles.dateInputContainer}>
-                <View style={[styles.inputWrapper, validationErrors.jamMulai && styles.inputError]}>
-                  <Ionicons name="time-outline" size={20} color="#666" style={styles.inputIcon} />
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Jam Mulai *</Text>
+                <View style={styles.dateInputContainer}>
                   <TextInput
-                    style={styles.input}
+                    style={[styles.textInput, validationErrors.jamMulai && styles.inputError]}
                     placeholder="08:00"
                     value={formData.jamMulai}
                     onChangeText={(text) => {
@@ -890,19 +840,16 @@ export default function TambahDinasScreen() {
                     <Ionicons name="time" size={20} color="#004643" />
                   </TouchableOpacity>
                 </View>
+                {validationErrors.jamMulai && (
+                  <Text style={styles.errorText}>{validationErrors.jamMulai}</Text>
+                )}
               </View>
-              {validationErrors.jamMulai && (
-                <Text style={styles.errorText}>{validationErrors.jamMulai}</Text>
-              )}
-            </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Jam Selesai *</Text>
-              <View style={styles.dateInputContainer}>
-                <View style={[styles.inputWrapper, validationErrors.jamSelesai && styles.inputError]}>
-                  <Ionicons name="time-outline" size={20} color="#666" style={styles.inputIcon} />
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Jam Selesai *</Text>
+                <View style={styles.dateInputContainer}>
                   <TextInput
-                    style={styles.input}
+                    style={[styles.textInput, validationErrors.jamSelesai && styles.inputError]}
                     placeholder="17:00"
                     value={formData.jamSelesai}
                     onChangeText={(text) => {
@@ -917,238 +864,204 @@ export default function TambahDinasScreen() {
                     <Ionicons name="time" size={20} color="#004643" />
                   </TouchableOpacity>
                 </View>
+                {validationErrors.jamSelesai && (
+                  <Text style={styles.errorText}>{validationErrors.jamSelesai}</Text>
+                )}
               </View>
-              {validationErrors.jamSelesai && (
-                <Text style={styles.errorText}>{validationErrors.jamSelesai}</Text>
-              )}
             </View>
           </View>
-        </View>
 
-        {/* Card 3: Lokasi Dinas */}
-        <View style={styles.cardContainer}>
-          <View style={styles.cardHeader}>
-            <Ionicons name="location-outline" size={24} color="#004643" />
-            <Text style={styles.cardTitle}>Lokasi Dinas</Text>
-          </View>
-          
-          <View style={styles.cardContent}>
-            <TouchableOpacity 
-              style={styles.dropdownBtn}
-              onPress={() => setShowLokasiModal(!showLokasiModal)}
-            >
+          {/* Lokasi & Pegawai */}
+          <View style={styles.formCard}>
+            <View style={styles.cardHeader}>
               <Ionicons name="location-outline" size={20} color="#004643" />
-              <Text style={styles.dropdownBtnText}>
-                {selectedLokasi.length > 0 
-                  ? `${selectedLokasi.length} lokasi dipilih` 
-                  : 'Pilih Lokasi Dinas'
-                }
-              </Text>
-              <Ionicons 
-                name={showLokasiModal ? "chevron-up" : "chevron-down"} 
-                size={16} 
-                color="#666" 
-              />
-            </TouchableOpacity>
-            
-            {showLokasiModal && (
-              <View style={styles.dropdownContainer}>
-                <View style={styles.pegawaiSearchWrapper}>
-                  <Ionicons name="search-outline" size={16} color="#666" />
-                  <TextInput
-                    style={styles.searchPegawaiInput}
-                    placeholder="Cari nama lokasi..."
-                    value={lokasiSearchQuery}
-                    onChangeText={filterLokasi}
+              <Text style={styles.cardTitle}>Lokasi & Pegawai Dinas</Text>
+            </View>
+            <View style={styles.cardContent}>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Lokasi Dinas *</Text>
+                <TouchableOpacity 
+                  style={styles.dropdownBtn}
+                  onPress={() => setShowLokasiModal(!showLokasiModal)}
+                >
+                  <Text style={styles.dropdownBtnText}>
+                    {selectedLokasi.length > 0 
+                      ? `${selectedLokasi.length} lokasi dipilih` 
+                      : 'Pilih Lokasi Dinas'
+                    }
+                  </Text>
+                  <Ionicons 
+                    name={showLokasiModal ? "chevron-up" : "chevron-down"} 
+                    size={16} 
+                    color="#666" 
                   />
-                </View>
+                </TouchableOpacity>
                 
-                <ScrollView style={styles.pegawaiDropdownList} nestedScrollEnabled>
-                  {filteredLokasi.map((lokasi) => {
-                    const isSelected = selectedLokasi.find(l => l.id === lokasi.id);
-                    return (
-                      <TouchableOpacity
-                        key={lokasi.id}
-                        style={[styles.pegawaiDropdownItem, isSelected && styles.pegawaiSelected]}
-                        onPress={() => {
-                          if (isSelected) {
-                            setSelectedLokasi(selectedLokasi.filter(l => l.id !== lokasi.id));
-                          } else {
-                            setSelectedLokasi([...selectedLokasi, lokasi]);
-                          }
-                        }}
-                      >
-                        <View style={styles.pegawaiItemInfo}>
-                          <Text style={styles.pegawaiItemName}>{lokasi.nama_lokasi}</Text>
-                          <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                            <Ionicons 
-                              name={lokasi.jenis_lokasi === 'tetap' ? 'business-outline' : 'location-outline'} 
-                              size={12} 
-                              color="#666" 
-                            />
-                            <Text style={[styles.pegawaiItemNip, {marginLeft: 4}]}>
-                              {lokasi.jenis_lokasi === 'tetap' ? 'Kantor Tetap' : 'Lokasi Dinas'}
-                            </Text>
-                          </View>
-                        </View>
-                        {isSelected && (
-                          <Ionicons name="checkmark-circle" size={20} color="#004643" />
-                        )}
-                      </TouchableOpacity>
-                    );
-                  })}
-                  
-                  {filteredLokasi.length === 0 && (
-                    <View style={styles.emptyPegawai}>
-                      <Text style={styles.emptyPegawaiText}>Lokasi tidak ditemukan</Text>
+                {showLokasiModal && (
+                  <View style={styles.dropdownContainer}>
+                    <View style={styles.searchWrapper}>
+                      <Ionicons name="search-outline" size={16} color="#666" />
+                      <TextInput
+                        style={styles.searchInput}
+                        placeholder="Cari nama lokasi..."
+                        value={lokasiSearchQuery}
+                        onChangeText={filterLokasi}
+                      />
                     </View>
-                  )}
-                </ScrollView>
+                    
+                    <ScrollView style={styles.dropdownList} nestedScrollEnabled>
+                      {filteredLokasi.map((lokasi) => {
+                        const isSelected = selectedLokasi.find(l => l.id === lokasi.id);
+                        return (
+                          <TouchableOpacity
+                            key={lokasi.id}
+                            style={[styles.dropdownItem, isSelected && styles.dropdownItemSelected]}
+                            onPress={() => {
+                              if (isSelected) {
+                                setSelectedLokasi(selectedLokasi.filter(l => l.id !== lokasi.id));
+                              } else {
+                                setSelectedLokasi([...selectedLokasi, lokasi]);
+                              }
+                            }}
+                          >
+                            <View style={styles.itemInfo}>
+                              <Text style={styles.itemName}>{lokasi.nama_lokasi}</Text>
+                              <Text style={styles.itemSubtext}>
+                                {lokasi.jenis_lokasi === 'tetap' ? 'Kantor Tetap' : 'Lokasi Dinas'}
+                              </Text>
+                            </View>
+                            {isSelected && (
+                              <Ionicons name="checkmark-circle" size={20} color="#004643" />
+                            )}
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </ScrollView>
+                  </View>
+                )}
+                
+                {validationErrors.lokasi && (
+                  <Text style={styles.errorText}>{validationErrors.lokasi}</Text>
+                )}
+                
+                {selectedLokasi.length > 0 && (
+                  <View style={styles.selectedContainer}>
+                    {selectedLokasi.map((lokasi) => (
+                      <View key={lokasi.id} style={styles.selectedChip}>
+                        <Text style={styles.selectedChipText}>{lokasi.nama_lokasi}</Text>
+                        <TouchableOpacity 
+                          onPress={() => {
+                            const updated = selectedLokasi.filter(l => l.id !== lokasi.id);
+                            setSelectedLokasi(updated);
+                          }}
+                        >
+                          <Ionicons name="close-circle" size={16} color="#F44336" />
+                        </TouchableOpacity>
+                      </View>
+                    ))}
+                  </View>
+                )}
               </View>
-            )}
-            
-            {validationErrors.lokasi && (
-              <Text style={styles.errorText}>{validationErrors.lokasi}</Text>
-            )}
-            
-            {selectedLokasi.length > 0 && (
-              <View style={styles.selectedLokasiContainer}>
-                {selectedLokasi.map((lokasi, index) => (
-                  <View key={lokasi.id} style={styles.selectedLokasiChip}>
-                    <View style={styles.lokasiChipContent}>
-                      <Text style={styles.lokasiChipText}>{lokasi.nama_lokasi}</Text>
-                      <Text style={styles.lokasiChipSubtext}>
-                        {lokasi.jenis_lokasi === 'tetap' ? 'Kantor Tetap' : 'Lokasi Dinas'}
-                      </Text>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Pegawai Dinas * ({selectedPegawai.length} dipilih)</Text>
+                <TouchableOpacity 
+                  style={styles.dropdownBtn}
+                  onPress={() => setShowPegawaiDropdown(!showPegawaiDropdown)}
+                >
+                  <Text style={styles.dropdownBtnText}>
+                    {selectedPegawai.length > 0 
+                      ? `${selectedPegawai.length} pegawai dipilih` 
+                      : 'Pilih Pegawai Dinas'
+                    }
+                  </Text>
+                  <Ionicons 
+                    name={showPegawaiDropdown ? "chevron-up" : "chevron-down"} 
+                    size={16} 
+                    color="#666" 
+                  />
+                </TouchableOpacity>
+                
+                {showPegawaiDropdown && (
+                  <View style={styles.dropdownContainer}>
+                    <View style={styles.searchWrapper}>
+                      <Ionicons name="search-outline" size={16} color="#666" />
+                      <TextInput
+                        style={styles.searchInput}
+                        placeholder="Cari nama atau NIP pegawai..."
+                        value={pegawaiSearchQuery}
+                        onChangeText={filterPegawai}
+                      />
                     </View>
+                    
+                    <ScrollView style={styles.dropdownList} nestedScrollEnabled>
+                      {filteredPegawai.map((pegawai: any, index) => {
+                        const pegawaiId = pegawai.id_user || pegawai.id_pegawai || pegawai.id;
+                        const isSelected = selectedPegawai.find((p: any) => {
+                          const selectedId = p.id_user || p.id_pegawai || p.id;
+                          return selectedId === pegawaiId;
+                        });
+                        return (
+                          <TouchableOpacity
+                            key={pegawaiId || index}
+                            style={[styles.dropdownItem, isSelected && styles.dropdownItemSelected]}
+                            onPress={() => togglePegawai(pegawai)}
+                          >
+                            <View style={styles.itemInfo}>
+                              <Text style={styles.itemName}>{pegawai.nama_lengkap}</Text>
+                              <Text style={styles.itemSubtext}>NIP: {pegawai.nip}</Text>
+                            </View>
+                            {isSelected && (
+                              <Ionicons name="checkmark-circle" size={20} color="#004643" />
+                            )}
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </ScrollView>
+                  </View>
+                )}
+                
+                {validationErrors.pegawai && (
+                  <Text style={styles.errorText}>{validationErrors.pegawai}</Text>
+                )}
+                
+                {selectedPegawai.length > 0 && (
+                  <View style={styles.selectedContainer}>
+                    {selectedPegawai.map((pegawai: any, index) => (
+                      <View key={index} style={styles.selectedChip}>
+                        <Text style={styles.selectedChipText}>{pegawai.nama_lengkap}</Text>
+                        <TouchableOpacity onPress={() => togglePegawai(pegawai)}>
+                          <Ionicons name="close-circle" size={16} color="#F44336" />
+                        </TouchableOpacity>
+                      </View>
+                    ))}
+                  </View>
+                )}
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Upload Dokumen SPT</Text>
+                <TouchableOpacity style={styles.uploadBtn} onPress={pickDocument}>
+                  <Ionicons name="document-attach-outline" size={20} color="#004643" />
+                  <View style={styles.uploadContent}>
+                    <Text style={styles.uploadText}>
+                      {selectedFile ? selectedFile.name : 'Pilih File SPT'}
+                    </Text>
+                    <Text style={styles.uploadSubtext}>PDF, DOC, JPG (Max 5MB)</Text>
+                  </View>
+                  {selectedFile && (
                     <TouchableOpacity 
-                      onPress={() => {
-                        const updated = selectedLokasi.filter(l => l.id !== lokasi.id);
-                        setSelectedLokasi(updated);
-                      }}
+                      onPress={() => setSelectedFile(null)}
+                      style={styles.removeFileBtn}
                     >
                       <Ionicons name="close-circle" size={20} color="#F44336" />
                     </TouchableOpacity>
-                  </View>
-                ))}
+                  )}
+                </TouchableOpacity>
               </View>
-            )}
-          </View>
-        </View>
-
-        {/* Card 4: Pegawai & Dokumen */}
-        <View style={[styles.cardContainer, {marginBottom: 100}]}>
-          <View style={styles.cardHeader}>
-            <Ionicons name="people-outline" size={24} color="#004643" />
-            <Text style={styles.cardTitle}>Pegawai & Dokumen</Text>
-          </View>
-          
-          <View style={styles.cardContent}>
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Upload Dokumen SPT (Opsional)</Text>
-              <TouchableOpacity style={styles.uploadBtn} onPress={pickDocument}>
-                <Ionicons name="document-attach-outline" size={20} color="#004643" />
-                <View style={styles.uploadContent}>
-                  <Text style={styles.uploadText}>
-                    {selectedFile ? selectedFile.name : 'Pilih File SPT'}
-                  </Text>
-                  <Text style={styles.uploadSubtext}>PDF, DOC, JPG (Max 5MB)</Text>
-                </View>
-                {selectedFile && (
-                  <TouchableOpacity 
-                    onPress={() => setSelectedFile(null)}
-                    style={styles.removeFileBtn}
-                  >
-                    <Ionicons name="close-circle" size={20} color="#F44336" />
-                  </TouchableOpacity>
-                )}
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Pegawai Dinas * ({selectedPegawai.length} dipilih)</Text>
-              <TouchableOpacity 
-                style={styles.dropdownBtn}
-                onPress={() => setShowPegawaiDropdown(!showPegawaiDropdown)}
-              >
-                <Ionicons name="people-outline" size={20} color="#004643" />
-                <Text style={styles.dropdownBtnText}>
-                  {selectedPegawai.length > 0 
-                    ? `${selectedPegawai.length} pegawai dipilih` 
-                    : 'Pilih Pegawai Dinas'
-                  }
-                </Text>
-                <Ionicons 
-                  name={showPegawaiDropdown ? "chevron-up" : "chevron-down"} 
-                  size={16} 
-                  color="#666" 
-                />
-              </TouchableOpacity>
-              
-              {showPegawaiDropdown && (
-                <View style={styles.dropdownContainer}>
-                  <View style={styles.pegawaiSearchWrapper}>
-                    <Ionicons name="search-outline" size={16} color="#666" />
-                    <TextInput
-                      style={styles.searchPegawaiInput}
-                      placeholder="Cari nama atau NIP pegawai..."
-                      value={pegawaiSearchQuery}
-                      onChangeText={filterPegawai}
-                    />
-                  </View>
-                  
-                  <ScrollView style={styles.pegawaiDropdownList} nestedScrollEnabled>
-                    {filteredPegawai.map((pegawai: any, index) => {
-                      const pegawaiId = pegawai.id_user || pegawai.id_pegawai || pegawai.id;
-                      const isSelected = selectedPegawai.find((p: any) => {
-                        const selectedId = p.id_user || p.id_pegawai || p.id;
-                        return selectedId === pegawaiId;
-                      });
-                      return (
-                        <TouchableOpacity
-                          key={pegawaiId || index}
-                          style={[styles.pegawaiDropdownItem, isSelected && styles.pegawaiSelected]}
-                          onPress={() => togglePegawai(pegawai)}
-                        >
-                          <View style={styles.pegawaiItemInfo}>
-                            <Text style={styles.pegawaiItemName}>{pegawai.nama_lengkap}</Text>
-                            <Text style={styles.pegawaiItemNip}>NIP: {pegawai.nip}</Text>
-                          </View>
-                          {isSelected && (
-                            <Ionicons name="checkmark-circle" size={20} color="#004643" />
-                          )}
-                        </TouchableOpacity>
-                      );
-                    })}
-                    
-                    {filteredPegawai.length === 0 && (
-                      <View style={styles.emptyPegawai}>
-                        <Text style={styles.emptyPegawaiText}>Pegawai tidak ditemukan</Text>
-                      </View>
-                    )}
-                  </ScrollView>
-                </View>
-              )}
-              
-              {validationErrors.pegawai && (
-                <Text style={styles.errorText}>{validationErrors.pegawai}</Text>
-              )}
-              
-              {selectedPegawai.length > 0 && (
-                <View style={styles.selectedPegawaiContainer}>
-                  {selectedPegawai.map((pegawai: any, index) => (
-                    <View key={index} style={styles.selectedPegawaiChip}>
-                      <Text style={styles.selectedPegawaiChipText}>{pegawai.nama_lengkap}</Text>
-                      <TouchableOpacity onPress={() => togglePegawai(pegawai)}>
-                        <Ionicons name="close-circle" size={16} color="#F44336" />
-                      </TouchableOpacity>
-                    </View>
-                  ))}
-                </View>
-              )}
             </View>
           </View>
-        </View>
+
         </View>
       </ScrollView>
 
@@ -1417,59 +1330,26 @@ export default function TambahDinasScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFB' },
-  header: { 
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 1000,
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    paddingHorizontal: 20,
-    paddingTop: 50,
-    paddingBottom: 15,
-    backgroundColor: '#fff',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1
-  },
-  backBtn: {
-    padding: 10,
-    marginRight: 15,
-    borderRadius: 10,
-    backgroundColor: '#F5F5F5'
-  },
-  headerTitle: { 
-    fontSize: 20, 
-    fontWeight: 'bold', 
-    color: '#004643'
-  },
   contentContainer: {
     flex: 1,
-    marginTop: 120
+    marginTop: 10
   },
-  cardContainer: {
+  formContainer: {
+    paddingHorizontal: 5,
+    paddingBottom: 100
+  },
+  formCard: {
     backgroundColor: '#fff',
-    marginHorizontal: 20,
-    marginBottom: 20,
-    borderRadius: 16,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4
+    marginHorizontal: 15,
+    marginBottom: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
   },
   cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: 15,
     paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#F0F0F0'
@@ -1481,229 +1361,130 @@ const styles = StyleSheet.create({
     marginLeft: 8
   },
   cardContent: {
-    padding: 20
+    padding: 15
   },
-  formContainer: {
-    paddingBottom: 20
+  inputGroup: {
+    marginBottom: 16
   },
-  inputGroup: { 
-    marginBottom: 16 
-  },
-  label: {
+  inputLabel: {
     fontSize: 14,
     fontWeight: '600',
     color: '#333',
     marginBottom: 8
   },
-  inputWrapper: {
+  textInput: {
     backgroundColor: '#F8F9FA',
     borderRadius: 8,
     paddingHorizontal: 12,
-    minHeight: 45,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    flexDirection: 'row',
-    alignItems: 'center'
-  },
-  inputIcon: {
-    marginRight: 12
-  },
-  input: {
-    flex: 1,
-    fontSize: 16,
-    color: '#333'
-  },
-  textArea: {
-    textAlignVertical: 'top',
-    paddingTop: 15,
-    minHeight: 80
-  },
-
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 25,
-    gap: 20
-  },
-  halfInput: { 
-    flex: 1
-  },
-
-  roleContainer: {
-    flexDirection: 'row',
-    gap: 8
-  },
-  roleBtn: {
-    flex: 1,
     paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 10,
-    backgroundColor: '#fff',
-    alignItems: 'center',
+    fontSize: 16,
+    color: '#333',
     borderWidth: 1,
     borderColor: '#E0E0E0'
   },
-  roleActive: {
-    backgroundColor: '#004643'
+  textArea: {
+    textAlignVertical: 'top',
+    minHeight: 80
   },
-  roleText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#666'
+  dateInputContainer: {
+    position: 'relative'
   },
-  roleTextActive: {
-    color: '#fff'
-  },
-  lokasiBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    justifyContent: 'space-between'
-  },
-  lokasiBtnText: {
-    flex: 1,
-    fontSize: 14,
-    color: '#333',
-    marginLeft: 10
-  },
-  selectedLokasiContainer: {
-    marginTop: 10,
-    gap: 8
-  },
-  selectedLokasiChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F0F8F7',
-    padding: 12,
-    borderRadius: 10,
-    justifyContent: 'space-between'
-  },
-  lokasiChipContent: {
-    flex: 1
-  },
-  lokasiChipText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#004643'
-  },
-  lokasiChipSubtext: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 2
-  },
-  lokasiModalContainer: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '80%',
-    marginTop: 'auto',
-    paddingBottom: 20
-  },
-  lokasiList: {
-    maxHeight: 400,
-    paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 20
-  },
-  lokasiItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    marginVertical: 4,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2
-  },
-  lokasiItemSelected: {
-    backgroundColor: '#F0F8F7',
-    borderColor: '#004643',
-    borderWidth: 2
-  },
-  lokasiItemContent: {
-    flex: 1
-  },
-  lokasiItemName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 4
-  },
-  lokasiItemType: {
-    fontSize: 12,
-    color: '#004643',
-    fontWeight: '500',
-    marginBottom: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    backgroundColor: '#E8F5E8',
-    borderRadius: 10,
-    alignSelf: 'flex-start'
-  },
-  lokasiItemAddress: {
-    fontSize: 12,
-    color: '#666'
-  },
-  modalFooter: {
-    paddingHorizontal: 20,
-    paddingTop: 15,
-    borderTopWidth: 1,
-    borderTopColor: '#F0F0F0'
-  },
-
-  placeholder: {
-    color: '#999'
-  },
-  jamPickerContainer: {
+  calendarButton: {
     position: 'absolute',
-    top: '100%',
-    left: 0,
-    right: 0,
+    right: 12,
+    top: 12,
+    padding: 4,
+    borderRadius: 4,
+    backgroundColor: '#F0F8F0'
+  },
+  dropdownBtn: {
+    backgroundColor: '#F8F9FA',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between'
+  },
+  dropdownBtnText: {
+    fontSize: 16,
+    color: '#333'
+  },
+  dropdownContainer: {
     backgroundColor: '#fff',
-    borderRadius: 10,
+    borderRadius: 8,
     marginTop: 5,
     borderWidth: 1,
     borderColor: '#E0E0E0',
-    maxHeight: 200,
-    zIndex: 1000,
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4
+    maxHeight: 200
   },
-  jamPickerList: {
-    maxHeight: 180
-  },
-  jamPickerItem: {
+  dropdownItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 15,
+    paddingHorizontal: 12,
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#F5F5F5'
   },
-  jamPickerSelected: {
+  dropdownItemSelected: {
     backgroundColor: '#F0F8F7'
   },
-  jamPickerText: {
+  dropdownItemText: {
+    fontSize: 14,
+    color: '#333',
+    flex: 1
+  },
+  searchWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0'
+  },
+  searchInput: {
+    flex: 1,
+    marginLeft: 8,
     fontSize: 14,
     color: '#333'
   },
-  jamPickerTextSelected: {
+  dropdownList: {
+    maxHeight: 150
+  },
+  itemInfo: {
+    flex: 1
+  },
+  itemName: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#333',
+    marginBottom: 2
+  },
+  itemSubtext: {
+    fontSize: 12,
+    color: '#666'
+  },
+  selectedContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 10,
+    gap: 8
+  },
+  selectedChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F0F8F7',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
+    gap: 6
+  },
+  selectedChipText: {
+    fontSize: 12,
     color: '#004643',
-    fontWeight: '600'
+    fontWeight: '500'
   },
   uploadBtn: {
     flexDirection: 'row',
@@ -1711,10 +1492,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E0E0E0',
     borderStyle: 'dashed',
-    borderRadius: 10,
-    padding: 15,
-    backgroundColor: '#FAFAFA',
-    minHeight: 60
+    borderRadius: 8,
+    padding: 12,
+    backgroundColor: '#FAFAFA'
   },
   uploadContent: {
     flex: 1,
@@ -1733,173 +1513,6 @@ const styles = StyleSheet.create({
   removeFileBtn: {
     padding: 4
   },
-  textAreaWrapper: {
-    minHeight: 80,
-    alignItems: 'flex-start',
-    paddingTop: 12
-  },
-  textAreaIcon: {
-    alignSelf: 'flex-start',
-    marginTop: 3
-  },
-
-  mapBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F0F8F7',
-    padding: 15,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#E0E0E0'
-  },
-  mapBtnText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#004643',
-    marginLeft: 8
-  },
-
-  sliderContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 10
-  },
-  sliderLabel: {
-    fontSize: 12,
-    color: '#666'
-  },
-  customSlider: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginHorizontal: 10
-  },
-  sliderButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#F0F8F7',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginHorizontal: 5
-  },
-  sliderTrack: {
-    flex: 1,
-    height: 4,
-    backgroundColor: '#E0E0E0',
-    borderRadius: 2,
-    position: 'relative',
-    marginHorizontal: 10
-  },
-  sliderFill: {
-    height: 4,
-    backgroundColor: '#004643',
-    borderRadius: 2
-  },
-  sliderThumb: {
-    position: 'absolute',
-    top: -6,
-    width: 16,
-    height: 16,
-    backgroundColor: '#004643',
-    borderRadius: 8,
-    marginLeft: -8
-  },
-
-  dropdownBtn: {
-    backgroundColor: '#F8F9FA',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    flexDirection: 'row',
-    alignItems: 'center'
-  },
-  dropdownBtnText: {
-    flex: 1,
-    fontSize: 16,
-    color: '#333',
-    marginLeft: 8
-  },
-  dropdownContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    marginTop: 5,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    maxHeight: 250
-  },
-  pegawaiSearchWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0'
-  },
-  searchPegawaiInput: {
-    flex: 1,
-    marginLeft: 8,
-    fontSize: 14,
-    color: '#333'
-  },
-  pegawaiDropdownList: {
-    maxHeight: 180
-  },
-  pegawaiDropdownItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 15,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F5F5F5'
-  },
-  pegawaiSelected: {
-    backgroundColor: '#F0F8F7'
-  },
-  pegawaiItemInfo: {
-    flex: 1
-  },
-  pegawaiItemName: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#333',
-    marginBottom: 2
-  },
-  pegawaiItemNip: {
-    fontSize: 12,
-    color: '#666'
-  },
-  emptyPegawai: {
-    padding: 20,
-    alignItems: 'center'
-  },
-  emptyPegawaiText: {
-    fontSize: 14,
-    color: '#999'
-  },
-  selectedPegawaiContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginTop: 10,
-    gap: 8
-  },
-  selectedPegawaiChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F0F8F7',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 16,
-    gap: 6
-  },
-  selectedPegawaiChipText: {
-    fontSize: 12,
-    color: '#004643',
-    fontWeight: '500'
-  },
-
   submitBtn: {
     backgroundColor: '#004643',
     flexDirection: 'row',
@@ -1909,8 +1522,7 @@ const styles = StyleSheet.create({
     borderRadius: 12
   },
   submitBtnDisabled: {
-    backgroundColor: '#999',
-    elevation: 0
+    backgroundColor: '#ccc'
   },
   submitText: {
     color: '#fff',
@@ -1928,336 +1540,6 @@ const styles = StyleSheet.create({
     paddingTop: 15,
     paddingBottom: 20
   },
-
-  selectedPegawaiList: {
-    marginTop: 10,
-    gap: 8
-  },
-  selectedPegawaiItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#F0F8F7',
-    padding: 10,
-    borderRadius: 8
-  },
-  selectedPegawaiName: {
-    fontSize: 14,
-    color: '#004643',
-    fontWeight: '500'
-  },
-
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-  pegawaiModal: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '80%',
-    paddingTop: 20
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0'
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333'
-  },
-  pegawaiList: {
-    flex: 1,
-    paddingHorizontal: 20
-  },
-  pegawaiItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0'
-  },
-  pegawaiItemSelected: {
-    backgroundColor: '#F0F8F7'
-  },
-  pegawaiInfo: {
-    flex: 1
-  },
-  pegawaiName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 4
-  },
-  pegawaiNip: {
-    fontSize: 12,
-    color: '#666'
-  },
-  confirmBtn: {
-    backgroundColor: '#004643',
-    paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4
-  },
-  mapModalContainer: {
-    flex: 1,
-    backgroundColor: '#fff'
-  },
-  mapHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 15,
-    paddingBottom: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
-    backgroundColor: '#fff',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4
-  },
-  backButton: {
-    padding: 10,
-    marginRight: 15,
-    borderRadius: 10,
-    backgroundColor: '#F5F5F5'
-  },
-  mapTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#004643'
-  },
-  mapSearchContainer: {
-    position: 'absolute',
-    top: 80,
-    left: 16,
-    right: 16,
-    zIndex: 1000
-  },
-  mapSearchWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 13,
-    marginLeft: 6,
-    color: '#333'
-  },
-  currentLocationBtn: {
-    padding: 4
-  },
-  searchResults: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    marginTop: 4,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    maxHeight: 160
-  },
-  searchResultItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0'
-  },
-  searchResultText: {
-    flex: 1,
-    fontSize: 12,
-    color: '#333',
-    marginLeft: 6
-  },
-  inputModalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-  inputModalContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 15,
-    width: '90%',
-    maxHeight: '70%'
-  },
-  inputModalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0'
-  },
-  inputModalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333'
-  },
-  inputModalContent: {
-    paddingHorizontal: 20,
-    paddingVertical: 10
-  },
-  inputModalItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f5f5f5'
-  },
-  inputModalItemText: {
-    fontSize: 16,
-    color: '#333',
-    marginLeft: 15
-  },
-  map: {
-    flex: 1
-  },
-  mapActions: {
-    position: 'absolute',
-    bottom: 80,
-    left: 20,
-    right: 20,
-    flexDirection: 'row',
-    gap: 10
-  },
-  confirmLocationBtn: {
-    flex: 1,
-    backgroundColor: '#004643',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    borderRadius: 10,
-    gap: 8
-  },
-  confirmLocationText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600'
-  },
-  cancelLocationBtn: {
-    flex: 1,
-    backgroundColor: '#fff',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    gap: 8
-  },
-  cancelLocationText: {
-    color: '#666',
-    fontSize: 14,
-    fontWeight: '600'
-  },
-  mapInfo: {
-    position: 'absolute',
-    bottom: 20,
-    left: 20,
-    right: 20,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    borderRadius: 8
-  },
-  mapInfoText: {
-    color: '#fff',
-    fontSize: 12,
-    textAlign: 'center'
-  },
-  confirmBtnText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold'
-  },
-  emptyLokasiContainer: {
-    alignItems: 'center',
-    paddingVertical: 40,
-    paddingHorizontal: 20
-  },
-  emptyLokasiText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#999',
-    marginTop: 12,
-    textAlign: 'center'
-  },
-  emptyLokasiSubtext: {
-    fontSize: 12,
-    color: '#CCC',
-    marginTop: 4,
-    textAlign: 'center'
-  },
-  dateInputContainer: {
-    position: 'relative'
-  },
-  calendarButton: {
-    padding: 8,
-    borderRadius: 6,
-    backgroundColor: '#F0F8F0'
-  },
-  
-  // New styles for improvements
-  progressContainer: {
-    position: 'absolute',
-    top: 90,
-    left: 0,
-    right: 0,
-    zIndex: 999,
-    backgroundColor: '#fff',
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0'
-  },
-  progressBar: {
-    height: 4,
-    backgroundColor: '#E0E0E0',
-    borderRadius: 2
-  },
-  progressFill: {
-    height: 4,
-    backgroundColor: '#004643',
-    borderRadius: 2
-  },
-  progressText: {
-    fontSize: 12,
-    color: '#666',
-    textAlign: 'center'
-  },
-  
   inputError: {
     borderColor: '#F44336',
     borderWidth: 2
@@ -2268,15 +1550,19 @@ const styles = StyleSheet.create({
     marginTop: 4,
     marginLeft: 4
   },
-  
+
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
   confirmModalContainer: {
     backgroundColor: '#fff',
     borderRadius: 15,
     width: '90%',
-    maxHeight: '80%',
-    alignSelf: 'center',
-    marginTop: 'auto',
-    marginBottom: 'auto'
+    maxHeight: '80%'
   },
   confirmModalHeader: {
     flexDirection: 'row',
@@ -2368,10 +1654,5 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: '#004643'
-  },
-  timeConfirmText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#fff'
   }
 });

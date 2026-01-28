@@ -8,6 +8,7 @@ import { useRouter } from 'expo-router';
 import { Calendar } from 'react-native-calendars';
 import { getApiUrl, API_CONFIG } from '../../constants/config';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { AppHeader } from '../../components';
 
 export default function AddDataPegawaiForm() {
   const router = useRouter();
@@ -232,14 +233,22 @@ export default function AddDataPegawaiForm() {
     }
   };
 
-  // Progress calculation - berdasarkan field wajib
+  // Progress calculation - berdasarkan field wajib dan opsional
   const calculateProgress = () => {
-    let completedSteps = 0;
-    if (formData.nama_lengkap && formData.nip) completedSteps++;
-    if (formData.email && formData.password) completedSteps++;
-    if (formData.jenis_kelamin) completedSteps++;
-    if (formData.jabatan && formData.divisi) completedSteps++;
-    return completedSteps;
+    const fields = [
+      formData.nama_lengkap?.trim(),
+      formData.nip?.trim(), 
+      formData.email?.trim(),
+      formData.password?.trim(),
+      formData.jenis_kelamin?.trim(),
+      formData.jabatan?.trim(),
+      formData.divisi?.trim(),
+      formData.no_telepon?.trim(),
+      formData.alamat?.trim(),
+      formData.tanggal_lahir?.trim()
+    ];
+    const filledFields = fields.filter(field => field && field !== '').length;
+    return Math.round((filledFields / fields.length) * 100);
   };
 
   const handleNameChange = (text: string) => {
@@ -376,26 +385,13 @@ export default function AddDataPegawaiForm() {
       keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
     >
       <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <TouchableOpacity 
-              style={styles.backBtn}
-              onPress={() => router.back()}
-            >
-              <Ionicons name="arrow-back" size={24} color="#004643" />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>Tambah Data Pegawai</Text>
-          </View>
-        </View>
+        <AppHeader 
+          title="Tambah Data Pegawai"
+          showBack={true}
+        />
 
-        {/* Progress Indicator */}
-        <View style={styles.progressContainer}>
-          <View style={styles.progressBar}>
-            <View style={[styles.progressFill, { width: `${(calculateProgress() / totalSteps) * 100}%` }]} />
-          </View>
-        </View>
-
-        <ScrollView style={styles.contentContainer} showsVerticalScrollIndicator={false}>
+        <View style={styles.contentContainer}>
+          <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.formContainer}>
             
             {/* Informasi Pribadi */}
@@ -597,6 +593,7 @@ export default function AddDataPegawaiForm() {
 
           </View>
         </ScrollView>
+        </View>
 
         {/* Calendar Modal */}
         <Modal visible={showCalendar} transparent>
@@ -740,7 +737,7 @@ export default function AddDataPegawaiForm() {
         </Modal>
 
         {/* Sticky Save Button */}
-        <View style={styles.stickyFooter}>
+        <SafeAreaView style={styles.stickyFooter}>
           <TouchableOpacity 
             style={[styles.submitBtn, loading && styles.submitBtnDisabled]} 
             onPress={handleSubmit}
@@ -755,7 +752,7 @@ export default function AddDataPegawaiForm() {
               </>
             )}
           </TouchableOpacity>
-        </View>
+        </SafeAreaView>
       </SafeAreaView>
     </KeyboardAvoidingView>
   );
@@ -763,65 +760,31 @@ export default function AddDataPegawaiForm() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFB' },
-  header: { 
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 1000,
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'ios' ? 40 : 50,
-    paddingBottom: 15,
-    backgroundColor: '#fff',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1
-  },
-  backBtn: {
-    padding: 10,
-    marginRight: 15,
-    borderRadius: 10,
-    backgroundColor: '#F5F5F5'
-  },
-  headerTitle: { 
-    fontSize: 20, 
-    fontWeight: 'bold', 
-    color: '#004643'
-  },
+
   contentContainer: {
     flex: 1,
-    marginTop: Platform.OS === 'ios' ? 90 : 120
+  },
+  content: {
+    flex: 1,
+    marginTop: 10
   },
   formContainer: {
+    paddingHorizontal: 5,
     paddingBottom: 100
   },
   formCard: {
     backgroundColor: '#fff',
-    marginHorizontal: 20,
-    marginBottom: 20,
-    borderRadius: 16,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4
+    marginHorizontal: 15,
+    marginBottom: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
   },
   cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: 15,
     paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0'
   },
   cardTitle: {
     fontSize: 16,
@@ -830,7 +793,7 @@ const styles = StyleSheet.create({
     marginLeft: 8
   },
   cardContent: {
-    padding: 20
+    padding: 15
   },
   inputGroup: {
     marginBottom: 16
@@ -916,30 +879,16 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(248, 250, 251, 0.98)',
     paddingHorizontal: 20,
     paddingTop: 15,
-    paddingBottom: 20
+    paddingBottom: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#E0E0E0',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4
   },
-  progressContainer: {
-    position: 'absolute',
-    top: Platform.OS === 'ios' ? 80 : 90,
-    left: 0,
-    right: 0,
-    zIndex: 999,
-    backgroundColor: '#fff',
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0'
-  },
-  progressBar: {
-    height: 4,
-    backgroundColor: '#E0E0E0',
-    borderRadius: 2
-  },
-  progressFill: {
-    height: 4,
-    backgroundColor: '#004643',
-    borderRadius: 2
-  },
+
   inputError: {
     borderColor: '#F44336',
     borderWidth: 2
@@ -1050,6 +999,49 @@ const styles = StyleSheet.create({
   },
   calendarTitle: {
     fontSize: 18,
+    fontWeight: 'bold',
+    color: '#004643'
+  },
+  progressContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0'
+  },
+  progressContent: {
+    flex: 1,
+  },
+  progressText: {
+    fontSize: 16,
+    color: '#333',
+    flex: 1
+  },
+  progressBar: {
+    height: 8,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 4,
+    overflow: 'hidden',
+    marginBottom: 8
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#004643',
+    borderRadius: 4
+  },
+  progressHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8
+  },
+  progressLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333'
+  },
+  progressPercentage: {
+    fontSize: 14,
     fontWeight: 'bold',
     color: '#004643'
   }

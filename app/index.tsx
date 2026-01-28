@@ -16,8 +16,8 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthAPI } from '../constants/config';
+import { AuthStorage } from '../utils/AuthStorage';
 import NetworkDebugger from '../utils/NetworkDebugger';
 import ExpoGoFixer from '../utils/ExpoGoFixer';
 
@@ -26,6 +26,7 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [emailFocused, setEmailFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
@@ -62,7 +63,27 @@ export default function LoginScreen() {
     }
   };
 
+  const checkLoginStatus = async () => {
+    try {
+      const user = await AuthStorage.getUser();
+      if (user) {
+        if (user.role === 'admin') {
+          router.replace('/admin/dashboard-admin' as any);
+        } else {
+          router.replace('/(tabs)/beranda');
+        }
+        return;
+      }
+    } catch (error) {
+      console.log('Error checking login status:', error);
+    } finally {
+      setCheckingSession(false);
+    }
+  };
+
   useEffect(() => {
+    checkLoginStatus();
+    
     // Log environment info for debugging
     ExpoGoFixer.logEnvironmentInfo();
     
@@ -133,7 +154,7 @@ export default function LoginScreen() {
           alamat: result.data.alamat || ''
         };
         
-        await AsyncStorage.setItem('userData', JSON.stringify(userData));
+        await AuthStorage.setUser(userData);
         
         // Redirect berdasarkan role dari database
         if (result.data.role === 'admin') {
@@ -151,6 +172,20 @@ export default function LoginScreen() {
       setLoading(false);
     }
   };
+
+  if (checkingSession) {
+    return (
+      <LinearGradient
+        colors={['#F8FAFB', '#E8F4F8', '#F0F9FF']}
+        style={styles.container}
+      >
+        <View style={styles.loadingSessionContainer}>
+          <ActivityIndicator size="large" color="#004643" />
+          <Text style={styles.loadingSessionText}>Checking session...</Text>
+        </View>
+      </LinearGradient>
+    );
+  }
 
   return (
     <LinearGradient
@@ -424,5 +459,16 @@ const styles = StyleSheet.create({
   loadingContainer: {
     flexDirection: 'row',
     alignItems: 'center'
+  },
+  loadingSessionContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  loadingSessionText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#004643',
+    fontWeight: '500'
   }
 });

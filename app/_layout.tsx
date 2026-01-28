@@ -8,15 +8,11 @@ export default function RootLayout() {
         <Stack.Screen name="index" />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="admin" />
-        <Stack.Screen name="data-pegawai-admin" />
-        <Stack.Screen name="akun-login-admin" />
-        <Stack.Screen name="add-data-pegawai" />
-        <Stack.Screen name="daftar-pegawai" />
-        <Stack.Screen name="add-user" />
-        <Stack.Screen name="users" />
         <Stack.Screen name="pengajuan" />
         <Stack.Screen name="modal" />
-        <Stack.Screen name="kelola-dinas" />
+        <Stack.Screen name="approval-admin" />
+        <Stack.Screen name="notifikasi-admin" />
+        <Stack.Screen name="test" />
       </Stack>
     </ErrorBoundary>
   );

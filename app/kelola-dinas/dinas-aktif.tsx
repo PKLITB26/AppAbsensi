@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, SafeAreaView, StatusBar, ScrollView, TouchableO
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { KelolaDinasAPI } from '../../constants/config';
+import { AppHeader } from '../../components';
 
 interface DinasAktif {
   id: number;
@@ -200,117 +201,119 @@ export default function DinasAktifScreen() {
       <StatusBar barStyle="dark-content" />
       
       {/* HEADER */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <TouchableOpacity 
-            style={styles.backBtn}
-            onPress={() => router.back()}
-          >
-            <Ionicons name="arrow-back" size={24} color="#004643" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Data Dinas Aktif</Text>
+      <AppHeader 
+        title="Data Dinas Aktif"
+        showBack={true}
+        showStats={true}
+        statsText={`${filteredData.length} Dinas Aktif`}
+      />
+
+      <View style={styles.contentWrapper}>
+        {/* Fixed Search and Date */}
+        <View style={styles.fixedControls}>
+          {/* Search Container */}
+          <View style={styles.searchContainer}>
+            <View style={styles.searchInputWrapper}>
+              <Ionicons name="search-outline" size={20} color="#666" style={styles.searchIcon} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Cari nama kegiatan atau nomor SPT..."
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                placeholderTextColor="#999"
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity 
+                  onPress={() => setSearchQuery('')}
+                  style={styles.clearBtn}
+                >
+                  <Ionicons name="close-circle" size={20} color="#999" />
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+
+          {/* Fixed Date Summary */}
+          <View style={styles.filterSummaryCard}>
+            <View style={styles.summarySection}>
+              <View style={styles.summaryLeft}>
+                <View style={styles.dateContainer}>
+                  <Ionicons name="calendar-outline" size={16} color="#004643" />
+                  <Text style={styles.summaryDate}>
+                    {new Date().toLocaleDateString('id-ID', { 
+                      weekday: 'long', 
+                      day: 'numeric', 
+                      month: 'long' 
+                    })}
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.summaryRight}>
+                <View style={styles.countBadge}>
+                  <Text style={styles.countNumber}>{filteredData.length}</Text>
+                  <Text style={styles.countLabel}>Dinas Aktif</Text>
+                </View>
+              </View>
+            </View>
+          </View>
         </View>
-      </View>
 
-      <View style={styles.contentContainer}>
-
-      <View style={styles.searchContainer}>
-        <View style={styles.searchInputWrapper}>
-          <Ionicons name="search-outline" size={20} color="#666" style={styles.searchIcon} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Cari nama kegiatan atau nomor SPT..."
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            placeholderTextColor="#999"
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity 
-              onPress={() => setSearchQuery('')}
-              style={styles.clearBtn}
-            >
-              <Ionicons name="close-circle" size={20} color="#999" />
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
-
-      <View style={styles.filterSummaryCard}>
-        <View style={styles.summarySection}>
-          <View style={styles.summaryLeft}>
-            <View style={styles.dateContainer}>
-              <Ionicons name="calendar-outline" size={16} color="#004643" />
-              <Text style={styles.summaryDate}>
-                {new Date().toLocaleDateString('id-ID', { 
-                  weekday: 'long', 
-                  day: 'numeric', 
-                  month: 'long' 
-                })}
+        {/* Scrollable List */}
+        <FlatList
+          style={styles.flatList}
+          data={currentData}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={renderDinasCard}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          refreshing={loading}
+          onRefresh={fetchDinasAktif}
+          ListEmptyComponent={() => (
+            <View style={styles.emptyState}>
+              <Ionicons name="briefcase-outline" size={60} color="#ccc" />
+              <Text style={styles.emptyText}>
+                {loading ? 'Memuat data...' : 'Tidak ada dinas aktif'}
               </Text>
             </View>
-          </View>
-          <View style={styles.summaryRight}>
-            <View style={styles.countBadge}>
-              <Text style={styles.countNumber}>{filteredData.length}</Text>
-              <Text style={styles.countLabel}>Dinas Aktif</Text>
-            </View>
-          </View>
-        </View>
-      </View>
-
-      <FlatList
-        data={currentData}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={renderDinasCard}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-        refreshing={loading}
-        onRefresh={fetchDinasAktif}
-        ListEmptyComponent={() => (
-          <View style={styles.emptyState}>
-            <Ionicons name="briefcase-outline" size={60} color="#ccc" />
-            <Text style={styles.emptyText}>
-              {loading ? 'Memuat data...' : 'Tidak ada dinas aktif'}
-            </Text>
-          </View>
-        )}
-        ListFooterComponent={() => {
-          if (totalPages <= 1) return null;
-          return (
-            <View style={styles.paginationContainer}>
-              <TouchableOpacity 
-                style={[styles.pageBtn, currentPage === 1 && styles.pageBtnDisabled]}
-                onPress={() => setCurrentPage(currentPage - 1)}
-                disabled={currentPage === 1}
-              >
-                <Ionicons name="chevron-back" size={16} color={currentPage === 1 ? '#ccc' : '#004643'} />
-              </TouchableOpacity>
-              
-              <View style={styles.pageNumbers}>
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                  <TouchableOpacity
-                    key={page}
-                    style={[styles.pageNumber, currentPage === page && styles.pageNumberActive]}
-                    onPress={() => setCurrentPage(page)}
-                  >
-                    <Text style={[styles.pageNumberText, currentPage === page && styles.pageNumberTextActive]}>
-                      {page}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+          )}
+          ListFooterComponent={() => {
+            if (totalPages <= 1) return null;
+            return (
+              <View style={styles.paginationContainer}>
+                <TouchableOpacity 
+                  style={[styles.pageBtn, currentPage === 1 && styles.pageBtnDisabled]}
+                  onPress={() => setCurrentPage(currentPage - 1)}
+                  disabled={currentPage === 1}
+                >
+                  <Ionicons name="chevron-back" size={16} color={currentPage === 1 ? '#ccc' : '#004643'} />
+                </TouchableOpacity>
+                
+                <View style={styles.pageNumbers}>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                    <TouchableOpacity
+                      key={page}
+                      style={[styles.pageNumber, currentPage === page && styles.pageNumberActive]}
+                      onPress={() => setCurrentPage(page)}
+                    >
+                      <Text style={[styles.pageNumberText, currentPage === page && styles.pageNumberTextActive]}>
+                        {page}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                
+                <TouchableOpacity 
+                  style={[styles.pageBtn, currentPage === totalPages && styles.pageBtnDisabled]}
+                  onPress={() => setCurrentPage(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                >
+                  <Ionicons name="chevron-forward" size={16} color={currentPage === totalPages ? '#ccc' : '#004643'} />
+                </TouchableOpacity>
               </View>
-              
-              <TouchableOpacity 
-                style={[styles.pageBtn, currentPage === totalPages && styles.pageBtnDisabled]}
-                onPress={() => setCurrentPage(currentPage + 1)}
-                disabled={currentPage === totalPages}
-              >
-                <Ionicons name="chevron-forward" size={16} color={currentPage === totalPages ? '#ccc' : '#004643'} />
-              </TouchableOpacity>
-            </View>
-          );
-        }}
-      />
+            );
+          }}
+        />
+      </View>
       
       <TouchableOpacity 
         style={styles.floatingAddBtn}
@@ -318,50 +321,25 @@ export default function DinasAktifScreen() {
       >
         <Ionicons name="add" size={28} color="#fff" />
       </TouchableOpacity>
-      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFB' },
-  header: { 
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 1000,
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    paddingHorizontal: 20,
-    paddingTop: 50,
-    paddingBottom: 15,
-    backgroundColor: '#fff',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4
-  },
-  contentContainer: {
+  container: { flex: 1, backgroundColor: '#fff' },
+  contentWrapper: {
     flex: 1,
-    marginTop: 120
+    backgroundColor: "#F8FAFB",
   },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1
+  fixedControls: {
+    paddingTop: 8,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F0F0F0",
+    backgroundColor: "#FAFBFC",
   },
-  backBtn: {
-    padding: 10,
-    marginRight: 15,
-    borderRadius: 10,
-    backgroundColor: '#F5F5F5'
-  },
-  headerTitle: { 
-    fontSize: 20, 
-    fontWeight: 'bold', 
-    color: '#004643' 
+  flatList: {
+    flex: 1,
   },
   addBtn: {
     width: 44,
@@ -395,7 +373,7 @@ const styles = StyleSheet.create({
   searchContainer: {
     paddingHorizontal: 15,
     paddingVertical: 8,
-    backgroundColor: '#F8FAFB'
+    backgroundColor: "#F8FAFB"
   },
   searchInputWrapper: {
     flexDirection: 'row',
@@ -475,7 +453,7 @@ const styles = StyleSheet.create({
     marginTop: 2
   },
   listContent: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 5,
     paddingTop: 10,
     paddingBottom: 20
   },
@@ -484,6 +462,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 20,
     marginBottom: 15,
+    marginHorizontal: 15,
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -591,7 +570,8 @@ const styles = StyleSheet.create({
   },
   emptyState: {
     alignItems: 'center',
-    paddingVertical: 40
+    paddingVertical: 40,
+    paddingTop: 100
   },
   emptyText: {
     fontSize: 14,
