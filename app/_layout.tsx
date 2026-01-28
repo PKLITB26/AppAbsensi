@@ -12,7 +12,6 @@ export default function RootLayout() {
         <Stack.Screen name="modal" />
         <Stack.Screen name="approval-admin" />
         <Stack.Screen name="notifikasi-admin" />
-        <Stack.Screen name="test" />
       </Stack>
     </ErrorBoundary>
   );

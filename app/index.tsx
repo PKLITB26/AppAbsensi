@@ -18,8 +18,6 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { AuthAPI } from '../constants/config';
 import { AuthStorage } from '../utils/AuthStorage';
-import NetworkDebugger from '../utils/NetworkDebugger';
-import ExpoGoFixer from '../utils/ExpoGoFixer';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -83,16 +81,6 @@ export default function LoginScreen() {
 
   useEffect(() => {
     checkLoginStatus();
-    
-    // Log environment info for debugging
-    ExpoGoFixer.logEnvironmentInfo();
-    
-    // Test network connection
-    NetworkDebugger.testConnection().then(result => {
-      if (!result.success) {
-        console.warn('Network test failed:', result.error);
-      }
-    });
     
     Animated.sequence([
       Animated.timing(fadeAnim, {
@@ -167,7 +155,7 @@ export default function LoginScreen() {
       }
     } catch (error) {
       console.error('Login error:', error);
-      NetworkDebugger.showNetworkError((error as Error).message);
+      Alert.alert("Error", "Terjadi kesalahan jaringan. Silakan coba lagi.");
     } finally {
       setLoading(false);
     }
@@ -346,10 +334,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 2,
     borderColor: '#004643',
-    shadowColor: '#004643',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
+    boxShadow: '0 4px 8px rgba(0, 70, 67, 0.15)',
     elevation: 6
   },
   logoImage: {
@@ -383,17 +368,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16, 
     marginBottom: 16,
     height: 58,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
+    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)',
     elevation: 2
   },
   inputFocused: {
     borderColor: '#004643',
-    shadowColor: '#004643',
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
+    boxShadow: '0 6px 12px rgba(0, 70, 67, 0.1)',
     elevation: 4
   },
   inputIcon: { 
@@ -440,15 +420,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center', 
     alignItems: 'center',
     marginTop: 10,
-    shadowColor: '#004643',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    boxShadow: '0 4px 8px rgba(0, 70, 67, 0.3)',
     elevation: 6
   },
   loginBtnDisabled: {
     backgroundColor: '#7A9B99',
-    shadowOpacity: 0.1
+    boxShadow: '0 4px 8px rgba(0, 70, 67, 0.1)',
   },
   loginText: { 
     color: '#fff', 
