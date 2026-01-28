@@ -10,6 +10,7 @@ interface AppHeaderProps {
   showStats?: boolean;
   statsText?: string;
   rightComponent?: React.ReactNode;
+  fallbackRoute?: string;
 }
 
 export default function AppHeader({
@@ -18,7 +19,8 @@ export default function AppHeader({
   onBackPress,
   showStats = false,
   statsText,
-  rightComponent
+  rightComponent,
+  fallbackRoute
 }: AppHeaderProps) {
   const router = useRouter();
 
@@ -26,7 +28,11 @@ export default function AppHeader({
     if (onBackPress) {
       onBackPress();
     } else {
-      router.back();
+      if (router.canGoBack()) {
+        router.back();
+      } else {
+        router.push(fallbackRoute || '/(tabs)/beranda');
+      }
     }
   };
 

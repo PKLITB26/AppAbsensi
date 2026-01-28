@@ -198,6 +198,7 @@ export default function DataPegawaiAdminScreen() {
         showBack={true}
         showStats={true}
         statsText={`${filteredPegawai.length} Pegawai`}
+        fallbackRoute="/admin/dashboard-admin"
       />
 
       {loading ? (
@@ -444,6 +445,8 @@ export default function DataPegawaiAdminScreen() {
         transparent={true}
         animationType="none"
         onRequestClose={() => setShowActionModal(false)}
+        accessible={true}
+        accessibilityViewIsModal={true}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.bottomSheetContainer}>
@@ -601,7 +604,7 @@ const styles = StyleSheet.create({
   sortTextActive: { color: "#fff" },
 
   loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
-  listContent: { paddingHorizontal: 5, paddingTop: 10, paddingBottom: 20 },
+  listContent: { paddingHorizontal: 5, paddingTop: 20, paddingBottom: 20 },
   pegawaiCard: {
     flexDirection: "row",
     alignItems: "center",

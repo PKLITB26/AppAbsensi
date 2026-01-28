@@ -20,6 +20,7 @@ export default function KelolaDinasScreen() {
       <AppHeader 
         title="Kelola Dinas"
         showBack={true}
+        fallbackRoute="/admin/dashboard-admin"
       />
 
       <View style={styles.contentContainer}>

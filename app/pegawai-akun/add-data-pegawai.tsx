@@ -388,6 +388,7 @@ export default function AddDataPegawaiForm() {
         <AppHeader 
           title="Tambah Data Pegawai"
           showBack={true}
+          fallbackRoute="/pegawai-akun/data-pegawai-admin"
         />
 
         <View style={styles.contentContainer}>
@@ -596,7 +597,12 @@ export default function AddDataPegawaiForm() {
         </View>
 
         {/* Calendar Modal */}
-        <Modal visible={showCalendar} transparent>
+        <Modal 
+          visible={showCalendar} 
+          transparent
+          accessible={true}
+          accessibilityViewIsModal={true}
+        >
           <View style={styles.calendarModalOverlay}>
             <View style={styles.calendarModalContainer}>
               <View style={styles.calendarHeader}>
@@ -645,7 +651,12 @@ export default function AddDataPegawaiForm() {
         </Modal>
 
         {/* Confirmation Modal */}
-        <Modal visible={showConfirmModal} transparent>
+        <Modal 
+          visible={showConfirmModal} 
+          transparent
+          accessible={true}
+          accessibilityViewIsModal={true}
+        >
           <View style={styles.modalOverlay}>
             <View style={styles.confirmModalContainer}>
               <View style={styles.confirmModalHeader}>
@@ -765,11 +776,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    flex: 1,
-    marginTop: 10
+    flex: 1
   },
   formContainer: {
     paddingHorizontal: 5,
+    paddingTop: 20,
     paddingBottom: 100
   },
   formCard: {
@@ -859,17 +870,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
-    borderRadius: 12
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    minHeight: 50,
+    maxWidth: Platform.OS === 'web' ? 300 : '100%',
+    width: Platform.OS === 'web' ? 300 : '100%'
   },
   submitBtnDisabled: {
     backgroundColor: '#ccc'
   },
   submitText: {
     color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginLeft: 8
+    fontSize: 15,
+    fontWeight: '600',
+    marginLeft: 6,
+    textAlign: 'center'
   },
   stickyFooter: {
     position: 'absolute',
@@ -877,16 +893,17 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: 'rgba(248, 250, 251, 0.98)',
-    paddingHorizontal: 20,
-    paddingTop: 15,
-    paddingBottom: 20,
+    paddingHorizontal: Platform.OS === 'web' ? 65 : 16,
+    paddingTop: 12,
+    paddingBottom: Platform.OS === 'ios' ? 20 : 16,
     borderTopWidth: 1,
     borderTopColor: '#E0E0E0',
     elevation: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.1,
-    shadowRadius: 4
+    shadowRadius: 4,
+    alignItems: 'center'
   },
 
   inputError: {

@@ -104,6 +104,7 @@ export default function DetailPegawai() {
         showBack={true}
         showStats={true}
         statsText={isDataComplete(pegawai) ? 'Informasi Lengkap' : 'Belum Lengkap'}
+        fallbackRoute="/pegawai-akun/data-pegawai-admin"
       />
 
       <View style={styles.contentContainer}>

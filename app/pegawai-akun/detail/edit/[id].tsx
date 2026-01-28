@@ -121,6 +121,7 @@ export default function EditPegawai() {
       <AppHeader 
         title="Edit Pegawai"
         showBack={true}
+        fallbackRoute="/pegawai-akun/data-pegawai-admin"
       />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
