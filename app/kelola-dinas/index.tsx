@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, StatusBar, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, StatusBar, ScrollView, TouchableOpacity, Alert, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { AppHeader } from '../../components';
@@ -139,19 +139,26 @@ export default function KelolaDinasScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFB' },
+  container: { 
+    flex: 1, 
+    backgroundColor: '#F8FAFB' 
+  },
   contentContainer: {
     flex: 1,
-    paddingTop: 10,
+    paddingTop: Platform.OS === 'android' ? 5 : 10,
   },
   
-  statsContainer: { paddingHorizontal: 20, marginBottom: 30, marginTop: 10 },
+  statsContainer: { 
+    paddingHorizontal: 20, 
+    marginBottom: 25, 
+    marginTop: Platform.OS === 'android' ? 5 : 10 
+  },
   statsHeaderCard: {
     backgroundColor: '#fff',
     borderRadius: 16,
-    padding: 20,
-    marginBottom: 20,
-    elevation: 3,
+    padding: Platform.OS === 'android' ? 16 : 20,
+    marginBottom: 16,
+    elevation: Platform.OS === 'android' ? 4 : 3,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -168,8 +175,8 @@ const styles = StyleSheet.create({
     flex: 1
   },
   statsIconBg: {
-    width: 48,
-    height: 48,
+    width: Platform.OS === 'android' ? 44 : 48,
+    height: Platform.OS === 'android' ? 44 : 48,
     borderRadius: 12,
     backgroundColor: '#F0F8F7',
     justifyContent: 'center',
@@ -200,69 +207,87 @@ const styles = StyleSheet.create({
     color: '#4CAF50'
   },
   statsTitle: {
-    fontSize: 16,
+    fontSize: Platform.OS === 'android' ? 15 : 16,
     fontWeight: 'bold',
     color: '#333',
-    marginBottom: 2
+    marginBottom: 2,
+    lineHeight: Platform.OS === 'android' ? 18 : 20
   },
   statsDate: {
-    fontSize: 12,
-    color: '#666'
+    fontSize: Platform.OS === 'android' ? 11 : 12,
+    color: '#666',
+    lineHeight: Platform.OS === 'android' ? 14 : 16
   },
   statsGrid: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 12
+    gap: Platform.OS === 'android' ? 8 : 12
   },
   statCard: {
     flex: 1,
     backgroundColor: '#fff',
     borderRadius: 16,
-    padding: 16,
-    elevation: 3,
+    padding: Platform.OS === 'android' ? 12 : 16,
+    elevation: Platform.OS === 'android' ? 4 : 3,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    alignItems: 'center'
+    alignItems: 'center',
+    minHeight: Platform.OS === 'android' ? 120 : 130
   },
   statIconContainer: {
-    marginBottom: 12
+    marginBottom: Platform.OS === 'android' ? 8 : 12
   },
   statIconBg: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: Platform.OS === 'android' ? 44 : 50,
+    height: Platform.OS === 'android' ? 44 : 50,
+    borderRadius: Platform.OS === 'android' ? 22 : 25,
     justifyContent: 'center',
     alignItems: 'center'
   },
   statContent: {
-    alignItems: 'center'
+    alignItems: 'center',
+    flex: 1,
+    justifyContent: 'center'
   },
   statNumber: {
-    fontSize: 24,
+    fontSize: Platform.OS === 'android' ? 20 : 24,
     fontWeight: 'bold',
     color: '#333',
-    marginBottom: 4
+    marginBottom: 4,
+    lineHeight: Platform.OS === 'android' ? 24 : 28
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: Platform.OS === 'android' ? 11 : 12,
     fontWeight: '600',
     color: '#333',
-    marginBottom: 2
+    marginBottom: 2,
+    textAlign: 'center',
+    lineHeight: Platform.OS === 'android' ? 14 : 16
   },
   statSubtext: {
-    fontSize: 10,
+    fontSize: Platform.OS === 'android' ? 9 : 10,
     color: '#666',
-    textAlign: 'center'
+    textAlign: 'center',
+    lineHeight: Platform.OS === 'android' ? 12 : 14
   },
 
-  menuSection: { marginTop: 30, paddingHorizontal: 20 },
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  menuSection: { 
+    marginTop: Platform.OS === 'android' ? 20 : 30, 
+    paddingHorizontal: 20 
+  },
+  sectionHeader: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    marginBottom: Platform.OS === 'android' ? 16 : 20 
+  },
   sectionTitle: { 
-    fontSize: 16, 
+    fontSize: Platform.OS === 'android' ? 15 : 16, 
     fontWeight: 'bold', 
-    color: '#333' 
+    color: '#333',
+    lineHeight: Platform.OS === 'android' ? 18 : 20
   },
   menuGrid: { 
     flexDirection: 'row', 
@@ -272,31 +297,41 @@ const styles = StyleSheet.create({
   menuItem: { 
     width: '30%', 
     alignItems: 'center', 
-    marginBottom: 25 
+    marginBottom: Platform.OS === 'android' ? 20 : 25,
+    paddingHorizontal: 4
   },
   menuIconCircle: { 
-    width: 56, 
-    height: 56, 
+    width: Platform.OS === 'android' ? 52 : 56, 
+    height: Platform.OS === 'android' ? 52 : 56, 
     borderRadius: 16, 
     justifyContent: 'center', 
     alignItems: 'center', 
-    marginBottom: 8 
+    marginBottom: 8,
+    elevation: Platform.OS === 'android' ? 2 : 0
   },
   menuLabel: { 
-    fontSize: 11, 
+    fontSize: Platform.OS === 'android' ? 10 : 11, 
     color: '#444', 
     fontWeight: '500', 
-    textAlign: 'center' 
+    textAlign: 'center',
+    lineHeight: Platform.OS === 'android' ? 13 : 15,
+    paddingHorizontal: 2
   },
 
-  recentSection: { paddingHorizontal: 20, marginBottom: 30 },
+  recentSection: { 
+    paddingHorizontal: 20, 
+    marginBottom: 30,
+    marginTop: Platform.OS === 'android' ? 10 : 0
+  },
   emptyState: { 
     alignItems: 'center', 
-    paddingVertical: 40 
+    paddingVertical: Platform.OS === 'android' ? 30 : 40 
   },
   emptyText: { 
-    fontSize: 14, 
+    fontSize: Platform.OS === 'android' ? 13 : 14, 
     color: '#999', 
-    marginTop: 10 
+    marginTop: 10,
+    textAlign: 'center',
+    lineHeight: Platform.OS === 'android' ? 16 : 18
   },
 });
