@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { StatusBar } from 'expo-status-bar';
 import { 
   StyleSheet, View, Text, TextInput, TouchableOpacity, 
-  SafeAreaView, Alert, ActivityIndicator, ScrollView, Platform, KeyboardAvoidingView, Modal 
+  Alert, ActivityIndicator, ScrollView, Platform, KeyboardAvoidingView, Modal 
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -379,16 +380,15 @@ export default function AddDataPegawaiForm() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
+      <StatusBar style="dark" translucent={true} backgroundColor="transparent" />
       <AppHeader 
         title="Tambah Data Pegawai"
         showBack={true}
         fallbackRoute="/pegawai-akun/data-pegawai-admin"
       />
 
-        <View style={styles.contentContainer}>
-          <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-          <View style={styles.formContainer}>
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
             
             {/* Informasi Pribadi */}
             <View style={styles.formCard}>
@@ -587,16 +587,32 @@ export default function AddDataPegawaiForm() {
               </View>
             </View>
 
-          </View>
         </ScrollView>
+
+        {/* Button Footer - Fixed di bawah seperti header */}
+        <View style={styles.buttonFooter}>
+          <TouchableOpacity 
+            style={[styles.submitBtn, loading && styles.submitBtnDisabled]} 
+            onPress={handleSubmit}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <>
+                <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
+                <Text style={styles.submitText}>Simpan Data Pegawai</Text>
+              </>
+            )}
+          </TouchableOpacity>
         </View>
 
         {/* Calendar Modal */}
         <Modal 
           visible={showCalendar} 
           transparent
-          accessible={true}
-          accessibilityViewIsModal={true}
+          accessible={false}
+          accessibilityViewIsModal={false}
         >
           <View style={styles.calendarModalOverlay}>
             <View style={styles.calendarModalContainer}>
@@ -649,8 +665,8 @@ export default function AddDataPegawaiForm() {
         <Modal 
           visible={showConfirmModal} 
           transparent
-          accessible={true}
-          accessibilityViewIsModal={true}
+          accessible={false}
+          accessibilityViewIsModal={false}
         >
           <View style={styles.modalOverlay}>
             <View style={styles.confirmModalContainer}>
@@ -742,40 +758,21 @@ export default function AddDataPegawaiForm() {
           </View>
         </Modal>
 
-        {/* Sticky Save Button */}
-        <SafeAreaView style={styles.stickyFooter}>
-          <TouchableOpacity 
-            style={[styles.submitBtn, loading && styles.submitBtnDisabled]} 
-            onPress={handleSubmit}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <>
-                <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
-                <Text style={styles.submitText}>Simpan Data Pegawai</Text>
-              </>
-            )}
-          </TouchableOpacity>
-        </SafeAreaView>
-    </SafeAreaView>
+
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFB' },
 
-  contentContainer: {
-    flex: 1,
-  },
   content: {
-    flex: 1
-  },
-  formContainer: {
+    flex: 1,
     paddingHorizontal: 5,
     paddingTop: 20,
-    paddingBottom: 100
+  },
+  scrollContent: {
+    paddingBottom: 20,
   },
   formCard: {
     backgroundColor: '#fff',
@@ -867,9 +864,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderRadius: 12,
-    minHeight: 50,
-    maxWidth: Platform.OS === 'web' ? 300 : '100%',
-    width: Platform.OS === 'web' ? 300 : '100%'
+    minHeight: 50
   },
   submitBtnDisabled: {
     backgroundColor: '#ccc'
@@ -881,23 +876,17 @@ const styles = StyleSheet.create({
     marginLeft: 6,
     textAlign: 'center'
   },
-  stickyFooter: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'rgba(248, 250, 251, 0.98)',
-    paddingHorizontal: Platform.OS === 'web' ? 65 : 16,
-    paddingTop: 12,
-    paddingBottom: Platform.OS === 'ios' ? 20 : 16,
+  buttonFooter: {
+    backgroundColor: 'white',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
-    elevation: 8,
+    borderTopColor: '#e0e0e0',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    alignItems: 'center'
+    elevation: 5,
   },
 
   inputError: {

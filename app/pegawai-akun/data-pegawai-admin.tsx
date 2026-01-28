@@ -10,7 +10,6 @@ import {
   PanResponder,
   Platform,
   RefreshControl,
-  SafeAreaView,
   StyleSheet,
   Text,
   TextInput,

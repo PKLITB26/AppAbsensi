@@ -452,7 +452,7 @@ export default function RiwayatDinasScreen() {
                 </TouchableOpacity>
               ))}
             </ScrollView>
-
+            
             {selectedDateFilter === "tanggal_tertentu" && (
               <View style={styles.selectedDateInfo}>
                 <Text style={styles.selectedDateText}>
@@ -460,12 +460,6 @@ export default function RiwayatDinasScreen() {
                 </Text>
               </View>
             )}
-
-            <View style={styles.resultSummary}>
-              <Text style={styles.resultText}>
-                Ditemukan {totalRecords} riwayat dinas
-              </Text>
-            </View>
           </View>
         </View>
 

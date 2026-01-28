@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, SafeAreaView, StatusBar, ScrollView, TouchableO
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { getApiUrl, API_CONFIG } from '../constants/config';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { AppHeader } from '../components';
 
 interface PengajuanData {
   id_pengajuan: number;
@@ -25,11 +25,11 @@ interface PengajuanData {
 
 export default function ApprovalAdminScreen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const [pengajuan, setPengajuan] = useState<PengajuanData[]>([]);
   const [filteredPengajuan, setFilteredPengajuan] = useState<PengajuanData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
+  const [selectedFilter, setSelectedFilter] = useState('pending');
+  const [searchQuery, setSearchQuery] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedPengajuan, setSelectedPengajuan] = useState<PengajuanData | null>(null);
   const [approvalNote, setApprovalNote] = useState('');
@@ -41,7 +41,7 @@ export default function ApprovalAdminScreen() {
 
   useEffect(() => {
     filterPengajuan();
-  }, [selectedFilters, pengajuan]);
+  }, [selectedFilter, searchQuery, pengajuan]);
 
   const fetchPengajuan = async () => {
     try {
@@ -65,8 +65,16 @@ export default function ApprovalAdminScreen() {
     let filtered = pengajuan;
     
     // Filter by status
-    if (selectedFilters.length > 0) {
-      filtered = filtered.filter(item => selectedFilters.includes(item.status));
+    if (selectedFilter) {
+      filtered = filtered.filter(item => item.status === selectedFilter);
+    }
+    
+    // Filter by search query
+    if (searchQuery.trim()) {
+      filtered = filtered.filter(item => 
+        item.nama_lengkap.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        getJenisLabel(item.jenis_pengajuan).toLowerCase().includes(searchQuery.toLowerCase())
+      );
     }
     
     setFilteredPengajuan(filtered);
@@ -135,17 +143,6 @@ export default function ApprovalAdminScreen() {
       Alert.alert('Error', 'Gagal memproses approval');
     }
   };
-
-  const toggleStatusFilter = (status: string) => {
-    setSelectedFilters(prev => 
-      prev.includes(status) 
-        ? prev.filter(s => s !== status)
-        : [...prev, status]
-    );
-  };
-
-
-
 
 
   const renderPengajuanCard = ({ item }: { item: PengajuanData }) => (
@@ -235,24 +232,16 @@ export default function ApprovalAdminScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+    <View style={styles.container}>
+      <StatusBar barStyle="dark-content" translucent={true} backgroundColor="transparent" />
       
-      {/* FIXED HEADER */}
-      <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
-        <View style={styles.headerLeft}>
-          <TouchableOpacity 
-            style={styles.backBtn}
-            onPress={() => router.back()}
-          >
-            <Ionicons name="arrow-back" size={24} color="#004643" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Approval Pengajuan</Text>
-        </View>
-        <View style={styles.headerStats}>
-          <Text style={styles.statsText}>{filteredPengajuan.length} Pengajuan</Text>
-        </View>
-      </View>
+      {/* HEADER */}
+      <AppHeader 
+        title="Persetujuan"
+        showBack={true}
+        showStats={true}
+        statsText={`${filteredPengajuan.length} Pengajuan`}
+      />
         
       {loading ? (
         <View style={styles.loadingContainer}>
@@ -260,66 +249,88 @@ export default function ApprovalAdminScreen() {
           <Text style={styles.loadingText}>Memuat data pengajuan...</Text>
         </View>
       ) : (
-        <View style={[styles.contentContainer, { marginTop: insets.top + 90 }]}>
-          
-          <View style={styles.searchContainer}>
-            <View style={styles.searchInputWrapper}>
-              <Ionicons name="search-outline" size={20} color="#666" style={styles.searchIcon} />
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Cari nama pegawai atau jenis pengajuan..."
-                placeholderTextColor="#999"
-              />
+        <View style={styles.contentContainer}>
+          {/* Fixed Search and Sort */}
+          <View style={styles.fixedControls}>
+            {/* Search Container */}
+            <View style={styles.searchContainer}>
+              <View style={styles.searchInputWrapper}>
+                <Ionicons name="search-outline" size={20} color="#666" style={styles.searchIcon} />
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="Cari nama pegawai atau jenis pengajuan..."
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  placeholderTextColor="#999"
+                />
+                {searchQuery.length > 0 && (
+                  <TouchableOpacity 
+                    onPress={() => setSearchQuery('')}
+                    style={styles.clearBtn}
+                  >
+                    <Ionicons name="close-circle" size={20} color="#999" />
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+
+            {/* Status Filter */}
+            <View style={styles.filterCard}>
+              <View style={styles.filterHeader}>
+                <Ionicons name="funnel-outline" size={20} color="#004643" />
+                <Text style={styles.filterTitle}>Filter Status</Text>
+              </View>
+              
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.filterChips}
+              >
+                {[
+                  { key: 'pending', label: 'Menunggu' },
+                  { key: 'approved', label: 'Disetujui' },
+                  { key: 'rejected', label: 'Ditolak' }
+                ].map((filter) => (
+                  <TouchableOpacity
+                    key={filter.key}
+                    style={[
+                      styles.filterChip,
+                      selectedFilter === filter.key && styles.filterChipActive,
+                    ]}
+                    onPress={() => setSelectedFilter(filter.key)}
+                  >
+                    <Text
+                      style={[
+                        styles.filterChipText,
+                        selectedFilter === filter.key && styles.filterChipTextActive,
+                      ]}
+                    >
+                      {filter.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
             </View>
           </View>
 
-          <View style={styles.filterCard}>
-            <View style={styles.filterHeader}>
-              <Ionicons name="funnel-outline" size={20} color="#004643" />
-              <Text style={styles.filterTitle}>Filter Status</Text>
-            </View>
-            <View style={styles.sortContainer}>
-              <TouchableOpacity
-                style={[styles.sortBtn, selectedFilters.includes('pending') && styles.sortBtnActive]}
-                onPress={() => toggleStatusFilter('pending')}
-              >
-                <Text style={[styles.sortText, selectedFilters.includes('pending') && styles.sortTextActive]}>
-                  Menunggu
-                </Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={[styles.sortBtn, selectedFilters.includes('approved') && styles.sortBtnActive]}
-                onPress={() => toggleStatusFilter('approved')}
-              >
-                <Text style={[styles.sortText, selectedFilters.includes('approved') && styles.sortTextActive]}>
-                  Disetujui
-                </Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={[styles.sortBtn, selectedFilters.includes('rejected') && styles.sortBtnActive]}
-                onPress={() => toggleStatusFilter('rejected')}
-              >
-                <Text style={[styles.sortText, selectedFilters.includes('rejected') && styles.sortTextActive]}>
-                  Ditolak
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
+          {/* Pengajuan List */}
           <FlatList
             data={filteredPengajuan}
             keyExtractor={(item) => item.id_pengajuan.toString()}
             renderItem={renderPengajuanCard}
+            style={styles.flatList}
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
-            ListEmptyComponent={
-              <View style={styles.emptyContainer}>
-                <Ionicons name="document-text-outline" size={80} color="#ccc" />
-                <Text style={styles.emptyText}>Belum ada pengajuan</Text>
+            refreshing={loading}
+            onRefresh={() => fetchPengajuan()}
+            ListEmptyComponent={() => (
+              <View style={styles.emptyState}>
+                <Ionicons name="document-text-outline" size={60} color="#ccc" />
+                <Text style={styles.emptyText}>
+                  {loading ? 'Memuat data...' : 'Tidak ada pengajuan ditemukan'}
+                </Text>
               </View>
-            }
+            )}
           />
         </View>
       )}
@@ -348,75 +359,59 @@ export default function ApprovalAdminScreen() {
                     {selectedPengajuan.nama_lengkap} - {getJenisLabel(selectedPengajuan.jenis_pengajuan)}
                   </Text>
                   
-                  <Text style={styles.modalLabel}>
-                    {approvalAction === 'approve' ? 'Catatan (opsional):' : 'Alasan penolakan:'}
-                  </Text>
+                  <Text style={styles.modalLabel}>Catatan:</Text>
                   <TextInput
                     style={styles.modalTextInput}
-                    placeholder={approvalAction === 'approve' ? 'Tambahkan catatan...' : 'Berikan alasan penolakan...'}
+                    placeholder="Tambahkan catatan (opsional)"
                     value={approvalNote}
                     onChangeText={setApprovalNote}
                     multiline
-                    numberOfLines={4}
-                    textAlignVertical="top"
+                    numberOfLines={3}
                   />
-
-                  <View style={styles.modalActions}>
-                    <TouchableOpacity 
-                      style={styles.modalCancelBtn}
-                      onPress={() => setModalVisible(false)}
-                    >
-                      <Text style={styles.modalCancelText}>Batal</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity 
-                      style={[styles.modalSubmitBtn, { 
-                        backgroundColor: approvalAction === 'approve' ? '#4CAF50' : '#F44336' 
-                      }]}
-                      onPress={submitApproval}
-                    >
-                      <Text style={styles.modalSubmitText}>
-                        {approvalAction === 'approve' ? 'Setujui' : 'Tolak'}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
                 </View>
               )}
+
+              <View style={styles.modalActions}>
+                <TouchableOpacity 
+                  style={styles.modalCancelBtn}
+                  onPress={() => setModalVisible(false)}
+                >
+                  <Text style={styles.modalCancelText}>Batal</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.modalConfirmBtn, { backgroundColor: approvalAction === 'approve' ? '#4CAF50' : '#F44336' }]}
+                  onPress={submitApproval}
+                >
+                  <Text style={styles.modalConfirmText}>
+                    {approvalAction === 'approve' ? 'Setujui' : 'Tolak'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         </Modal>
-      </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFB' },
-  header: { 
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 1000,
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    paddingHorizontal: 20,
-    paddingBottom: 15,
-    backgroundColor: '#fff',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1
-  },
   contentContainer: {
     flex: 1,
   },
+  fixedControls: {
+    paddingTop: 8,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+    backgroundColor: '#FAFBFC',
+  },
+  flatList: {
+    flex: 1,
+  },
+  
   searchContainer: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 15,
     paddingVertical: 8,
     backgroundColor: '#F8FAFB'
   },
@@ -431,7 +426,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
-    gap: 10
   },
   searchIcon: {
     marginRight: 10
@@ -442,17 +436,18 @@ const styles = StyleSheet.create({
     color: '#333',
     paddingVertical: 12
   },
+  clearBtn: {
+    padding: 4
+  },
+  
   filterCard: {
     backgroundColor: '#fff',
-    marginHorizontal: 20,
+    marginHorizontal: 15,
     marginVertical: 5,
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 15,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
   },
   filterHeader: {
     flexDirection: 'row',
@@ -465,69 +460,44 @@ const styles = StyleSheet.create({
     color: '#333',
     marginLeft: 8
   },
-  sortContainer: {
-    flexDirection: 'row',
-    gap: 8,
+  filterChips: {
+    marginBottom: 10,
   },
-  sortBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
+  filterChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginRight: 8,
+    borderRadius: 20,
     backgroundColor: '#F5F5F5',
-    gap: 4,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
   },
-  sortBtnActive: { backgroundColor: '#004643' },
-  sortText: { fontSize: 12, color: '#666', fontWeight: '500' },
-  sortTextActive: { color: '#fff' },
-  backBtn: {
-    padding: 10,
-    marginRight: 15,
-    borderRadius: 10,
-    backgroundColor: '#F5F5F5'
+  filterChipActive: {
+    backgroundColor: '#004643',
+    borderColor: '#004643',
   },
-  headerTitle: { 
-    fontSize: 20, 
-    fontWeight: 'bold', 
-    color: '#004643'
-  },
-  headerStats: {
-    backgroundColor: '#E6F0EF',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12
-  },
-  statsText: {
+  filterChipText: {
     fontSize: 12,
-    fontWeight: 'bold',
-    color: '#004643'
+    color: '#666',
+    fontWeight: '500',
   },
-
-
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center'
+  filterChipTextActive: {
+    color: '#fff',
   },
-  loadingText: {
-    marginTop: 10,
-    color: '#666'
-  },
+  
   listContent: {
+    paddingHorizontal: 5,
+    paddingTop: 10,
     paddingBottom: 20,
   },
   pengajuanCard: {
     backgroundColor: '#fff',
-    marginHorizontal: 20,
-    marginTop: 15,
-    borderRadius: 16,
-    padding: 16,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4
+    borderRadius: 12,
+    padding: 15,
+    marginBottom: 12,
+    marginHorizontal: 15,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
   },
   cardHeader: {
     flexDirection: 'row',
@@ -671,16 +641,23 @@ const styles = StyleSheet.create({
     color: '#999',
     textAlign: 'right',
   },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
+  emptyState: {
     alignItems: 'center',
-    paddingTop: 100
+    paddingVertical: 40,
   },
   emptyText: {
-    fontSize: 16,
-    color: '#ccc',
-    marginTop: 16
+    fontSize: 14,
+    color: '#999',
+    marginTop: 10,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  loadingText: {
+    marginTop: 10,
+    color: '#666'
   },
   modalOverlay: {
     flex: 1,
@@ -744,13 +721,13 @@ const styles = StyleSheet.create({
     color: '#666',
     fontWeight: 'bold',
   },
-  modalSubmitBtn: {
+  modalConfirmBtn: {
     flex: 1,
     paddingVertical: 12,
     borderRadius: 8,
     alignItems: 'center',
   },
-  modalSubmitText: {
+  modalConfirmText: {
     color: '#fff',
     fontWeight: 'bold',
   },

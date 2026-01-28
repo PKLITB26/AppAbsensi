@@ -1,13 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, StatusBar, ScrollView, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform, Modal, FlatList, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
-import { Picker } from '@react-native-picker/picker';
 import { Calendar } from 'react-native-calendars';
 import { KelolaDinasAPI as DinasAPI, PegawaiAkunAPI, PengaturanAPI } from '../../constants/config';
-import * as Location from 'expo-location';
-import MapView, { Marker } from 'react-native-maps';
 import * as DocumentPicker from 'expo-document-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppHeader } from '../../components';
@@ -15,31 +12,38 @@ import { AppHeader } from '../../components';
 export default function TambahDinasScreen() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [showPegawaiModal, setShowPegawaiModal] = useState(false);
   const [pegawaiList, setPegawaiList] = useState<any[]>([]);
   const [selectedPegawai, setSelectedPegawai] = useState<any[]>([]);
-  const [mapRegion, setMapRegion] = useState({
-    latitude: -6.2088,
-    longitude: 106.8456,
-    latitudeDelta: 0.01,
-    longitudeDelta: 0.01
-  });
-  const [markerPosition, setMarkerPosition] = useState<{latitude: number, longitude: number} | null>(null);
-  const [showMapModal, setShowMapModal] = useState(false);
   const [showPegawaiDropdown, setShowPegawaiDropdown] = useState(false);
   const [pegawaiSearchQuery, setPegawaiSearchQuery] = useState('');
   const [filteredPegawai, setFilteredPegawai] = useState<any[]>([]);
   const [lokasiSearchQuery, setLokasiSearchQuery] = useState('');
   const [filteredLokasi, setFilteredLokasi] = useState<any[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [currentLocation, setCurrentLocation] = useState<{latitude: number, longitude: number} | null>(null);
-  const [showInputModal, setShowInputModal] = useState(false);
-  const [coordinateInput, setCoordinateInput] = useState('');
-  const [isUpdatingFromInput, setIsUpdatingFromInput] = useState(false);
   const [selectedFile, setSelectedFile] = useState<any>(null);
   const [showJamMulaiPicker, setShowJamMulaiPicker] = useState(false);
   const [showJamSelesaiPicker, setShowJamSelesaiPicker] = useState(false);
+  const [showJenisDinasDropdown, setShowJenisDinasDropdown] = useState(false);
+  const [showDateMulaiPicker, setShowDateMulaiPicker] = useState(false);
+  const [showDateSelesaiPicker, setShowDateSelesaiPicker] = useState(false);
+  const [selectedDateMulai, setSelectedDateMulai] = useState('');
+  const [selectedDateSelesai, setSelectedDateSelesai] = useState('');
+  const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({});
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [selectedLokasi, setSelectedLokasi] = useState<any[]>([]);
+  const [availableLokasi, setAvailableLokasi] = useState<any[]>([]);
+  const [showLokasiModal, setShowLokasiModal] = useState(false);
+
+  const [formData, setFormData] = useState({
+    namaKegiatan: '',
+    nomorSpt: '',
+    jenisDinas: 'lokal',
+    tanggalMulai: '',
+    tanggalSelesai: '',
+    jamMulai: '',
+    jamSelesai: '',
+    deskripsi: '',
+    pegawaiIds: [] as number[]
+  });
 
   const handleJamMulaiConfirm = (time: Date) => {
     const formattedTime = formatTime(time);
@@ -54,17 +58,6 @@ export default function TambahDinasScreen() {
     validateField('jamSelesai', formattedTime);
     setShowJamSelesaiPicker(false);
   };
-
-  const [showJenisDinasDropdown, setShowJenisDinasDropdown] = useState(false);
-  const [showDateMulaiPicker, setShowDateMulaiPicker] = useState(false);
-  const [showDateSelesaiPicker, setShowDateSelesaiPicker] = useState(false);
-  const [selectedDateMulai, setSelectedDateMulai] = useState('');
-  const [selectedDateSelesai, setSelectedDateSelesai] = useState('');
-  const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({});
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [currentStep, setCurrentStep] = useState(1);
-
-  const totalSteps = 5;
 
   const pickDocument = async () => {
     try {
@@ -87,187 +80,11 @@ export default function TambahDinasScreen() {
     }
   };
 
-  const [formData, setFormData] = useState({
-    namaKegiatan: '',
-    nomorSpt: '',
-    jenisDinas: 'lokal',
-    tanggalMulai: '',
-    tanggalSelesai: '',
-    jamMulai: '',
-    jamSelesai: '',
-    deskripsi: '',
-    pegawaiIds: [] as number[]
-  });
-  const [selectedLokasi, setSelectedLokasi] = useState<any[]>([]);
-  const [availableLokasi, setAvailableLokasi] = useState<any[]>([]);
-  const [showLokasiModal, setShowLokasiModal] = useState(false);
-
-  const getCurrentLocation = async () => {
-    try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Error', 'Permission to access location was denied');
-        return;
-      }
-
-      const location = await Location.getCurrentPositionAsync({});
-      const { latitude, longitude } = location.coords;
-      setCurrentLocation({ latitude, longitude });
-      setMapRegion({
-        latitude,
-        longitude,
-        latitudeDelta: 0.01,
-        longitudeDelta: 0.01
-      });
-    } catch (error) {
-      Alert.alert('Error', 'Could not fetch location');
-    }
-  };
-
-  const searchLocation = async (query: string) => {
-    if (!query.trim()) {
-      setSearchResults([]);
-      return;
-    }
-
-    // Cek apakah input adalah koordinat
-    const coordPattern = /^-?\d+\.?\d*[,\s]+-?\d+\.?\d*$/;
-    if (coordPattern.test(query.trim())) {
-      const coords = query.trim().split(/[,\s]+/);
-      if (coords.length === 2) {
-        const latitude = parseFloat(coords[0]);
-        const longitude = parseFloat(coords[1]);
-        
-        if (!isNaN(latitude) && !isNaN(longitude) && 
-            latitude >= -90 && latitude <= 90 && 
-            longitude >= -180 && longitude <= 180) {
-          try {
-            const address = await reverseGeocode(latitude, longitude);
-            setSearchResults([{
-              latitude,
-              longitude,
-              address: `📍 ${address}`,
-              id: `coord-${latitude}-${longitude}`
-            }]);
-            return;
-          } catch (error) {
-            console.error('Coordinate error:', error);
-          }
-        }
-      }
-    }
-
-    // Gunakan Nominatim OpenStreetMap (GRATIS, tidak perlu API key)
-    try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&addressdetails=1&limit=5&countrycodes=id`,
-        {
-          headers: {
-            'User-Agent': 'HadirinApp/1.0'
-          }
-        }
-      );
-      const data = await response.json();
-      
-      if (data && data.length > 0) {
-        const formattedResults = data.map((item: any) => ({
-          latitude: parseFloat(item.lat),
-          longitude: parseFloat(item.lon),
-          address: `📍 ${item.display_name}`,
-          id: item.place_id
-        }));
-        setSearchResults(formattedResults);
-        return;
-      }
-    } catch (error) {
-      console.error('Nominatim error:', error);
-    }
-
-    // Fallback ke Location.geocodeAsync
-    try {
-      const results = await Location.geocodeAsync(query);
-      const formattedResults = await Promise.all(
-        results.map(async (result) => {
-          const address = await reverseGeocode(result.latitude, result.longitude);
-          return {
-            ...result,
-            address: `📍 ${address}`,
-            id: `${result.latitude}-${result.longitude}`
-          };
-        })
-      );
-      setSearchResults(formattedResults);
-    } catch (error) {
-      console.error('Search error:', error);
-      setSearchResults([]);
-    }
-  };
-
-  const selectSearchResult = (result: any) => {
-    setMarkerPosition({ latitude: result.latitude, longitude: result.longitude });
-    setMapRegion({
-      latitude: result.latitude,
-      longitude: result.longitude,
-      latitudeDelta: 0.01,
-      longitudeDelta: 0.01
-    });
-    setSearchQuery('');
-    setSearchResults([]);
-  };
-
-  const reverseGeocode = async (latitude: number, longitude: number) => {
-    try {
-      const result = await Location.reverseGeocodeAsync({ latitude, longitude });
-      if (result.length > 0) {
-        const address = result[0];
-        const fullAddress = `${address.street || ''} ${address.name || ''}, ${address.district || ''}, ${address.city || ''}, ${address.region || ''} ${address.postalCode || ''}`.trim();
-        return fullAddress;
-      }
-    } catch (error) {
-      console.error('Error reverse geocoding:', error);
-    }
-    return 'Alamat tidak ditemukan';
-  };
-
-  const handleMapPress = (event: any) => {
-    const { latitude, longitude } = event.nativeEvent.coordinate;
-    setMarkerPosition({ latitude, longitude });
-  };
-
-  const confirmLocation = async () => {
-    if (!markerPosition) {
-      Alert.alert('Error', 'Pilih lokasi terlebih dahulu');
-      return;
-    }
-
-    try {
-      const address = await reverseGeocode(markerPosition.latitude, markerPosition.longitude);
-      setShowMapModal(false);
-      setMarkerPosition(null);
-    } catch (error) {
-      Alert.alert('Error', 'Gagal mendapatkan alamat');
-    }
-  };
-
-  const openMapPicker = () => {
-    setShowMapModal(true);
-  };
-
   useEffect(() => {
     fetchPegawai();
     fetchAvailableLokasi();
-    loadDraftData();
   }, []);
 
-  // Auto-save draft every 30 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      saveDraftData();
-    }, 30000);
-    return () => clearInterval(interval);
-  }, [formData, selectedPegawai, selectedLokasi]);
-
-  // Real-time validation
   const validateField = (field: string, value: any) => {
     const errors = { ...validationErrors };
     
@@ -344,64 +161,6 @@ export default function TambahDinasScreen() {
     return regex.test(timeStr);
   };
 
-  // Auto-save functions
-  const saveDraftData = async () => {
-    try {
-      const draftData = {
-        formData,
-        selectedPegawai,
-        selectedLokasi,
-        selectedFile,
-        timestamp: new Date().toISOString()
-      };
-      await AsyncStorage.setItem('dinas_draft', JSON.stringify(draftData));
-    } catch (error) {
-      console.error('Error saving draft:', error);
-    }
-  };
-
-  const loadDraftData = async () => {
-    try {
-      const draftStr = await AsyncStorage.getItem('dinas_draft');
-      if (draftStr) {
-        const draft = JSON.parse(draftStr);
-        const draftAge = new Date().getTime() - new Date(draft.timestamp).getTime();
-        
-        // Only load draft if it's less than 24 hours old
-        if (draftAge < 24 * 60 * 60 * 1000) {
-          Alert.alert(
-            'Draft Ditemukan',
-            'Ditemukan data draft yang belum disimpan. Muat data draft?',
-            [
-              { text: 'Tidak', onPress: () => clearDraftData() },
-              { 
-                text: 'Ya', 
-                onPress: () => {
-                  setFormData(draft.formData || formData);
-                  setSelectedPegawai(draft.selectedPegawai || []);
-                  setSelectedLokasi(draft.selectedLokasi || []);
-                  setSelectedFile(draft.selectedFile || null);
-                }
-              }
-            ]
-          );
-        } else {
-          clearDraftData();
-        }
-      }
-    } catch (error) {
-      console.error('Error loading draft:', error);
-    }
-  };
-
-  const clearDraftData = async () => {
-    try {
-      await AsyncStorage.removeItem('dinas_draft');
-    } catch (error) {
-      console.error('Error clearing draft:', error);
-    }
-  };
-
   const fetchAvailableLokasi = async () => {
     try {
       const response = await PengaturanAPI.getLokasiKantor();
@@ -411,7 +170,6 @@ export default function TambahDinasScreen() {
       }
     } catch (error) {
       console.error('Error fetching lokasi:', error);
-      // Fallback data
       const fallbackData = [
         { id: 1, nama_lokasi: 'Kantor Pusat', jenis_lokasi: 'tetap' },
         { id: 2, nama_lokasi: 'Kantor Cabang Bandung', jenis_lokasi: 'dinas' },
@@ -425,9 +183,7 @@ export default function TambahDinasScreen() {
   const fetchPegawai = async () => {
     try {
       const response = await PegawaiAkunAPI.getDataPegawai();
-      console.log('Pegawai API Response:', response); // Debug log
       if (response && response.data) {
-        console.log('Pegawai data:', response.data); // Debug log
         setPegawaiList(response.data);
         setFilteredPegawai(response.data);
       }
@@ -466,9 +222,6 @@ export default function TambahDinasScreen() {
   };
 
   const togglePegawai = (pegawai: any) => {
-    console.log('Toggling pegawai:', pegawai); // Debug log
-    
-    // Gunakan id yang paling reliable
     const pegawaiId = pegawai.id_user || pegawai.id_pegawai || pegawai.id;
     const isSelected = selectedPegawai.find((p: any) => {
       const selectedId = p.id_user || p.id_pegawai || p.id;
@@ -477,25 +230,20 @@ export default function TambahDinasScreen() {
     
     let updatedPegawai;
     if (isSelected) {
-      // Remove pegawai
       updatedPegawai = selectedPegawai.filter((p: any) => {
         const selectedId = p.id_user || p.id_pegawai || p.id;
         return selectedId !== pegawaiId;
       });
     } else {
-      // Add pegawai
       updatedPegawai = [...selectedPegawai, pegawai];
     }
     
     setSelectedPegawai(updatedPegawai);
     
-    // Update pegawaiIds di formData
     const validIds = updatedPegawai
       .map((p: any) => p.id_user || p.id_pegawai || p.id)
       .filter(id => id != null && !isNaN(parseInt(id)))
       .map(id => parseInt(id));
-    
-    console.log('Valid pegawai IDs:', validIds); // Debug log
     
     setFormData({
       ...formData,
@@ -528,8 +276,6 @@ export default function TambahDinasScreen() {
     setShowDateSelesaiPicker(false);
   };
 
-
-
   const formatTime = (time: Date) => {
     const hours = String(time.getHours()).padStart(2, '0');
     const minutes = String(time.getMinutes()).padStart(2, '0');
@@ -558,13 +304,12 @@ export default function TambahDinasScreen() {
     if (!dateStr) return '';
     const parts = dateStr.split('/');
     if (parts.length === 3 && parts[0].length === 2 && parts[1].length === 2 && parts[2].length === 4) {
-      return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`; // Convert DD/MM/YYYY to YYYY-MM-DD
+      return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
     }
     return dateStr;
   };
 
-  const handleSubmit = async () => {
-    // Validate all required fields first
+  const handleSave = async () => {
     const errors: {[key: string]: string} = {};
     
     if (!formData.namaKegiatan.trim()) errors.namaKegiatan = 'Nama kegiatan wajib diisi';
@@ -578,16 +323,14 @@ export default function TambahDinasScreen() {
     
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
-      Alert.alert('Data Belum Lengkap', 'Mohon lengkapi field yang wajib diisi (bertanda *)');
+      Alert.alert('Data Belum Lengkap', 'Mohon lengkapi semua field yang wajib diisi sebelum melanjutkan');
       return;
     }
     
-    // Show confirmation modal if all data is valid
     setShowConfirmModal(true);
   };
 
-  const confirmSubmit = async () => {
-    // Validate all fields
+  const confirmSave = async () => {
     const errors: {[key: string]: string} = {};
     
     if (!formData.namaKegiatan.trim()) errors.namaKegiatan = 'Nama kegiatan wajib diisi';
@@ -602,14 +345,14 @@ export default function TambahDinasScreen() {
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
       setShowConfirmModal(false);
-      Alert.alert('Error', 'Mohon lengkapi field yang wajib diisi');
+      Alert.alert('Error', 'Mohon lengkapi semua field yang wajib diisi');
       return;
     }
-
-    setLoading(true);
-    setShowConfirmModal(false);
     
     try {
+      setLoading(true);
+      setShowConfirmModal(false);
+      
       const dinasData = {
         nama_kegiatan: formData.namaKegiatan.trim(),
         nomor_spt: formData.nomorSpt.trim(),
@@ -623,51 +366,49 @@ export default function TambahDinasScreen() {
         lokasi_ids: selectedLokasi.map(lokasi => lokasi.id)
       };
       
-      const response = await DinasAPI.createDinas(dinasData);
-      
-      if (response.success) {
-        await clearDraftData();
-        Alert.alert('Sukses', 'Data dinas berhasil ditambahkan!', [
-          { text: 'OK', onPress: () => {
-              setFormData({
-                namaKegiatan: '',
-                nomorSpt: '',
-                jenisDinas: 'lokal',
-                tanggalMulai: '',
-                tanggalSelesai: '',
-                jamMulai: '',
-                jamSelesai: '',
-                deskripsi: '',
-                pegawaiIds: []
-              });
-              setSelectedPegawai([]);
-              setSelectedLokasi([]);
-              setSelectedFile(null);
-              router.back();
-            }
-          }
-        ]);
-      } else {
-        Alert.alert('Error', response.message || 'Gagal menambahkan data dinas');
+      try {
+        const response = await DinasAPI.createDinas(dinasData);
+        
+        if (response.success) {
+          Alert.alert('Sukses', 'Data dinas berhasil disimpan', [
+            { text: 'OK', onPress: () => router.replace('/kelola-dinas/dinas-aktif' as any) }
+          ]);
+        } else {
+          const errorMsg = response.message || response.error || 'Gagal menyimpan data dinas';
+          Alert.alert('Error', errorMsg);
+        }
+      } catch (apiError: any) {
+        console.error('API Error:', apiError);
+        let errorMessage = 'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.';
+        
+        if (apiError.message) {
+          errorMessage = apiError.message;
+        }
+        
+        Alert.alert('Error', errorMessage);
       }
     } catch (error) {
-      Alert.alert('Koneksi Error', 'Pastikan XAMPP nyala dan HP satu Wi-Fi dengan laptop.');
+      console.error('Error saving dinas:', error);
+      Alert.alert('Error', 'Terjadi kesalahan saat menyimpan data');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" translucent={true} backgroundColor="transparent" />
+    <SafeAreaView style={styles.container}>
       <AppHeader 
         title="Tambah Dinas Baru"
         showBack={true}
       />
 
-      <View style={styles.contentContainer}>
-        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.formContainer}>
+      <KeyboardAvoidingView 
+        style={styles.keyboardAvoidingView}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+      >
+        <ScrollView style={styles.contentContainer} showsVerticalScrollIndicator={false}>
+          <View style={styles.formContainer}>
           
           {/* Informasi Dasar */}
           <View style={styles.formCard}>
@@ -1060,9 +801,22 @@ export default function TambahDinasScreen() {
             </View>
           </View>
 
+          </View>
+        </ScrollView>
+        
+        <View style={styles.stickyFooter}>
+          <TouchableOpacity 
+            style={[styles.submitBtn, loading && styles.submitBtnDisabled]} 
+            onPress={handleSave}
+            disabled={loading}
+          >
+            <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
+            <Text style={styles.submitText}>
+              {loading ? 'Menyimpan...' : 'Simpan Data Dinas'}
+            </Text>
+          </TouchableOpacity>
         </View>
-      </ScrollView>
-      </View>
+      </KeyboardAvoidingView>
 
       {/* Calendar Modals */}
       <Modal visible={showDateMulaiPicker} transparent>
@@ -1161,7 +915,7 @@ export default function TambahDinasScreen() {
         </View>
       </Modal>
 
-      {/* Time Picker Modals - Simple Version */}
+      {/* Time Picker Modals */}
       <DateTimePickerModal
         isVisible={showJamMulaiPicker}
         mode="time"
@@ -1179,24 +933,6 @@ export default function TambahDinasScreen() {
         is24Hour={true}
         display="default"
       />
-
-      {/* Sticky Save Button */}
-      <View style={styles.stickyFooter}>
-        <TouchableOpacity 
-          style={[styles.submitBtn, loading && styles.submitBtnDisabled]} 
-          onPress={handleSubmit}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <>
-              <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
-              <Text style={styles.submitText}>Simpan Data Dinas</Text>
-            </>
-          )}
-        </TouchableOpacity>
-      </View>
 
       {/* Confirmation Modal */}
       <Modal visible={showConfirmModal} transparent>
@@ -1274,7 +1010,7 @@ export default function TambahDinasScreen() {
               
               <TouchableOpacity 
                 style={styles.saveConfirmBtn}
-                onPress={confirmSubmit}
+                onPress={confirmSave}
                 disabled={loading}
               >
                 <Text style={styles.saveConfirmText}>
@@ -1285,61 +1021,22 @@ export default function TambahDinasScreen() {
           </View>
         </View>
       </Modal>
-
-      {/* Input Modal */}
-      <Modal visible={showInputModal} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.inputModalContainer}>
-            <View style={styles.inputModalHeader}>
-              <Text style={styles.inputModalTitle}>Input Data</Text>
-              <TouchableOpacity onPress={() => setShowInputModal(false)}>
-                <Ionicons name="close" size={24} color="#666" />
-              </TouchableOpacity>
-            </View>
-            
-            <ScrollView style={styles.inputModalContent}>
-              <TouchableOpacity 
-                style={styles.inputModalItem}
-                onPress={() => {
-                  Alert.prompt('Nama Kegiatan', 'Masukkan nama kegiatan:', [
-                    { text: 'Batal', style: 'cancel' },
-                    { text: 'OK', onPress: (value: string | undefined) => value && setFormData({...formData, namaKegiatan: value}) }
-                  ]);
-                }}
-              >
-                <Ionicons name="clipboard-outline" size={20} color="#004643" />
-                <Text style={styles.inputModalItemText}>Nama Kegiatan</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={styles.inputModalItem}
-                onPress={() => {
-                  Alert.prompt('Nomor SPT', 'Masukkan nomor SPT:', [
-                    { text: 'Batal', style: 'cancel' },
-                    { text: 'OK', onPress: (value: string | undefined) => value && setFormData({...formData, nomorSpt: value}) }
-                  ]);
-                }}
-              >
-                <Ionicons name="document-text-outline" size={20} color="#004643" />
-                <Text style={styles.inputModalItemText}>Nomor SPT</Text>
-              </TouchableOpacity>
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFB' },
+  keyboardAvoidingView: {
+    flex: 1,
+  },
   contentContainer: {
     flex: 1
   },
   formContainer: {
     paddingHorizontal: 5,
     paddingTop: 20,
-    paddingBottom: 100
+    paddingBottom: 20
   },
   formCard: {
     backgroundColor: '#fff',
@@ -1521,40 +1218,30 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    minHeight: 50,
-    maxWidth: Platform.OS === 'web' ? 300 : '100%',
-    width: Platform.OS === 'web' ? 300 : '100%'
+    paddingVertical: 16,
+    borderRadius: 12
   },
   submitBtnDisabled: {
     backgroundColor: '#ccc'
   },
   submitText: {
     color: '#fff',
-    fontSize: 15,
-    fontWeight: '600',
-    marginLeft: 6,
-    textAlign: 'center'
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginLeft: 8
   },
   stickyFooter: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
     backgroundColor: 'rgba(248, 250, 251, 0.98)',
-    paddingHorizontal: Platform.OS === 'web' ? 65 : 16,
-    paddingTop: 12,
-    paddingBottom: Platform.OS === 'ios' ? 20 : 16,
+    paddingHorizontal: 20,
+    paddingTop: 15,
+    paddingBottom: 20,
     borderTopWidth: 1,
     borderTopColor: '#E0E0E0',
     elevation: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    alignItems: 'center'
+    shadowRadius: 4
   },
   inputError: {
     borderColor: '#F44336',
@@ -1566,8 +1253,6 @@ const styles = StyleSheet.create({
     marginTop: 4,
     marginLeft: 4
   },
-
-  // Modal styles
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -1670,49 +1355,5 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: '#004643'
-  },
-  
-  // Input Modal styles
-  inputModalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-  inputModalContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 15,
-    width: '90%',
-    maxHeight: '70%'
-  },
-  inputModalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0'
-  },
-  inputModalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333'
-  },
-  inputModalContent: {
-    paddingHorizontal: 20,
-    paddingVertical: 15
-  },
-  inputModalItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0'
-  },
-  inputModalItemText: {
-    fontSize: 16,
-    color: '#333',
-    marginLeft: 12
   }
 });

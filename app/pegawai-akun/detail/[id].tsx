@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { StatusBar } from 'expo-status-bar';
 import {
   View,
   Text,
@@ -7,8 +8,6 @@ import {
   Image,
   Alert,
   ActivityIndicator,
-  StatusBar,
-  SafeAreaView,
   Platform,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -49,7 +48,7 @@ export default function DetailPegawai() {
   const fetchPegawaiDetail = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${getApiUrl(API_CONFIG.ENDPOINTS.DETAIL_PEGAWAI)}?id=${id}`);
+      const response = await fetch(`${getApiUrl(API_CONFIG.ENDPOINTS.DETAIL_PEGAWAI)}/${id}`);
       const result = await response.json();
       
       if (result.success) {
@@ -69,20 +68,20 @@ export default function DetailPegawai() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" />
+      <View style={styles.container}>
+        <StatusBar style="dark" translucent={true} backgroundColor="transparent" />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#004643" />
           <Text style={styles.loadingText}>Memuat data pegawai...</Text>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   if (!pegawai) {
     return (
-      <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" />
+      <View style={styles.container}>
+        <StatusBar style="dark" translucent={true} backgroundColor="transparent" />
         <View style={styles.errorContainer}>
           <Ionicons name="alert-circle-outline" size={64} color="#F44336" />
           <Text style={styles.errorText}>Data pegawai tidak ditemukan</Text>
@@ -90,13 +89,13 @@ export default function DetailPegawai() {
             <Text style={styles.backBtnText}>Kembali</Text>
           </TouchableOpacity>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+    <View style={styles.container}>
+      <StatusBar style="dark" translucent={true} backgroundColor="transparent" />
       
       {/* HEADER */}
       <AppHeader 
@@ -301,7 +300,7 @@ export default function DetailPegawai() {
           <Ionicons name="create-outline" size={24} color="#fff" />
         </TouchableOpacity>
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { StatusBar } from 'expo-status-bar';
 import {
   View,
   Text,
@@ -7,8 +8,6 @@ import {
   TextInput,
   Alert,
   ActivityIndicator,
-  StatusBar,
-  SafeAreaView,
   Platform,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -44,7 +43,7 @@ export default function EditPegawai() {
   const fetchPegawaiDetail = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${getApiUrl(API_CONFIG.ENDPOINTS.DETAIL_PEGAWAI)}?id=${id}`);
+      const response = await fetch(`${getApiUrl(API_CONFIG.ENDPOINTS.DETAIL_PEGAWAI)}/${id}`);
       const result = await response.json();
       
       if (result.success) {
@@ -103,19 +102,19 @@ export default function EditPegawai() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" />
+      <View style={styles.container}>
+        <StatusBar style="dark" translucent={true} backgroundColor="transparent" />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#004643" />
           <Text style={styles.loadingText}>Memuat data pegawai...</Text>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+    <View style={styles.container}>
+      <StatusBar style="dark" translucent={true} backgroundColor="transparent" />
       
       {/* HEADER */}
       <AppHeader 
@@ -298,8 +297,8 @@ export default function EditPegawai() {
 
       </ScrollView>
       
-      {/* Sticky Save Button */}
-      <View style={styles.stickyFooter}>
+      {/* Button Footer - Fixed di bawah seperti header */}
+      <View style={styles.buttonFooter}>
         <TouchableOpacity 
           style={styles.saveButton}
           onPress={handleSave}
@@ -315,7 +314,7 @@ export default function EditPegawai() {
           )}
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -338,10 +337,10 @@ const styles = StyleSheet.create({
 
   content: {
     flex: 1,
+    paddingTop: 10,
   },
   scrollContent: {
-    paddingTop: 10,
-    paddingBottom: 100,
+    paddingBottom: 20,
   },
   formCard: {
     backgroundColor: '#fff',
@@ -453,14 +452,16 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginLeft: 8
   },
-  stickyFooter: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'rgba(248, 250, 251, 0.98)',
-    paddingHorizontal: 20,
-    paddingTop: 15,
-    paddingBottom: 20
+  buttonFooter: {
+    backgroundColor: 'white',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 5,
   },
 });

@@ -13,8 +13,8 @@ export default function KelolaDinasScreen() {
   });
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+    <View style={styles.container}>
+      <StatusBar barStyle="dark-content" translucent={true} backgroundColor="transparent" />
       
       {/* HEADER */}
       <AppHeader 
@@ -134,7 +134,7 @@ export default function KelolaDinasScreen() {
         </View>
         </ScrollView>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 

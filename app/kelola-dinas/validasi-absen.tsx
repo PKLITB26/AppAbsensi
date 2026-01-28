@@ -51,11 +51,32 @@ export default function ValidasiAbsenScreen() {
       };
       
       const response = await KelolaDinasAPI.getValidasiAbsen(params);
-      setAbsensiData(response.data);
-      setTotalRecords(response.pagination.total_records);
-      setTotalPages(response.pagination.total_pages);
+      
+      // Handle response safely
+      if (response && response.data) {
+        setAbsensiData(response.data);
+        
+        // Handle pagination safely
+        if (response.pagination) {
+          setTotalRecords(response.pagination.total_records || 0);
+          setTotalPages(response.pagination.total_pages || 0);
+        } else {
+          // Fallback if no pagination
+          setTotalRecords(response.data.length || 0);
+          setTotalPages(1);
+        }
+      } else {
+        // Handle empty or invalid response
+        setAbsensiData([]);
+        setTotalRecords(0);
+        setTotalPages(0);
+      }
     } catch (error) {
       console.error('Error fetching validasi absen:', error);
+      // Set empty state on error
+      setAbsensiData([]);
+      setTotalRecords(0);
+      setTotalPages(0);
     } finally {
       setLoading(false);
     }
@@ -239,99 +260,148 @@ export default function ValidasiAbsenScreen() {
       />
 
       <View style={styles.contentContainer}>
-
-      <View style={styles.searchContainer}>
-        <View style={styles.searchInputWrapper}>
-          <Ionicons name="search-outline" size={20} color="#666" style={styles.searchIcon} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Cari nama pegawai atau kegiatan..."
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            placeholderTextColor="#999"
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity 
-              onPress={() => setSearchQuery('')}
-              style={styles.clearBtn}
-            >
-              <Ionicons name="close-circle" size={20} color="#999" />
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
-
-      <View style={styles.filterCard}>
-        <View style={styles.filterHeader}>
-          <Ionicons name="funnel-outline" size={20} color="#004643" />
-          <Text style={styles.filterTitle}>Filter Status</Text>
-        </View>
-        <View style={styles.sortContainer}>
-          <TouchableOpacity
-            style={[styles.sortBtn, selectedFilter === 'pending' && styles.sortBtnActive]}
-            onPress={() => setSelectedFilter('pending')}
-          >
-            <Text style={[styles.sortText, selectedFilter === 'pending' && styles.sortTextActive]}>
-              Menunggu
-            </Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={[styles.sortBtn, selectedFilter === 'approved' && styles.sortBtnActive]}
-            onPress={() => setSelectedFilter('approved')}
-          >
-            <Text style={[styles.sortText, selectedFilter === 'approved' && styles.sortTextActive]}>
-              Disetujui
-            </Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={[styles.sortBtn, selectedFilter === 'rejected' && styles.sortBtnActive]}
-            onPress={() => setSelectedFilter('rejected')}
-          >
-            <Text style={[styles.sortText, selectedFilter === 'rejected' && styles.sortTextActive]}>
-              Ditolak
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      <FlatList
-        data={absensiData}
-        renderItem={renderAbsensiCard}
-        keyExtractor={(item) => item.id.toString()}
-        contentContainerStyle={styles.listContainer}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Ionicons name="document-text-outline" size={64} color="#ccc" />
-            <Text style={styles.emptyText}>Tidak ada data absensi</Text>
+        {/* Fixed Search and Sort */}
+        <View style={styles.fixedControls}>
+          {/* Search Container */}
+          <View style={styles.searchContainer}>
+            <View style={styles.searchInputWrapper}>
+              <Ionicons name="search-outline" size={20} color="#666" style={styles.searchIcon} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Cari nama pegawai atau kegiatan..."
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                placeholderTextColor="#999"
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity 
+                  onPress={() => setSearchQuery('')}
+                  style={styles.clearBtn}
+                >
+                  <Ionicons name="close-circle" size={20} color="#999" />
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
-        }
-      />
 
-      {totalPages > 1 && (
-        <View style={styles.pagination}>
-          <TouchableOpacity
-            style={[styles.pageBtn, currentPage === 1 && styles.pageBtnDisabled]}
-            onPress={() => setCurrentPage(currentPage - 1)}
-            disabled={currentPage === 1}
-          >
-            <Ionicons name="chevron-back" size={20} color={currentPage === 1 ? '#ccc' : '#004643'} />
-          </TouchableOpacity>
-          
-          <Text style={styles.pageText}>
-            Halaman {currentPage} dari {totalPages}
-          </Text>
-          
-          <TouchableOpacity
-            style={[styles.pageBtn, currentPage === totalPages && styles.pageBtnDisabled]}
-            onPress={() => setCurrentPage(currentPage + 1)}
-            disabled={currentPage === totalPages}
-          >
-            <Ionicons name="chevron-forward" size={20} color={currentPage === totalPages ? '#ccc' : '#004643'} />
-          </TouchableOpacity>
+          {/* Status Filter */}
+          <View style={styles.filterCard}>
+            <View style={styles.filterHeader}>
+              <Ionicons name="funnel-outline" size={20} color="#004643" />
+              <Text style={styles.filterTitle}>Filter Status</Text>
+            </View>
+            
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.filterChips}
+            >
+              {[
+                { key: 'pending', label: 'Menunggu' },
+                { key: 'approved', label: 'Disetujui' },
+                { key: 'rejected', label: 'Ditolak' }
+              ].map((filter) => (
+                <TouchableOpacity
+                  key={filter.key}
+                  style={[
+                    styles.filterChip,
+                    selectedFilter === filter.key && styles.filterChipActive,
+                  ]}
+                  onPress={() => setSelectedFilter(filter.key)}
+                >
+                  <Text
+                    style={[
+                      styles.filterChipText,
+                      selectedFilter === filter.key && styles.filterChipTextActive,
+                    ]}
+                  >
+                    {filter.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
         </View>
-      )}
+
+        {/* Absensi List */}
+        <FlatList
+          data={absensiData}
+          renderItem={renderAbsensiCard}
+          keyExtractor={(item) => item.id.toString()}
+          style={styles.flatList}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          refreshing={loading}
+          onRefresh={() => fetchValidasiAbsen()}
+          ListEmptyComponent={() => (
+            <View style={styles.emptyState}>
+              <Ionicons name="document-text-outline" size={60} color="#ccc" />
+              <Text style={styles.emptyText}>
+                {loading ? 'Memuat data...' : 'Tidak ada data absensi'}
+              </Text>
+            </View>
+          )}
+          ListFooterComponent={() => {
+            if (totalPages <= 1) return null;
+            return (
+              <View style={styles.paginationContainer}>
+                <TouchableOpacity
+                  style={[
+                    styles.pageBtn,
+                    currentPage === 1 && styles.pageBtnDisabled,
+                  ]}
+                  onPress={() => setCurrentPage(currentPage - 1)}
+                  disabled={currentPage === 1}
+                >
+                  <Ionicons
+                    name="chevron-back"
+                    size={16}
+                    color={currentPage === 1 ? '#ccc' : '#004643'}
+                  />
+                </TouchableOpacity>
+
+                <View style={styles.pageNumbers}>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                    (page) => (
+                      <TouchableOpacity
+                        key={page}
+                        style={[
+                          styles.pageNumber,
+                          currentPage === page && styles.pageNumberActive,
+                        ]}
+                        onPress={() => setCurrentPage(page)}
+                      >
+                        <Text
+                          style={[
+                            styles.pageNumberText,
+                            currentPage === page && styles.pageNumberTextActive,
+                          ]}
+                        >
+                          {page}
+                        </Text>
+                      </TouchableOpacity>
+                    ),
+                  )}
+                </View>
+
+                <TouchableOpacity
+                  style={[
+                    styles.pageBtn,
+                    currentPage === totalPages && styles.pageBtnDisabled,
+                  ]}
+                  onPress={() => setCurrentPage(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                >
+                  <Ionicons
+                    name="chevron-forward"
+                    size={16}
+                    color={currentPage === totalPages ? '#ccc' : '#004643'}
+                  />
+                </TouchableOpacity>
+              </View>
+            );
+          }}
+        />
       </View>
     </SafeAreaView>
   );
@@ -341,10 +411,20 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFB' },
   contentContainer: {
     flex: 1,
-    paddingTop: 10,
   },
+  fixedControls: {
+    paddingTop: 8,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+    backgroundColor: '#FAFBFC',
+  },
+  flatList: {
+    flex: 1,
+  },
+  
   searchContainer: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 15,
     paddingVertical: 8,
     backgroundColor: '#F8FAFB'
   },
@@ -359,7 +439,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
-    gap: 10
   },
   searchIcon: {
     marginRight: 10
@@ -373,17 +452,15 @@ const styles = StyleSheet.create({
   clearBtn: {
     padding: 4
   },
+  
   filterCard: {
     backgroundColor: '#fff',
-    marginHorizontal: 20,
+    marginHorizontal: 15,
     marginVertical: 5,
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 15,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
   },
   filterHeader: {
     flexDirection: 'row',
@@ -396,35 +473,44 @@ const styles = StyleSheet.create({
     color: '#333',
     marginLeft: 8
   },
-  sortContainer: {
-    flexDirection: 'row',
-    gap: 8,
+  filterChips: {
+    marginBottom: 10,
   },
-  sortBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
+  filterChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginRight: 8,
+    borderRadius: 20,
     backgroundColor: '#F5F5F5',
-    gap: 4,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
   },
-  sortBtnActive: { backgroundColor: '#004643' },
-  sortText: { fontSize: 12, color: '#666', fontWeight: '500' },
-  sortTextActive: { color: '#fff' },
-  listContainer: {
-    padding: 16,
+  filterChipActive: {
+    backgroundColor: '#004643',
+    borderColor: '#004643',
+  },
+  filterChipText: {
+    fontSize: 12,
+    color: '#666',
+    fontWeight: '500',
+  },
+  filterChipTextActive: {
+    color: '#fff',
+  },
+  
+  listContent: {
+    paddingHorizontal: 5,
+    paddingTop: 10,
+    paddingBottom: 20,
   },
   absensiCard: {
     backgroundColor: '#fff',
     borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    padding: 15,
+    marginBottom: 12,
+    marginHorizontal: 15,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
   },
   cardHeader: {
     flexDirection: 'row',
@@ -571,34 +657,52 @@ const styles = StyleSheet.create({
     color: '#004643',
     fontSize: 14,
   },
-  emptyContainer: {
+  emptyState: {
     alignItems: 'center',
-    justifyContent: 'center',
     paddingVertical: 40,
   },
   emptyText: {
     fontSize: 14,
     color: '#999',
-    marginTop: 8,
+    marginTop: 10,
   },
-  pagination: {
+  
+  paginationContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'center',
-    padding: 16,
-    backgroundColor: '#fff',
-    borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
+    alignItems: 'center',
+    paddingVertical: 20,
+    marginTop: 10,
   },
   pageBtn: {
     padding: 8,
+    borderRadius: 8,
+    backgroundColor: '#F5F5F5',
   },
   pageBtnDisabled: {
-    opacity: 0.3,
+    backgroundColor: '#F0F0F0',
   },
-  pageText: {
+  pageNumbers: {
+    flexDirection: 'row',
+    marginHorizontal: 15,
+  },
+  pageNumber: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginHorizontal: 2,
+    borderRadius: 8,
+    backgroundColor: '#F5F5F5',
+  },
+  pageNumberActive: {
+    backgroundColor: '#004643',
+  },
+  pageNumberText: {
     fontSize: 14,
-    color: '#333',
-    marginHorizontal: 16,
+    color: '#666',
+    fontWeight: '500',
+  },
+  pageNumberTextActive: {
+    color: '#fff',
+    fontWeight: 'bold',
   },
 });
