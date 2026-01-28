@@ -31,7 +31,7 @@ export default function AppHeader({
       if (router.canGoBack()) {
         router.back();
       } else {
-        router.push(fallbackRoute || '/(tabs)/beranda');
+        router.push((fallbackRoute || '/(tabs)/beranda') as any);
       }
     }
   };

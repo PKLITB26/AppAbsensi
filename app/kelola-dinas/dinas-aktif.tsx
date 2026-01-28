@@ -38,9 +38,9 @@ export default function DinasAktifScreen() {
   const fetchDinasAktif = async () => {
     try {
       setLoading(true);
-      const data = await KelolaDinasAPI.getDinasAktif();
-      if (data && Array.isArray(data)) {
-        setDinasAktif(data);
+      const response = await KelolaDinasAPI.getDinasAktif();
+      if (response && response.success && Array.isArray(response.data)) {
+        setDinasAktif(response.data);
       } else {
         setDinasAktif([]);
       }

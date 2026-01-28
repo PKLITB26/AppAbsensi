@@ -379,17 +379,12 @@ export default function AddDataPegawaiForm() {
   };
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
-    >
-      <SafeAreaView style={styles.container}>
-        <AppHeader 
-          title="Tambah Data Pegawai"
-          showBack={true}
-          fallbackRoute="/pegawai-akun/data-pegawai-admin"
-        />
+    <SafeAreaView style={styles.container}>
+      <AppHeader 
+        title="Tambah Data Pegawai"
+        showBack={true}
+        fallbackRoute="/pegawai-akun/data-pegawai-admin"
+      />
 
         <View style={styles.contentContainer}>
           <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -764,8 +759,7 @@ export default function AddDataPegawaiForm() {
             )}
           </TouchableOpacity>
         </SafeAreaView>
-      </SafeAreaView>
-    </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
@@ -899,7 +893,10 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#E0E0E0',
     elevation: 8,
-    boxShadow: '0 -2px 4px rgba(0, 0, 0, 0.1)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
     alignItems: 'center'
   },
 

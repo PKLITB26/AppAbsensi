@@ -1285,7 +1285,7 @@ export default function TambahDinasScreen() {
 
       {/* Input Modal */}
       <Modal visible={showInputModal} animationType="slide" transparent>
-        <View style={styles.inputModalOverlay}>
+        <View style={styles.modalOverlay}>
           <View style={styles.inputModalContainer}>
             <View style={styles.inputModalHeader}>
               <Text style={styles.inputModalTitle}>Input Data</Text>
@@ -1331,11 +1331,11 @@ export default function TambahDinasScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFB' },
   contentContainer: {
-    flex: 1,
-    marginTop: 10
+    flex: 1
   },
   formContainer: {
     paddingHorizontal: 5,
+    paddingTop: 20,
     paddingBottom: 100
   },
   formCard: {
@@ -1531,14 +1531,17 @@ const styles = StyleSheet.create({
     marginLeft: 8
   },
   stickyFooter: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
     backgroundColor: 'rgba(248, 250, 251, 0.98)',
     paddingHorizontal: 20,
     paddingTop: 15,
-    paddingBottom: 20
+    paddingBottom: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#E0E0E0',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4
   },
   inputError: {
     borderColor: '#F44336',
@@ -1654,5 +1657,49 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: '#004643'
+  },
+  
+  // Input Modal styles
+  inputModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  inputModalContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 15,
+    width: '90%',
+    maxHeight: '70%'
+  },
+  inputModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0'
+  },
+  inputModalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333'
+  },
+  inputModalContent: {
+    paddingHorizontal: 20,
+    paddingVertical: 15
+  },
+  inputModalItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0'
+  },
+  inputModalItemText: {
+    fontSize: 16,
+    color: '#333',
+    marginLeft: 12
   }
 });

@@ -291,6 +291,49 @@ export const PegawaiAkunAPI = {
   },
 };
 
+// Kelola Dinas API
+export const KelolaDinasAPI = {
+  getDinasAktif: async () => {
+    try {
+      const response = await fetchWithRetry(getApiUrl(API_CONFIG.ENDPOINTS.DINAS_AKTIF));
+      return response.json();
+    } catch (error) {
+      return { success: false, message: 'Tidak dapat terhubung ke server', data: [] };
+    }
+  },
+  
+  createDinas: async (data: any) => {
+    try {
+      const response = await fetchWithRetry(getApiUrl(API_CONFIG.ENDPOINTS.CREATE_DINAS), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      return response.json();
+    } catch (error) {
+      return { success: false, message: 'Tidak dapat terhubung ke server' };
+    }
+  },
+  
+  getRiwayatDinas: async () => {
+    try {
+      const response = await fetchWithRetry(getApiUrl(API_CONFIG.ENDPOINTS.RIWAYAT_DINAS));
+      return response.json();
+    } catch (error) {
+      return { success: false, message: 'Tidak dapat terhubung ke server', data: [] };
+    }
+  },
+  
+  getValidasiAbsen: async () => {
+    try {
+      const response = await fetchWithRetry(getApiUrl(API_CONFIG.ENDPOINTS.VALIDASI_ABSEN));
+      return response.json();
+    } catch (error) {
+      return { success: false, message: 'Tidak dapat terhubung ke server', data: [] };
+    }
+  },
+};
+
 export default API_CONFIG;
 
 // Pengaturan API
