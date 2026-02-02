@@ -27,97 +27,42 @@ export default function KelolaDinasScreen() {
       <View style={styles.contentContainer}>
         <ScrollView showsVerticalScrollIndicator={false}>
 
-        {/* Stats Cards */}
-        <View style={styles.statsContainer}>
-          <View style={styles.statsHeaderCard}>
-            <View style={styles.statsHeaderContent}>
-              <View style={styles.statsHeaderLeft}>
-                <View style={styles.statsIconBg}>
-                  <Ionicons name="analytics" size={24} color="#004643" />
-                </View>
-                <View>
-                  <Text style={styles.statsTitle}>Ringkasan Dinas</Text>
-                  <Text style={styles.statsDate}>{new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' })}</Text>
-                </View>
-              </View>
-              <View style={styles.statsHeaderRight}>
-                <View style={styles.liveBadge}>
-                  <View style={styles.liveDot} />
-                  <Text style={styles.liveText}>Live</Text>
-                </View>
-              </View>
+        {/* Ringkasan Stats - Simple List */}
+        <View style={styles.statsSection}>
+          <Text style={styles.statsTitle}>Ringkasan Dinas Hari Ini</Text>
+          <View style={styles.statsList}>
+            <View style={styles.statsItem}>
+              <Ionicons name="briefcase" size={20} color="#004643" />
+              <Text style={styles.statsLabel}>Dinas Aktif</Text>
+              <Text style={styles.statsNumber}>3</Text>
             </View>
-          </View>
-          
-          <View style={styles.statsGrid}>
-            <View style={styles.statCard}>
-              <View style={styles.statIconContainer}>
-                <View style={[styles.statIconBg, { backgroundColor: '#E3F2FD' }]}>
-                  <Ionicons name="briefcase" size={24} color="#1976D2" />
-                </View>
-              </View>
-              <View style={styles.statContent}>
-                <Text style={styles.statNumber}>{stats.dinasAktif}</Text>
-                <Text style={styles.statLabel}>Dinas Aktif</Text>
-                <Text style={styles.statSubtext}>Kegiatan berlangsung</Text>
-              </View>
+            <View style={styles.statsItem}>
+              <Ionicons name="people" size={20} color="#004643" />
+              <Text style={styles.statsLabel}>Pegawai Dinas</Text>
+              <Text style={styles.statsNumber}>12</Text>
             </View>
-
-            <View style={styles.statCard}>
-              <View style={styles.statIconContainer}>
-                <View style={[styles.statIconBg, { backgroundColor: '#E8F5E9' }]}>
-                  <Ionicons name="people" size={24} color="#388E3C" />
-                </View>
-              </View>
-              <View style={styles.statContent}>
-                <Text style={styles.statNumber}>{stats.pegawaiDinas}</Text>
-                <Text style={styles.statLabel}>Pegawai Dinas</Text>
-                <Text style={styles.statSubtext}>Sedang bertugas</Text>
-              </View>
-            </View>
-
-            <View style={styles.statCard}>
-              <View style={styles.statIconContainer}>
-                <View style={[styles.statIconBg, { backgroundColor: '#FFF3E0' }]}>
-                  <Ionicons name="time" size={24} color="#F57C00" />
-                </View>
-              </View>
-              <View style={styles.statContent}>
-                <Text style={styles.statNumber}>{stats.belumAbsen}</Text>
-                <Text style={styles.statLabel}>Belum Absen</Text>
-                <Text style={styles.statSubtext}>Perlu tindakan</Text>
-              </View>
+            <View style={styles.statsItem}>
+              <Ionicons name="time" size={20} color="#004643" />
+              <Text style={styles.statsLabel}>Belum Absen</Text>
+              <Text style={styles.statsNumber}>2</Text>
             </View>
           </View>
         </View>
-
-        {/* Menu Grid */}
         <View style={styles.menuSection}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Menu Kelola Dinas</Text>
-          </View>
-          
-          <View style={styles.menuGrid}>
+          {/* Baris pertama - 3 menu utama */}
+          <View style={styles.mainMenuRow}>
             {[
-              { id: 1, name: 'Data Dinas Aktif', icon: 'today-outline', color: '#E8F5E9' },
-              { id: 2, name: 'Riwayat Dinas', icon: 'document-text-outline', color: '#FFF3E0' },
-              { id: 3, name: 'Validasi Absen', icon: 'checkmark-circle-outline', color: '#F3E5F5' },
+              { id: 1, name: 'Data Dinas Aktif', icon: 'today-outline', color: '#E8F5E9', iconColor: '#2E7D32', route: '/kelola-dinas/dinas-aktif' },
+              { id: 2, name: 'Riwayat Dinas', icon: 'document-text-outline', color: '#E3F2FD', iconColor: '#1976D2', route: '/kelola-dinas/riwayat-dinas' },
+              { id: 3, name: 'Validasi Absen', icon: 'checkmark-circle-outline', color: '#FFF3E0', iconColor: '#F57C00', route: '/kelola-dinas/validasi-absen' },
             ].map((item) => (
               <TouchableOpacity 
                 key={item.id} 
-                style={styles.menuItem}
-                onPress={() => {
-                  if (item.name === 'Data Dinas Aktif') {
-                    router.push('/kelola-dinas/dinas-aktif' as any);
-                  } else if (item.name === 'Riwayat Dinas') {
-                    router.push('/kelola-dinas/riwayat-dinas' as any);
-                  } else if (item.name === 'Validasi Absen') {
-                    router.push('/kelola-dinas/validasi-absen' as any);
-                  }
-                }}
+                style={styles.mainMenuItem}
+                onPress={() => router.push(item.route as any)}
               >
                 <View style={[styles.menuIconCircle, { backgroundColor: item.color }]}>
-                  <Ionicons name={item.icon as any} size={22} color="#333" />
+                  <Ionicons name={item.icon as any} size={22} color={item.iconColor} />
                 </View>
                 <Text style={styles.menuLabel}>{item.name}</Text>
               </TouchableOpacity>
@@ -275,48 +220,118 @@ const styles = StyleSheet.create({
   },
 
   menuSection: { 
-    marginTop: Platform.OS === 'android' ? 20 : 30, 
-    paddingHorizontal: 20 
+    marginTop: -10, 
+    marginHorizontal: 20, 
+    backgroundColor: '#fff', 
+    borderRadius: 16, 
+    padding: 20,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    marginBottom: 20
   },
-  sectionHeader: { 
+  mainMenuRow: { 
     flexDirection: 'row', 
     justifyContent: 'space-between', 
-    alignItems: 'center', 
-    marginBottom: Platform.OS === 'android' ? 16 : 20 
+    paddingHorizontal: Platform.OS === 'ios' ? 5 : 0,
   },
-  sectionTitle: { 
-    fontSize: Platform.OS === 'android' ? 15 : 16, 
-    fontWeight: 'bold', 
-    color: '#333',
-    lineHeight: Platform.OS === 'android' ? 18 : 20
-  },
-  menuGrid: { 
-    flexDirection: 'row', 
-    flexWrap: 'wrap', 
-    justifyContent: 'space-between'
-  },
-  menuItem: { 
-    width: '30%', 
-    alignItems: 'center', 
-    marginBottom: Platform.OS === 'android' ? 20 : 25,
-    paddingHorizontal: 4
+  mainMenuItem: { 
+    width: Platform.OS === 'ios' ? '30%' : '31%', 
+    alignItems: 'center' 
   },
   menuIconCircle: { 
-    width: Platform.OS === 'android' ? 52 : 56, 
-    height: Platform.OS === 'android' ? 52 : 56, 
+    width: Platform.OS === 'ios' ? 52 : 56, 
+    height: Platform.OS === 'ios' ? 52 : 56, 
     borderRadius: 16, 
     justifyContent: 'center', 
     alignItems: 'center', 
-    marginBottom: 8,
-    elevation: Platform.OS === 'android' ? 2 : 0
+    marginBottom: 8 
   },
   menuLabel: { 
-    fontSize: Platform.OS === 'android' ? 10 : 11, 
+    fontSize: 11, 
     color: '#444', 
     fontWeight: '500', 
+    textAlign: 'center' 
+  },
+
+  recentSection: { 
+    paddingHorizontal: 20, 
+    marginBottom: 30,
+    marginTop: Platform.OS === 'android' ? 10 : 0
+  },
+  emptyState: { 
+    alignItems: 'center', 
+    paddingVertical: Platform.OS === 'android' ? 30 : 40 
+  },
+  emptyText: { 
+    fontSize: Platform.OS === 'android' ? 13 : 14, 
+    color: '#999', 
+    marginTop: 10,
     textAlign: 'center',
-    lineHeight: Platform.OS === 'android' ? 13 : 15,
-    paddingHorizontal: 2
+    lineHeight: Platform.OS === 'android' ? 16 : 18
+  },
+});
+: 'center'
+  },
+  statNumber: {
+    fontSize: Platform.OS === 'android' ? 20 : 24,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 4,
+    lineHeight: Platform.OS === 'android' ? 24 : 28
+  },
+  statLabel: {
+    fontSize: Platform.OS === 'android' ? 11 : 12,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 2,
+    textAlign: 'center',
+    lineHeight: Platform.OS === 'android' ? 14 : 16
+  },
+  statSubtext: {
+    fontSize: Platform.OS === 'android' ? 9 : 10,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: Platform.OS === 'android' ? 12 : 14
+  },
+
+  menuSection: { 
+    marginTop: -10, 
+    marginHorizontal: 20, 
+    backgroundColor: '#fff', 
+    borderRadius: 16, 
+    padding: 20,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    marginBottom: 20
+  },
+  mainMenuRow: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    paddingHorizontal: Platform.OS === 'ios' ? 5 : 0,
+  },
+  mainMenuItem: { 
+    width: Platform.OS === 'ios' ? '30%' : '31%', 
+    alignItems: 'center' 
+  },
+  menuIconCircle: { 
+    width: Platform.OS === 'ios' ? 52 : 56, 
+    height: Platform.OS === 'ios' ? 52 : 56, 
+    borderRadius: 16, 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    marginBottom: 8 
+  },
+  menuLabel: { 
+    fontSize: 11, 
+    color: '#444', 
+    fontWeight: '500', 
+    textAlign: 'center' 
   },
 
   recentSection: { 

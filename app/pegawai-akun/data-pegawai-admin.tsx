@@ -52,7 +52,9 @@ export default function DataPegawaiAdminScreen() {
   const itemsPerPage = 15;
   const [selectedPegawai, setSelectedPegawai] = useState<PegawaiData | null>(null);
   const [showActionModal, setShowActionModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const translateY = useRef(new Animated.Value(300)).current;
+  const deleteModalScale = useRef(new Animated.Value(0)).current;
 
   const openModal = () => {
     setShowActionModal(true);
@@ -188,7 +190,16 @@ export default function DataPegawaiAdminScreen() {
     }
   };
 
+  const openDeleteModal = () => {
+    setShowDeleteModal(true);
+  };
+
+  const closeDeleteModal = () => {
+    setShowDeleteModal(false);
+  };
+
   const deletePegawai = async (id: number, nama: string) => {
+    closeDeleteModal();
     try {
       const result = await PegawaiAkunAPI.deletePegawai(id);
       if (result.success) {
@@ -346,82 +357,6 @@ export default function DataPegawaiAdminScreen() {
                 </View>
                 <View style={styles.pegawaiActions}>
                   <TouchableOpacity
-                    style={[
-                      styles.statusBadge,
-                      {
-                        backgroundColor:
-                          item.email &&
-                          item.email.trim() !== "" &&
-                          item.has_password === true &&
-                          item.nama_lengkap &&
-                          item.nama_lengkap.trim() !== "" &&
-                          item.nip &&
-                          item.nip.trim() !== ""
-                            ? "#E8F5E9"
-                            : "#FFEBEE",
-                      },
-                    ]}
-                    onPress={() => {
-                      if (
-                        !(
-                          item.email &&
-                          item.email.trim() !== "" &&
-                          item.has_password === true &&
-                          item.nama_lengkap &&
-                          item.nama_lengkap.trim() !== "" &&
-                          item.nip &&
-                          item.nip.trim() !== ""
-                        )
-                      ) {
-                        const missing = [];
-                        if (!item.email || item.email.trim() === "")
-                          missing.push("Email");
-                        if (item.has_password !== true)
-                          missing.push("Password");
-                        if (
-                          !item.nama_lengkap ||
-                          item.nama_lengkap.trim() === ""
-                        )
-                          missing.push("Nama Lengkap");
-                        if (!item.nip || item.nip.trim() === "")
-                          missing.push("NIP");
-                        Alert.alert(
-                          "Informasi Belum Lengkap",
-                          `Data yang kurang: ${missing.join(", ")}`,
-                          [{ text: "OK" }],
-                        );
-                      }
-                    }}
-                  >
-                    <Text
-                      style={[
-                        styles.statusText,
-                        {
-                          color:
-                            item.email &&
-                            item.email.trim() !== "" &&
-                            item.has_password === true &&
-                            item.nama_lengkap &&
-                            item.nama_lengkap.trim() !== "" &&
-                            item.nip &&
-                            item.nip.trim() !== ""
-                              ? "#2E7D32"
-                              : "#F44336",
-                        },
-                      ]}
-                    >
-                      {item.email &&
-                      item.email.trim() !== "" &&
-                      item.has_password === true &&
-                      item.nama_lengkap &&
-                      item.nama_lengkap.trim() !== "" &&
-                      item.nip &&
-                      item.nip.trim() !== ""
-                        ? "Lengkap"
-                        : "Belum Lengkap"}
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
                     style={styles.moreBtn}
                     onPress={() => {
                       setSelectedPegawai(item);
@@ -517,23 +452,10 @@ export default function DataPegawaiAdminScreen() {
               <TouchableOpacity
                 style={styles.bottomSheetItem}
                 onPress={() => {
-                  setShowActionModal(false);
-                  Alert.alert(
-                    "Konfirmasi Hapus",
-                    `Apakah Anda yakin ingin menghapus data ${selectedPegawai?.nama_lengkap}?`,
-                    [
-                      { text: "Batal", style: "cancel" },
-                      {
-                        text: "Hapus",
-                        style: "destructive",
-                        onPress: () =>
-                          deletePegawai(
-                            selectedPegawai?.id_pegawai || selectedPegawai?.id_user || 0,
-                            selectedPegawai?.nama_lengkap || ""
-                          ),
-                      },
-                    ]
-                  );
+                  closeModal();
+                  setTimeout(() => {
+                    openDeleteModal();
+                  }, 300);
                 }}
               >
                 <View style={[styles.actionIconContainer, { backgroundColor: '#FFEBEE' }]}>
@@ -543,6 +465,64 @@ export default function DataPegawaiAdminScreen() {
               </TouchableOpacity>
             </View>
           </Animated.View>
+        </View>
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        visible={showDeleteModal}
+        transparent={true}
+        animationType="none"
+        statusBarTranslucent={true}
+        onRequestClose={closeDeleteModal}
+      >
+        <View style={styles.deleteModalOverlay}>
+          <View style={styles.deleteModalContainer}>
+            {/* Icon */}
+            <View style={styles.deleteIconContainer}>
+              <Ionicons name="alert-circle-outline" size={48} color="#FF4444" />
+            </View>
+            
+            {/* Title */}
+            <Text style={styles.deleteModalTitle}>Hapus Data Pegawai</Text>
+            
+            {/* Message */}
+            <Text style={styles.deleteModalMessage}>
+              Apakah Anda yakin ingin menghapus data pegawai:
+            </Text>
+            
+            {/* Employee Info */}
+            <View style={styles.employeeInfoCard}>
+              <Text style={styles.employeeName}>{selectedPegawai?.nama_lengkap}</Text>
+              <Text style={styles.employeeDetail}>{selectedPegawai?.email || 'Email tidak tersedia'}</Text>
+              <Text style={styles.employeeDetail}>NIP: {selectedPegawai?.nip || 'Tidak tersedia'}</Text>
+            </View>
+            
+            {/* Warning */}
+            <Text style={styles.warningText}>Data yang dihapus tidak dapat dikembalikan</Text>
+            
+            {/* Buttons */}
+            <View style={styles.deleteModalButtons}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={closeDeleteModal}
+              >
+                <Text style={styles.cancelButtonText}>Batal</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={styles.deleteButton}
+                onPress={() => {
+                  deletePegawai(
+                    selectedPegawai?.id_pegawai || selectedPegawai?.id_user || 0,
+                    selectedPegawai?.nama_lengkap || ""
+                  );
+                }}
+              >
+                <Text style={styles.deleteButtonText}>Ya, Hapus</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
       </Modal>
     </View>
@@ -662,12 +642,11 @@ const styles = StyleSheet.create({
   },
   pegawaiEmail: { color: "#888", fontSize: 12, marginBottom: 2 },
   pegawaiNip: { color: "#666", fontSize: 12, marginBottom: 2 },
-  pegawaiActions: { alignItems: "flex-end", justifyContent: "space-between" },
+  pegawaiActions: { alignItems: "flex-end", justifyContent: "center" },
   moreBtn: { 
     padding: 8, 
     borderRadius: 8, 
-    backgroundColor: "#F5F5F5",
-    marginTop: 8
+    backgroundColor: "#F5F5F5"
   },
   statusBadge: {
     paddingHorizontal: 8,
@@ -802,5 +781,108 @@ const styles = StyleSheet.create({
   pageNumberTextActive: {
     color: "#fff",
     fontWeight: "bold",
+  },
+
+  // Delete Modal Styles
+  deleteModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  deleteModalContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 24,
+    width: '100%',
+    maxWidth: 320,
+    alignItems: 'center',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+  },
+  deleteIconContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#FFEBEE',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  deleteModalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  deleteModalMessage: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 16,
+    lineHeight: 20,
+  },
+  employeeInfoCard: {
+    backgroundColor: '#F8F9FA',
+    borderRadius: 12,
+    padding: 16,
+    width: '100%',
+    marginBottom: 16,
+  },
+  employeeName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    textAlign: 'center',
+    marginBottom: 6,
+  },
+  employeeDetail: {
+    fontSize: 13,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 2,
+  },
+  warningText: {
+    fontSize: 12,
+    color: '#FF8C00',
+    textAlign: 'center',
+    marginBottom: 20,
+    fontStyle: 'italic',
+  },
+  deleteModalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
+  },
+  cancelButton: {
+    flex: 1,
+    backgroundColor: '#F8F9FA',
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E9ECEF',
+  },
+  cancelButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#6C757D',
+  },
+  deleteButton: {
+    flex: 1,
+    backgroundColor: '#FF4444',
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  deleteButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#fff',
   },
 });

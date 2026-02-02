@@ -355,7 +355,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 15,
     paddingVertical: 12,
-    backgroundColor: '#F8FAFB',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
   },
   cardTitle: {
     fontSize: 16,

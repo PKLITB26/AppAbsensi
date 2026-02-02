@@ -45,7 +45,7 @@ export default function AkunLoginAdminScreen() {
   const fetchAccounts = async () => {
     try {
       console.log('Fetching login accounts...');
-      const response = await fetch(getApiUrl(API_CONFIG.ENDPOINTS.AKUN_LOGIN));
+      const response = await fetch(getApiUrl(API_CONFIG.ENDPOINTS.DATA_PEGAWAI));
       console.log('Response status:', response.status);
       
       if (!response.ok) {
@@ -102,16 +102,16 @@ export default function AkunLoginAdminScreen() {
 
   const deleteAccount = async (id: number) => {
     Alert.alert(
-      'Konfirmasi',
-      'Yakin ingin menghapus akun login ini?',
+      "Konfirmasi",
+      "Yakin ingin menghapus akun login ini?",
       [
-        { text: 'Batal', style: 'cancel' },
+        { text: "Batal", style: "cancel" },
         {
-          text: 'Hapus',
-          style: 'destructive',
+          text: "Hapus",
+          style: "destructive",
           onPress: async () => {
             try {
-              const response = await fetch(getApiUrl(API_CONFIG.ENDPOINTS.AKUN_LOGIN), {
+              const response = await fetch(getApiUrl(API_CONFIG.ENDPOINTS.DELETE_PEGAWAI), {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id_user: id })

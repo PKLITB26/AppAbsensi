@@ -36,6 +36,14 @@ const getAdminData = async (req, res) => {
     `);
     const stats = statsRows[0];
 
+    // Get total pegawai count from database
+    const [totalRows] = await db.execute(`
+      SELECT COUNT(*) as total_pegawai
+      FROM users u
+      WHERE u.role = 'pegawai'
+    `);
+    const totalPegawai = totalRows[0].total_pegawai;
+
     // Get recent activities (only pegawai)
     const [recentRows] = await db.execute(`
       SELECT 
@@ -75,7 +83,8 @@ const getAdminData = async (req, res) => {
       },
       stats: {
         hadir: parseInt(stats.hadir || 0),
-        tidak_hadir: parseInt(stats.tidak_hadir || 0)
+        tidak_hadir: parseInt(stats.tidak_hadir || 0),
+        total_pegawai: parseInt(totalPegawai || 0)
       },
       recent: recentRows || []
     });

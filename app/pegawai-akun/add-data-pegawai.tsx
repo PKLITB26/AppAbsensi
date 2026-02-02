@@ -6,7 +6,6 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { Calendar } from 'react-native-calendars';
 import { getApiUrl, API_CONFIG } from '../../constants/config';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppHeader } from '../../components';
@@ -27,7 +26,9 @@ export default function AddDataPegawaiForm() {
   });
   const [loading, setLoading] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
-  const [selectedDate, setSelectedDate] = useState('');
+  const [showMonthPicker, setShowMonthPicker] = useState(false);
+  const [showYearPicker, setShowYearPicker] = useState(false);
+  const [currentMonth, setCurrentMonth] = useState(new Date());
   const [existingEmails, setExistingEmails] = useState<string[]>([]);
   
   // New states for improvements
@@ -267,12 +268,81 @@ export default function AddDataPegawaiForm() {
     return `${day}/${month}/${year}`;
   };
 
-  const handleDateSelect = (day: any) => {
-    const date = new Date(day.dateString);
+  const handleDateSelect = (date: Date) => {
     const formattedDate = formatDate(date);
-    setSelectedDate(day.dateString);
     setFormData({...formData, tanggal_lahir: formattedDate});
     setShowCalendar(false);
+  };
+
+  const getDaysInMonth = () => {
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const startingDayOfWeek = firstDay.getDay();
+
+    const days = [];
+    for (let i = 0; i < startingDayOfWeek; i++) {
+      days.push(null);
+    }
+    for (let i = 1; i <= daysInMonth; i++) {
+      days.push(new Date(year, month, i));
+    }
+    return days;
+  };
+
+  const changeMonth = (direction: number) => {
+    const newMonth = new Date(currentMonth);
+    newMonth.setMonth(currentMonth.getMonth() + direction);
+    setCurrentMonth(newMonth);
+  };
+
+  const selectMonth = (monthIndex: number) => {
+    const newMonth = new Date(currentMonth);
+    newMonth.setMonth(monthIndex);
+    setCurrentMonth(newMonth);
+    setShowMonthPicker(false);
+  };
+
+  const selectYear = (year: number) => {
+    const newMonth = new Date(currentMonth);
+    newMonth.setFullYear(year);
+    setCurrentMonth(newMonth);
+    setShowYearPicker(false);
+  };
+
+  const getMonths = () => {
+    return [
+      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ];
+  };
+
+  const getYears = () => {
+    const currentYear = new Date().getFullYear();
+    const years = [];
+    for (let i = currentYear - 80; i <= currentYear; i++) {
+      years.push(i);
+    }
+    return years.reverse();
+  };
+
+  const generateMonthYearOptions = () => {
+    const months = [
+      { value: 0, label: 'Januari' }, { value: 1, label: 'Februari' }, { value: 2, label: 'Maret' },
+      { value: 3, label: 'April' }, { value: 4, label: 'Mei' }, { value: 5, label: 'Juni' },
+      { value: 6, label: 'Juli' }, { value: 7, label: 'Agustus' }, { value: 8, label: 'September' },
+      { value: 9, label: 'Oktober' }, { value: 10, label: 'November' }, { value: 11, label: 'Desember' }
+    ];
+    
+    const currentYear = new Date().getFullYear();
+    const years = [];
+    for (let i = currentYear - 80; i <= currentYear; i++) {
+      years.push(i);
+    }
+    
+    return { months, years: years.reverse() };
   };
 
   const showCalendarModal = () => {
@@ -617,46 +687,153 @@ export default function AddDataPegawaiForm() {
           <View style={styles.calendarModalOverlay}>
             <View style={styles.calendarModalContainer}>
               <View style={styles.calendarHeader}>
-                <Text style={styles.calendarTitle}>Pilih Tanggal Lahir</Text>
-                <TouchableOpacity onPress={() => setShowCalendar(false)}>
+                <TouchableOpacity onPress={() => changeMonth(-1)} style={styles.monthBtn}>
+                  <Ionicons name="chevron-back" size={24} color="#004643" />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => setShowMonthPicker(true)} style={styles.monthYearBtn}>
+                  <Text style={styles.calendarTitle}>
+                    {currentMonth.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}
+                  </Text>
+                  <Ionicons name="chevron-down" size={16} color="#004643" />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => changeMonth(1)} style={styles.monthBtn}>
+                  <Ionicons name="chevron-forward" size={24} color="#004643" />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => setShowCalendar(false)} style={styles.closeBtn}>
                   <Ionicons name="close" size={24} color="#666" />
                 </TouchableOpacity>
               </View>
-              <Calendar
-                onDayPress={handleDateSelect}
-                markedDates={{
-                  [selectedDate]: {
-                    selected: true,
-                    selectedColor: '#004643'
-                  }
-                }}
-                maxDate={new Date().toISOString().split('T')[0]}
-                theme={{
-                  backgroundColor: '#ffffff',
-                  calendarBackground: '#ffffff',
-                  textSectionTitleColor: '#004643',
-                  selectedDayBackgroundColor: '#004643',
-                  selectedDayTextColor: '#ffffff',
-                  todayTextColor: '#004643',
-                  dayTextColor: '#2d4150',
-                  textDisabledColor: '#d9e1e8',
-                  dotColor: '#004643',
-                  selectedDotColor: '#ffffff',
-                  arrowColor: '#004643',
-                  disabledArrowColor: '#d9e1e8',
-                  monthTextColor: '#004643',
-                  indicatorColor: '#004643',
-                  textDayFontFamily: 'System',
-                  textMonthFontFamily: 'System',
-                  textDayHeaderFontFamily: 'System',
-                  textDayFontWeight: '400',
-                  textMonthFontWeight: 'bold',
-                  textDayHeaderFontWeight: '600',
-                  textDayFontSize: 16,
-                  textMonthFontSize: 18,
-                  textDayHeaderFontSize: 14
-                }}
-              />
+              
+              <View style={styles.weekDays}>
+                {['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'].map((day, i) => (
+                  <Text key={i} style={styles.weekDayText}>{day}</Text>
+                ))}
+              </View>
+
+              <View style={styles.daysGrid}>
+                {getDaysInMonth().map((date, index) => {
+                  const isToday = date && date.toDateString() === new Date().toDateString();
+                  const isFuture = date && date > new Date();
+                  
+                  return (
+                    <TouchableOpacity
+                      key={index}
+                      style={[
+                        styles.dayCell,
+                        !date && styles.emptyCell,
+                        isToday && styles.todayCell,
+                        isFuture && styles.futureCell
+                      ]}
+                      onPress={() => date && !isFuture && handleDateSelect(date)}
+                      disabled={!date || isFuture}
+                    >
+                      {date && (
+                        <Text style={[
+                          styles.dayText,
+                          isToday && styles.todayText,
+                          isFuture && styles.futureText
+                        ]}>
+                          {date.getDate()}
+                        </Text>
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Month Picker Modal - Fullscreen */}
+        <Modal 
+          visible={showMonthPicker} 
+          transparent
+          animationType="none"
+          statusBarTranslucent={true}
+          onRequestClose={() => setShowMonthPicker(false)}
+        >
+          <View style={styles.fullscreenModalOverlay}>
+            <TouchableOpacity 
+              style={styles.modalBackdrop} 
+              activeOpacity={1}
+              onPress={() => setShowMonthPicker(false)}
+            />
+            <View style={styles.fullscreenModalContainer}>
+              {/* Handle Bar */}
+              <View style={styles.handleContainer}>
+                <View style={styles.handleBar} />
+              </View>
+              
+              <View style={styles.monthPickerHeader}>
+                <Text style={styles.monthPickerTitle}>Pilih Bulan & Tahun</Text>
+                <TouchableOpacity onPress={() => setShowMonthPicker(false)}>
+                  <Ionicons name="close" size={24} color="#666" />
+                </TouchableOpacity>
+              </View>
+              
+              <View style={styles.pickerRow}>
+                <View style={styles.pickerColumn}>
+                  <Text style={styles.pickerLabel}>Bulan</Text>
+                  <ScrollView style={styles.pickerList} showsVerticalScrollIndicator={false}>
+                    {generateMonthYearOptions().months.map((month) => (
+                      <TouchableOpacity
+                        key={month.value}
+                        style={[
+                          styles.pickerItem,
+                          currentMonth.getMonth() === month.value && styles.selectedPickerItem
+                        ]}
+                        onPress={() => {
+                          const newMonth = new Date(currentMonth);
+                          newMonth.setMonth(month.value);
+                          setCurrentMonth(newMonth);
+                        }}
+                      >
+                        <Text style={[
+                          styles.pickerItemText,
+                          currentMonth.getMonth() === month.value && styles.selectedPickerItemText
+                        ]}>
+                          {month.label}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+                
+                <View style={styles.pickerColumn}>
+                  <Text style={styles.pickerLabel}>Tahun</Text>
+                  <ScrollView style={styles.pickerList} showsVerticalScrollIndicator={false}>
+                    {generateMonthYearOptions().years.map((year) => (
+                      <TouchableOpacity
+                        key={year}
+                        style={[
+                          styles.pickerItem,
+                          currentMonth.getFullYear() === year && styles.selectedPickerItem
+                        ]}
+                        onPress={() => {
+                          const newMonth = new Date(currentMonth);
+                          newMonth.setFullYear(year);
+                          setCurrentMonth(newMonth);
+                        }}
+                      >
+                        <Text style={[
+                          styles.pickerItemText,
+                          currentMonth.getFullYear() === year && styles.selectedPickerItemText
+                        ]}>
+                          {year}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+              </View>
+              
+              <TouchableOpacity
+                style={styles.confirmButton}
+                onPress={() => setShowMonthPicker(false)}
+              >
+                <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
+                <Text style={styles.confirmButtonText}>Konfirmasi</Text>
+              </TouchableOpacity>
             </View>
           </View>
         </Modal>
@@ -997,10 +1174,174 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#F0F0F0'
   },
-  calendarTitle: {
+  monthBtn: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: '#F5F5F5'
+  },
+  closeBtn: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: '#F5F5F5'
+  },
+  weekDays: {
+    flexDirection: 'row',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#F8F9FA'
+  },
+  weekDayText: {
+    flex: 1,
+    textAlign: 'center',
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#666'
+  },
+  daysGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: 16,
+    paddingVertical: 12
+  },
+  dayCell: {
+    width: '14.28%',
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 6,
+    marginBottom: 4
+  },
+  emptyCell: {
+    backgroundColor: 'transparent'
+  },
+  todayCell: {
+    backgroundColor: '#004643'
+  },
+  futureCell: {
+    backgroundColor: '#F5F5F5'
+  },
+  dayText: {
+    fontSize: 14,
+    color: '#333',
+    fontWeight: '500'
+  },
+  todayText: {
+    color: '#FFFFFF',
+    fontWeight: '700'
+  },
+  monthYearBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: '#F0F8F7'
+  },
+  monthPickerContainer: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 20,
+    width: '100%',
+    maxWidth: 400,
+  },
+  monthPickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  monthPickerTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#004643'
+    fontWeight: '600',
+    color: '#333',
+  },
+  pickerRow: {
+    flexDirection: 'row',
+    gap: 20,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+  },
+  pickerColumn: {
+    flex: 1,
+  },
+  pickerLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  pickerList: {
+    maxHeight: 200,
+  },
+  pickerItem: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    marginBottom: 4,
+  },
+  selectedPickerItem: {
+    backgroundColor: '#004643',
+  },
+  pickerItemText: {
+    fontSize: 14,
+    color: '#333',
+    textAlign: 'center',
+  },
+  selectedPickerItemText: {
+    color: 'white',
+    fontWeight: '600',
+  },
+  confirmButton: {
+    backgroundColor: '#004643',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    marginTop: 20,
+    marginHorizontal: 20,
+    minHeight: 50,
+  },
+  fullscreenModalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    paddingTop: Platform.OS === 'android' ? 0 : 50,
+  },
+  modalBackdrop: {
+    flex: 1,
+  },
+  fullscreenModalContainer: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 20,
+    maxHeight: '80%',
+  },
+  handleContainer: {
+    paddingVertical: 12,
+    alignItems: 'center',
+    width: '100%',
+  },
+  handleBar: {
+    width: 40,
+    height: 4,
+    backgroundColor: '#DDD',
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginTop: 8,
+    marginBottom: 16,
+  },
+  confirmButtonText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '600',
+    marginLeft: 6,
   },
   progressContainer: {
     paddingHorizontal: 20,

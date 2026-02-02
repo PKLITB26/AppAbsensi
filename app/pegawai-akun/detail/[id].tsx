@@ -101,8 +101,6 @@ export default function DetailPegawai() {
       <AppHeader 
         title="Detail Pegawai"
         showBack={true}
-        showStats={true}
-        statsText={isDataComplete(pegawai) ? 'Informasi Lengkap' : 'Belum Lengkap'}
         fallbackRoute="/pegawai-akun/data-pegawai-admin"
       />
 
@@ -193,67 +191,10 @@ export default function DetailPegawai() {
             <View style={styles.cardHeader}>
               <Ionicons name="key-outline" size={20} color="#004643" />
               <Text style={styles.cardTitle}>
-                {(pegawai.email && pegawai.email.trim() !== '' && 
-                  pegawai.has_password === true && 
-                  pegawai.nama_lengkap && pegawai.nama_lengkap.trim() !== '' && 
-                  pegawai.nip && pegawai.nip.trim() !== '') ? 'Informasi Akun Login' : 'Informasi Tidak Lengkap'}
+                Akun Login
               </Text>
             </View>
             <View style={styles.cardContent}>
-              <View style={styles.accountStatusContainer}>
-                <View style={[styles.accountStatusBadge, {
-                  backgroundColor: (pegawai.email && pegawai.email.trim() !== '' && 
-                                  pegawai.has_password === true && 
-                                  pegawai.nama_lengkap && pegawai.nama_lengkap.trim() !== '' && 
-                                  pegawai.nip && pegawai.nip.trim() !== '') ? '#E8F5E9' : '#FFEBEE'
-                }]}>
-                  <Ionicons 
-                    name={(pegawai.email && pegawai.email.trim() !== '' && 
-                          pegawai.has_password === true && 
-                          pegawai.nama_lengkap && pegawai.nama_lengkap.trim() !== '' && 
-                          pegawai.nip && pegawai.nip.trim() !== '') ? "checkmark-circle" : "close-circle"} 
-                    size={16} 
-                    color={(pegawai.email && pegawai.email.trim() !== '' && 
-                           pegawai.has_password === true && 
-                           pegawai.nama_lengkap && pegawai.nama_lengkap.trim() !== '' && 
-                           pegawai.nip && pegawai.nip.trim() !== '') ? '#2E7D32' : '#F44336'} 
-                  />
-                  <Text style={[styles.accountStatusText, {
-                    color: (pegawai.email && pegawai.email.trim() !== '' && 
-                           pegawai.has_password === true && 
-                           pegawai.nama_lengkap && pegawai.nama_lengkap.trim() !== '' && 
-                           pegawai.nip && pegawai.nip.trim() !== '') ? '#2E7D32' : '#F44336'
-                  }]}>
-                    {(pegawai.email && pegawai.email.trim() !== '' && 
-                      pegawai.has_password === true && 
-                      pegawai.nama_lengkap && pegawai.nama_lengkap.trim() !== '' && 
-                      pegawai.nip && pegawai.nip.trim() !== '') ? 'Akun Sudah Dibuat' : 'Data Belum Lengkap'}
-                  </Text>
-                </View>
-              </View>
-              
-              {/* Missing Data Alert */}
-              {!(pegawai.email && pegawai.email.trim() !== '' && 
-                pegawai.has_password === true && 
-                pegawai.nama_lengkap && pegawai.nama_lengkap.trim() !== '' && 
-                pegawai.nip && pegawai.nip.trim() !== '') && (
-                <View style={styles.missingDataAlert}>
-                  <Text style={styles.missingDataTitle}>Data yang belum lengkap:</Text>
-                  {(!pegawai.email || pegawai.email.trim() === '') && (
-                    <Text style={styles.missingDataItem}>❌ Email kosong atau hanya spasi</Text>
-                  )}
-                  {(pegawai.has_password !== true) && (
-                    <Text style={styles.missingDataItem}>❌ Password belum diset</Text>
-                  )}
-                  {(!pegawai.nama_lengkap || pegawai.nama_lengkap.trim() === '') && (
-                    <Text style={styles.missingDataItem}>❌ Nama lengkap kosong</Text>
-                  )}
-                  {(!pegawai.nip || pegawai.nip.trim() === '') && (
-                    <Text style={styles.missingDataItem}>❌ NIP kosong</Text>
-                  )}
-                </View>
-              )}
-              
               <View style={styles.infoRow}>
                 <View style={styles.infoItem}>
                   <Text style={styles.infoLabel}>Email Login</Text>
@@ -268,20 +209,6 @@ export default function DetailPegawai() {
                 <View style={styles.infoItem}>
                   <Text style={styles.infoLabel}>Role</Text>
                   <Text style={styles.infoValue}>{pegawai.role || 'pegawai'}</Text>
-                </View>
-                <View style={styles.infoItem}>
-                  <Text style={styles.infoLabel}>Status Login</Text>
-                  <Text style={[styles.infoValue, {
-                    color: (pegawai.email && pegawai.email.trim() !== '' && 
-                           pegawai.has_password === true && 
-                           pegawai.nama_lengkap && pegawai.nama_lengkap.trim() !== '' && 
-                           pegawai.nip && pegawai.nip.trim() !== '') ? '#2E7D32' : '#F44336'
-                  }]}>
-                    {(pegawai.email && pegawai.email.trim() !== '' && 
-                      pegawai.has_password === true && 
-                      pegawai.nama_lengkap && pegawai.nama_lengkap.trim() !== '' && 
-                      pegawai.nip && pegawai.nip.trim() !== '') ? 'Dapat Login' : 'Tidak Dapat Login'}
-                  </Text>
                 </View>
               </View>
             </View>
@@ -424,6 +351,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 15,
     paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
   },
   cardTitle: {
     fontSize: 16,
