@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, StatusBar, ScrollView, TouchableOpacity, Modal, TextInput, Alert, FlatList } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput, Alert, FlatList } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { PengaturanAPI } from '../../constants/config';
+import { AppHeader } from '../../components';
 
 interface HariLibur {
   id: number;
@@ -189,20 +191,13 @@ export default function KalenderLiburScreen() {
   const monthName = currentMonth.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+    <View style={styles.container}>
+      <StatusBar style="dark" translucent={true} backgroundColor="transparent" />
       
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <TouchableOpacity 
-            style={styles.backBtn}
-            onPress={() => router.back()}
-          >
-            <Ionicons name="arrow-back" size={24} color="#004643" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Kalender Libur</Text>
-        </View>
-      </View>
+      <AppHeader 
+        title="Kalender Libur"
+        showBack={true}
+      />
 
       <ScrollView style={styles.content}>
         <View style={styles.infoCard}>
@@ -362,51 +357,16 @@ export default function KalenderLiburScreen() {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFB' },
-  header: { 
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 1000,
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    paddingHorizontal: 20,
-    paddingTop: 50,
-    paddingBottom: 15,
-    backgroundColor: '#fff',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1
-  },
-  backBtn: {
-    padding: 10,
-    marginRight: 15,
-    borderRadius: 10,
-    backgroundColor: '#F5F5F5'
-  },
-  headerTitle: { 
-    fontSize: 20, 
-    fontWeight: 'bold', 
-    color: '#004643' 
-  },
   content: {
     flex: 1,
-    paddingHorizontal: 5,
-    paddingTop: 15,
-    marginTop: 120
+    paddingHorizontal: 16,
+    paddingTop: 15
   },
   infoCard: {
     flexDirection: 'row',
@@ -414,7 +374,6 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     marginBottom: 16,
-    marginHorizontal: 20,
     alignItems: 'flex-start'
   },
   infoText: {
@@ -427,7 +386,7 @@ const styles = StyleSheet.create({
   calendarCard: {
     backgroundColor: '#fff',
     borderRadius: 12,
-    padding: 15,
+    padding: 16,
     marginBottom: 16,
     elevation: 2,
     shadowColor: '#000',
@@ -439,24 +398,29 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 15
+    marginBottom: 16
   },
   monthBtn: {
-    padding: 5
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: '#F5F5F5'
   },
   monthText: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '600',
     color: '#333'
   },
   weekDays: {
     flexDirection: 'row',
-    marginBottom: 10
+    marginBottom: 12,
+    paddingVertical: 8,
+    backgroundColor: '#F8F9FA',
+    borderRadius: 8
   },
   weekDayText: {
     flex: 1,
     textAlign: 'center',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
     color: '#666'
   },
@@ -466,34 +430,40 @@ const styles = StyleSheet.create({
   },
   dayCell: {
     width: '14.28%',
-    aspectRatio: 1,
+    height: 32,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 20,
-    marginBottom: 5
+    borderRadius: 6,
+    marginBottom: 4
   },
   emptyCell: {
     backgroundColor: 'transparent'
   },
   holidayCell: {
-    backgroundColor: '#FFEBEE'
+    backgroundColor: '#FFF0F0',
+    borderWidth: 1,
+    borderColor: '#FFD6D6'
   },
   todayCell: {
-    borderWidth: 2,
-    borderColor: '#004643',
-    borderRadius: 20
+    backgroundColor: '#004643',
+    elevation: 2,
+    shadowColor: '#004643',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3
   },
   dayText: {
-    fontSize: 14,
-    color: '#333'
+    fontSize: 13,
+    color: '#333',
+    fontWeight: '500'
   },
   holidayText: {
-    color: '#F44336',
-    fontWeight: 'bold'
+    color: '#E53E3E',
+    fontWeight: '600'
   },
   todayText: {
-    color: '#004643',
-    fontWeight: 'bold'
+    color: '#FFFFFF',
+    fontWeight: '700'
   },
   holidayDot: {
     position: 'absolute',
@@ -501,52 +471,63 @@ const styles = StyleSheet.create({
     width: 4,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#F44336'
+    backgroundColor: '#E53E3E'
   },
   legendCard: {
     backgroundColor: '#fff',
     borderRadius: 12,
-    padding: 15,
-    marginBottom: 16
+    padding: 16,
+    marginBottom: 16,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2
   },
   legendTitle: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: '#333',
-    marginBottom: 10
+    marginBottom: 12
   },
   legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8
+    marginBottom: 10
   },
   legendBox: {
-    width: 16,
-    height: 16,
+    width: 18,
+    height: 18,
     borderRadius: 4,
-    marginRight: 10
+    marginRight: 12
   },
   legendText: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#666'
   },
   listCard: {
     backgroundColor: '#fff',
     borderRadius: 12,
-    padding: 15,
-    marginBottom: 16
+    padding: 16,
+    marginBottom: 16,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2
   },
   listTitle: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: '#333',
-    marginBottom: 15
+    marginBottom: 16
   },
   listItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 4,
     borderBottomWidth: 1,
     borderBottomColor: '#F0F0F0'
   },
@@ -556,24 +537,24 @@ const styles = StyleSheet.create({
     flex: 1
   },
   listItemInfo: {
-    marginLeft: 10,
+    marginLeft: 12,
     flex: 1
   },
   listItemName: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '500',
     color: '#333',
-    marginBottom: 2
+    marginBottom: 4
   },
   listItemDate: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#666'
   },
   emptyText: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#999',
     textAlign: 'center',
-    paddingVertical: 20
+    paddingVertical: 24
   },
   modalOverlay: {
     flex: 1,

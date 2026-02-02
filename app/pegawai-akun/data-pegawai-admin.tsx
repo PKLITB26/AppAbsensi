@@ -4,10 +4,8 @@ import { useCallback, useEffect, useState, useRef } from "react";
 import {
   ActivityIndicator,
   Alert,
-  Animated,
   FlatList,
   Modal,
-  PanResponder,
   Platform,
   RefreshControl,
   StyleSheet,
@@ -15,6 +13,8 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Animated,
+  PanResponder,
 } from "react-native";
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -52,37 +52,54 @@ export default function DataPegawaiAdminScreen() {
   const itemsPerPage = 15;
   const [selectedPegawai, setSelectedPegawai] = useState<PegawaiData | null>(null);
   const [showActionModal, setShowActionModal] = useState(false);
-  const translateY = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(300)).current;
 
-  useEffect(() => {
-    if (!showActionModal) {
-      translateY.setValue(0);
+  const openModal = () => {
+    setShowActionModal(true);
+    if (Platform.OS === 'android') {
+      NavigationBar.setVisibilityAsync('hidden');
     }
-  }, [showActionModal]);
+    Animated.timing(translateY, {
+      toValue: 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  };
 
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: (_, gestureState) => {
-        return Math.abs(gestureState.dy) > 5;
-      },
-      onPanResponderMove: (_, gestureState) => {
-        if (gestureState.dy > 0) {
-          translateY.setValue(gestureState.dy);
-        }
-      },
-      onPanResponderRelease: (_, gestureState) => {
-        if (gestureState.dy > 100) {
-          setShowActionModal(false);
-        } else {
-          Animated.spring(translateY, {
-            toValue: 0,
-            useNativeDriver: false,
-          }).start();
-        }
-      },
-    })
-  ).current;
+  const closeModal = () => {
+    Animated.timing(translateY, {
+      toValue: 300,
+      duration: 200,
+      useNativeDriver: true,
+    }).start(() => {
+      setShowActionModal(false);
+      if (Platform.OS === 'android') {
+        NavigationBar.setVisibilityAsync('visible');
+      }
+    });
+  };
+
+  const panResponder = PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponder: (_, gestureState) => {
+      return gestureState.dy > 5;
+    },
+    onPanResponderMove: (_, gestureState) => {
+      if (gestureState.dy > 0) {
+        translateY.setValue(gestureState.dy);
+      }
+    },
+    onPanResponderRelease: (_, gestureState) => {
+      if (gestureState.dy > 100) {
+        closeModal();
+      } else {
+        Animated.spring(translateY, {
+          toValue: 0,
+          useNativeDriver: true,
+        }).start();
+      }
+    },
+  });
 
 
 
@@ -408,7 +425,7 @@ export default function DataPegawaiAdminScreen() {
                     style={styles.moreBtn}
                     onPress={() => {
                       setSelectedPegawai(item);
-                      setShowActionModal(true);
+                      openModal();
                     }}
                   >
                     <Ionicons name="ellipsis-vertical" size={18} color="#666" />
@@ -438,31 +455,37 @@ export default function DataPegawaiAdminScreen() {
         <Ionicons name="add" size={28} color="#fff" />
       </TouchableOpacity>
 
-      {/* Action Modal */}
+      {/* Action Modal - Bottom Sheet Style */}
       <Modal
         visible={showActionModal}
         transparent={true}
         animationType="none"
-        onRequestClose={() => setShowActionModal(false)}
-        accessible={true}
-        accessibilityViewIsModal={true}
+        statusBarTranslucent={true}
+        onRequestClose={() => closeModal()}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.bottomSheetContainer}>
-            <Animated.View 
-              style={[
-                styles.modalContent,
-                {
-                  transform: [{ translateY }],
-                },
-              ]}
-            >
-              <View style={styles.modalHeader} {...panResponder.panHandlers}>
-                <View style={styles.modalHandle} />
-              </View>
-              
+          <TouchableOpacity 
+            style={styles.modalBackdrop} 
+            activeOpacity={1}
+            onPress={() => closeModal()}
+          />
+          <Animated.View style={[styles.bottomSheetModal, {
+            transform: [{ translateY }]
+          }]}>
+            {/* Handle Bar with Pan Gesture */}
+            <View {...panResponder.panHandlers} style={styles.handleContainer}>
+              <View style={styles.handleBar} />
+            </View>
+            
+            {/* Header */}
+            <View style={styles.bottomSheetHeader}>
+              <Text style={styles.bottomSheetTitle}>Pilih Aksi</Text>
+            </View>
+            
+            {/* Actions */}
+            <View style={styles.bottomSheetActions}>
               <TouchableOpacity
-                style={styles.actionItem}
+                style={styles.bottomSheetItem}
                 onPress={() => {
                   setShowActionModal(false);
                   router.push(
@@ -470,12 +493,14 @@ export default function DataPegawaiAdminScreen() {
                   );
                 }}
               >
-                <Ionicons name="eye-outline" size={20} color="#2196F3" />
-                <Text style={[styles.actionText, { color: "#2196F3" }]}>Lihat Detail</Text>
+                <View style={[styles.actionIconContainer, { backgroundColor: '#E3F2FD' }]}>
+                  <Ionicons name="eye-outline" size={20} color="#2196F3" />
+                </View>
+                <Text style={styles.bottomSheetItemText}>Lihat Detail</Text>
               </TouchableOpacity>
               
               <TouchableOpacity
-                style={styles.actionItem}
+                style={styles.bottomSheetItem}
                 onPress={() => {
                   setShowActionModal(false);
                   router.push(
@@ -483,12 +508,14 @@ export default function DataPegawaiAdminScreen() {
                   );
                 }}
               >
-                <Ionicons name="create-outline" size={20} color="#FF9800" />
-                <Text style={[styles.actionText, { color: "#FF9800" }]}>Edit Data</Text>
+                <View style={[styles.actionIconContainer, { backgroundColor: '#FFF3E0' }]}>
+                  <Ionicons name="create-outline" size={20} color="#FF9800" />
+                </View>
+                <Text style={styles.bottomSheetItemText}>Edit Data</Text>
               </TouchableOpacity>
               
               <TouchableOpacity
-                style={styles.actionItem}
+                style={styles.bottomSheetItem}
                 onPress={() => {
                   setShowActionModal(false);
                   Alert.alert(
@@ -509,11 +536,13 @@ export default function DataPegawaiAdminScreen() {
                   );
                 }}
               >
-                <Ionicons name="trash-outline" size={20} color="#F44336" />
-                <Text style={[styles.actionText, { color: "#F44336" }]}>Hapus Data</Text>
+                <View style={[styles.actionIconContainer, { backgroundColor: '#FFEBEE' }]}>
+                  <Ionicons name="trash-outline" size={20} color="#F44336" />
+                </View>
+                <Text style={styles.bottomSheetItemText}>Hapus Data</Text>
               </TouchableOpacity>
-            </Animated.View>
-          </View>
+            </View>
+          </Animated.View>
         </View>
       </Modal>
     </View>
@@ -654,62 +683,70 @@ const styles = StyleSheet.create({
     paddingTop: 100,
   },
   emptyText: { fontSize: 16, color: "#ccc", marginTop: 16 },
+  
+  // Bottom Sheet Modal Styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    paddingTop: Platform.OS === 'android' ? 0 : 50,
   },
-  overlayTouchable: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
-  bottomSheetContainer: {
+  modalBackdrop: {
     flex: 1,
-    justifyContent: "flex-end",
   },
-  modalContent: {
-    backgroundColor: "#fff",
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingBottom: 20,
-    elevation: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
+  bottomSheetModal: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 20,
   },
-  modalHeader: {
-    alignItems: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-  },
-  modalHandle: {
-    width: 36,
+  handleBar: {
+    width: 40,
     height: 4,
-    backgroundColor: "#C4C4C4",
+    backgroundColor: '#DDD',
     borderRadius: 2,
-    marginBottom: 8,
+    alignSelf: 'center',
+    marginTop: 8,
+    marginBottom: 16,
   },
-  modalTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#333",
+  handleContainer: {
+    paddingVertical: 12,
+    alignItems: 'center',
+    width: '100%',
   },
-  actionItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 24,
-    paddingVertical: 14,
+  bottomSheetHeader: {
+    paddingHorizontal: 20,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  bottomSheetTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    textAlign: 'center',
+  },
+  bottomSheetActions: {
+    paddingTop: 8,
+  },
+  bottomSheetItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
     gap: 16,
-    borderRadius: 12,
-    marginHorizontal: 16,
-    marginBottom: 4,
   },
-  actionText: {
+  actionIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  bottomSheetItemText: {
     fontSize: 16,
-    fontWeight: "600",
+    color: '#333',
+    fontWeight: '500',
   },
   floatingAddBtn: {
     position: "absolute",

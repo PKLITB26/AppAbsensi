@@ -329,7 +329,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between', 
     alignItems: 'flex-start', 
     paddingHorizontal: 20, 
-    paddingTop: Platform.OS === 'ios' ? 20 : 40, 
+    paddingTop: Platform.OS === 'ios' ? 60 : 40, 
     marginBottom: 20 
   },
   adminInfo: { flex: 1 },
@@ -447,7 +447,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 14,
   },
-  menuSection: { marginTop: 30, paddingHorizontal: 20 },
+  menuSection: { marginTop: 10, paddingHorizontal: 20 },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
   sectionTitle: { fontSize: 16, fontWeight: 'bold', color: '#333' },
   mainMenuRow: { 

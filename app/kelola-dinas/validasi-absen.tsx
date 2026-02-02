@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, StatusBar, ScrollView, TouchableOpacity, FlatList, TextInput, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, FlatList, TextInput, Alert } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { KelolaDinasAPI } from '../../constants/config';
@@ -248,8 +249,8 @@ export default function ValidasiAbsenScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+    <View style={styles.container}>
+      <StatusBar style="dark" translucent={true} backgroundColor="transparent" />
       
       {/* HEADER */}
       <AppHeader 
@@ -257,6 +258,7 @@ export default function ValidasiAbsenScreen() {
         showBack={true}
         showStats={true}
         statsText={`${totalRecords} Absensi`}
+        fallbackRoute="/kelola-dinas"
       />
 
       <View style={styles.contentContainer}>
@@ -403,7 +405,7 @@ export default function ValidasiAbsenScreen() {
           }}
         />
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 

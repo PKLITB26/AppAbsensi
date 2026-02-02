@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, StatusBar, FlatList, TouchableOpacity, Alert, ActivityIndicator, TextInput, ScrollView, Modal, Image } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, ActivityIndicator, TextInput, ScrollView, Modal, Image } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Calendar } from 'react-native-calendars';
+import { AppHeader } from '../../components';
 
 interface PegawaiAbsen {
   id_pegawai: number;
@@ -181,33 +183,14 @@ export default function LaporanDetailAbsenScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+    <View style={styles.container}>
+      <StatusBar style="dark" translucent={true} backgroundColor="transparent" />
       
-      {/* HEADER */}
-      <View style={styles.header}>
-        <View style={styles.headerContent}>
-          <View style={styles.headerLeft}>
-            <TouchableOpacity 
-              style={styles.backBtn}
-              onPress={() => router.back()}
-            >
-              <Ionicons name="arrow-back" size={24} color="#004643" />
-            </TouchableOpacity>
-            <View style={styles.headerTitleContainer}>
-              <Ionicons name="checkmark-circle" size={20} color="#004643" style={styles.headerIcon} />
-              <Text style={styles.headerTitle}>Laporan Absen</Text>
-            </View>
-          </View>
-          <TouchableOpacity 
-            style={styles.exportBtn}
-            onPress={() => console.log('Export semua pegawai')}
-          >
-            <Ionicons name="download-outline" size={18} color="#004643" />
-            <Text style={styles.exportText}>Export</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+      <AppHeader 
+        title="Laporan Absen"
+        showBack={true}
+        fallbackRoute="/laporan/laporan-admin"
+      />
 
       {loading ? (
         <View style={styles.loadingContainer}>
@@ -302,74 +285,16 @@ export default function LaporanDetailAbsenScreen() {
       )}
       
       {renderCalendarModal()}
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFB' },
-  header: { 
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 1000,
-    backgroundColor: '#fff',
-    paddingTop: 50,
-    paddingBottom: 15,
-    paddingHorizontal: 20,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
   contentContainer: {
     flex: 1,
-    marginTop: 120
   },
-  headerContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1
-  },
-  headerTitleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  headerIcon: {
-    marginRight: 8,
-  },
-  backBtn: {
-    padding: 10,
-    marginRight: 15,
-    borderRadius: 10,
-    backgroundColor: '#F5F5F5'
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#004643',
-  },
-  exportBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#E6F0EF',
-    paddingHorizontal: 8,
-    paddingVertical: 8,
-    borderRadius: 8,
-    marginRight: 8,
-  },
-  exportText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#004643',
-  },
+
   content: { flex: 1 },
   searchContainer: {
     paddingHorizontal: 20,

@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, StatusBar, FlatList, TouchableOpacity, ActivityIndicator, TextInput, ScrollView, Modal, Image } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, TextInput, ScrollView, Modal, Image } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Calendar } from 'react-native-calendars';
 import { API_CONFIG, getApiUrl } from '../../constants/config';
+import { AppHeader } from '../../components';
 
 interface DinasData {
   id: number;
@@ -194,30 +196,14 @@ export default function LaporanDetailDinasScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+    <View style={styles.container}>
+      <StatusBar style="dark" translucent={true} backgroundColor="transparent" />
       
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <TouchableOpacity 
-            style={styles.backBtn}
-            onPress={() => router.back()}
-          >
-            <Ionicons name="arrow-back" size={24} color="#004643" />
-          </TouchableOpacity>
-          <View style={styles.headerTitleContainer}>
-            <Ionicons name="airplane" size={20} color="#004643" style={styles.headerIcon} />
-            <Text style={styles.headerTitle}>Laporan Dinas</Text>
-          </View>
-        </View>
-        <TouchableOpacity 
-          style={styles.exportBtn}
-          onPress={() => console.log('Export semua data dinas')}
-        >
-          <Ionicons name="download-outline" size={18} color="#004643" />
-          <Text style={styles.exportText}>Export</Text>
-        </TouchableOpacity>
-      </View>
+      <AppHeader 
+        title="Laporan Dinas"
+        showBack={true}
+        fallbackRoute="/laporan/laporan-admin"
+      />
 
       {loading ? (
         <View style={styles.loadingContainer}>
@@ -225,7 +211,8 @@ export default function LaporanDetailDinasScreen() {
           <Text style={styles.loadingText}>Memuat data dinas...</Text>
         </View>
       ) : (
-        <View style={styles.content}>
+        <View style={styles.contentContainer}>
+          <View style={styles.content}>
           {/* Search Bar */}
           <View style={styles.searchContainer}>
             <View style={styles.searchInputWrapper}>
@@ -312,72 +299,21 @@ export default function LaporanDetailDinasScreen() {
               </View>
             )}
           />
+          </View>
         </View>
       )}
       
       {renderCalendarModal()}
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFB' },
-  header: { 
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 1000,
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    paddingHorizontal: 20,
-    paddingTop: 50,
-    paddingBottom: 15,
-    backgroundColor: '#fff',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4
+  contentContainer: {
+    flex: 1,
   },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1
-  },
-  headerTitleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  headerIcon: {
-    marginRight: 8,
-  },
-  backBtn: {
-    padding: 10,
-    marginRight: 15,
-    borderRadius: 10,
-    backgroundColor: '#F5F5F5'
-  },
-  headerTitle: { 
-    fontSize: 20, 
-    fontWeight: 'bold', 
-    color: '#004643'
-  },
-  exportBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#E6F0EF',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    gap: 4,
-  },
-  exportText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#004643',
-  },
-  content: { flex: 1, marginTop: 120 },
+  content: { flex: 1 },
   searchContainer: {
     paddingHorizontal: 20,
     paddingVertical: 8,

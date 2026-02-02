@@ -4,15 +4,14 @@ import React, { useEffect, useState } from "react";
 import {
   FlatList,
   Modal,
-  SafeAreaView,
   ScrollView,
-  StatusBar,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+import { StatusBar } from 'expo-status-bar';
 import { KelolaDinasAPI } from "../../constants/config";
 import { AppHeader } from "../../components";
 
@@ -371,8 +370,8 @@ export default function RiwayatDinasScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+    <View style={styles.container}>
+      <StatusBar style="dark" translucent={true} backgroundColor="transparent" />
 
       {/* HEADER */}
       <AppHeader 
@@ -380,6 +379,7 @@ export default function RiwayatDinasScreen() {
         showBack={true}
         showStats={true}
         statsText={`${totalRecords} Riwayat`}
+        fallbackRoute="/kelola-dinas"
       />
 
       <View style={styles.contentContainer}>
@@ -547,7 +547,7 @@ export default function RiwayatDinasScreen() {
       </View>
 
       {renderCalendarModal()}
-    </SafeAreaView>
+    </View>
   );
 }
 

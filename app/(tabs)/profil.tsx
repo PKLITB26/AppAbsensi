@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
-import { Alert, Image, Modal, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, Modal, Platform, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { PegawaiAPI } from '../../constants/config';
 import { AuthStorage } from '../../utils/AuthStorage';
@@ -439,8 +439,18 @@ export default function ProfileScreen() {
       </Modal>
       
       {/* Modal Konfirmasi Logout */}
-      <Modal visible={logoutModal} transparent>
-        <View style={styles.modalOverlay}>
+      <Modal visible={logoutModal} transparent animationType="fade">
+        <TouchableOpacity 
+          style={{
+            flex: 1,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            justifyContent: 'center',
+            alignItems: 'center',
+            paddingTop: Platform.OS === 'ios' ? 50 : 30,
+          }}
+          activeOpacity={1}
+          onPress={() => setLogoutModal(false)}
+        >
           <View style={styles.logoutModalContent}>
             <View style={styles.logoutModalHeader}>
               <Ionicons name="log-out-outline" size={32} color="#FF4D4D" />
@@ -466,7 +476,7 @@ export default function ProfileScreen() {
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </TouchableOpacity>
       </Modal>
     </SafeAreaView>
   );
@@ -522,7 +532,17 @@ const styles = StyleSheet.create({
   logoutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 30, marginBottom: 100 },
   logoutText: { marginLeft: 10, color: '#FF4D4D', fontWeight: 'bold', fontSize: 16 },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
+  modalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 9999,
+  },
   modalContent: { backgroundColor: '#fff', margin: 20, padding: 20, borderRadius: 15, width: '90%' },
   modalTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 20, textAlign: 'center' },
   inputLabel: { fontSize: 14, fontWeight: '500', marginBottom: 8, color: '#333' },

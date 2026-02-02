@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, StatusBar, ScrollView, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { API_CONFIG, getApiUrl } from '../../../constants/config';
+import { AppHeader } from '../../../components';
 
 interface DetailDinas {
   id_pengajuan: number;
@@ -70,44 +72,49 @@ export default function DetailDinasScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
+        <StatusBar style="dark" translucent={true} backgroundColor="transparent" />
+        
+        <AppHeader 
+          title="Detail Perjalanan Dinas"
+          showBack={true}
+          fallbackRoute="/laporan/laporan-detail-dinas"
+        />
+        
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#004643" />
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   if (!data) {
     return (
-      <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
+        <StatusBar style="dark" translucent={true} backgroundColor="transparent" />
+        
+        <AppHeader 
+          title="Detail Perjalanan Dinas"
+          showBack={true}
+          fallbackRoute="/laporan/laporan-detail-dinas"
+        />
+        
         <View style={styles.errorContainer}>
           <Text>Data tidak ditemukan</Text>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+    <View style={styles.container}>
+      <StatusBar style="dark" translucent={true} backgroundColor="transparent" />
       
-      <View style={styles.header}>
-        <View style={styles.headerContent}>
-          <View style={styles.headerLeft}>
-            <TouchableOpacity 
-              style={styles.backBtn}
-              onPress={() => router.back()}
-            >
-              <Ionicons name="arrow-back" size={24} color="#004643" />
-            </TouchableOpacity>
-            <View style={styles.headerTitleContainer}>
-              <Ionicons name="airplane" size={20} color="#004643" style={styles.headerIcon} />
-              <Text style={styles.headerTitle}>Detail Perjalanan Dinas</Text>
-            </View>
-          </View>
-        </View>
-      </View>
+      <AppHeader 
+        title="Detail Perjalanan Dinas"
+        showBack={true}
+        fallbackRoute="/laporan/laporan-detail-dinas"
+      />
 
       <ScrollView style={styles.content}>
         {/* Profile Card */}
@@ -203,49 +210,12 @@ export default function DetailDinasScreen() {
           </View>
         )}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFB' },
-  header: {
-    backgroundColor: '#fff',
-    paddingTop: 50,
-    paddingBottom: 20,
-    paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
-    elevation: 2,
-  },
-  headerContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1
-  },
-  headerTitleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  headerIcon: {
-    marginRight: 8,
-  },
-  backBtn: {
-    padding: 10,
-    marginRight: 15,
-    borderRadius: 10,
-    backgroundColor: '#E6F0EF'
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#004643',
-  },
   content: { flex: 1, padding: 20 },
   profileCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', padding: 16, borderRadius: 12, marginBottom: 20, elevation: 2 },
   avatar: { width: 60, height: 60, borderRadius: 30, backgroundColor: '#E3F2FD', justifyContent: 'center', alignItems: 'center', marginRight: 12, overflow: 'hidden' },

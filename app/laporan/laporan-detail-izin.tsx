@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, StatusBar, FlatList, TouchableOpacity, ActivityIndicator, TextInput, ScrollView, Modal, Image } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, TextInput, ScrollView, Modal, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Calendar } from 'react-native-calendars';
+import { StatusBar } from 'expo-status-bar';
 import { API_CONFIG, getApiUrl } from '../../constants/config';
+import { AppHeader } from '../../components';
 
 interface IzinData {
   id: number;
@@ -204,30 +206,16 @@ export default function LaporanDetailIzinScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
-      
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <TouchableOpacity 
-            style={styles.backBtn}
-            onPress={() => router.back()}
-          >
-            <Ionicons name="arrow-back" size={24} color="#004643" />
-          </TouchableOpacity>
-          <View style={styles.headerTitleContainer}>
-            <Ionicons name="calendar" size={20} color="#004643" style={styles.headerIcon} />
-            <Text style={styles.headerTitle}>Laporan Izin/Cuti</Text>
-          </View>
-        </View>
-        <TouchableOpacity 
-          style={styles.exportBtn}
-          onPress={() => console.log('Export semua data izin/cuti')}
-        >
-          <Ionicons name="download-outline" size={18} color="#004643" />
-          <Text style={styles.exportText}>Export</Text>
-        </TouchableOpacity>
-      </View>
+    <View style={styles.container}>
+      <StatusBar style="dark" translucent={true} backgroundColor="transparent" />
+
+      <AppHeader 
+        title="Laporan Izin/Cuti"
+        showBack={true}
+        showStats={true}
+        statsText={`${data.length} Data Izin`}
+        fallbackRoute="/admin/dashboard-admin"
+      />
 
       {loading ? (
         <View style={styles.loadingContainer}>
@@ -235,7 +223,7 @@ export default function LaporanDetailIzinScreen() {
           <Text style={styles.loadingText}>Memuat data izin/cuti...</Text>
         </View>
       ) : (
-        <View style={styles.content}>
+        <View style={styles.contentWrapper}>
           {/* Search Bar */}
           <View style={styles.searchContainer}>
             <View style={styles.searchInputWrapper}>
@@ -326,68 +314,20 @@ export default function LaporanDetailIzinScreen() {
       )}
       
       {renderCalendarModal()}
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFB' },
-  header: { 
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 1000,
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    paddingHorizontal: 20,
-    paddingTop: 50,
-    paddingBottom: 15,
-    backgroundColor: '#fff',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4
+  container: { 
+    flex: 1, 
+    backgroundColor: "#fff",
   },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1
+
+  contentWrapper: {
+    flex: 1,
+    backgroundColor: "#F8FAFB",
   },
-  headerTitleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  headerIcon: {
-    marginRight: 8,
-  },
-  backBtn: {
-    padding: 10,
-    marginRight: 15,
-    borderRadius: 10,
-    backgroundColor: '#F5F5F5'
-  },
-  headerTitle: { 
-    fontSize: 20, 
-    fontWeight: 'bold', 
-    color: '#004643'
-  },
-  exportBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#E6F0EF',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    gap: 4,
-  },
-  exportText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#004643',
-  },
-  content: { flex: 1, marginTop: 120 },
   searchContainer: {
     paddingHorizontal: 15,
     paddingVertical: 8,

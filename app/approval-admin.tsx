@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, StatusBar, ScrollView, TouchableOpacity, FlatList, TextInput, Alert, ActivityIndicator, Modal, TextInput as RNTextInput, Image, TouchableWithoutFeedback, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, FlatList, TextInput, Alert, ActivityIndicator, Modal, TextInput as RNTextInput, Image, TouchableWithoutFeedback, Platform } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { getApiUrl, API_CONFIG } from '../constants/config';
@@ -233,7 +234,7 @@ export default function ApprovalAdminScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" translucent={true} backgroundColor="transparent" />
+      <StatusBar style="dark" translucent={true} backgroundColor="transparent" />
       
       {/* HEADER */}
       <AppHeader 
@@ -241,6 +242,7 @@ export default function ApprovalAdminScreen() {
         showBack={true}
         showStats={true}
         statsText={`${filteredPengajuan.length} Pengajuan`}
+        fallbackRoute="/admin/dashboard-admin"
       />
         
       {loading ? (

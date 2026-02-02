@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, StatusBar, ScrollView, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { API_CONFIG, getApiUrl } from '../../../constants/config';
+import { AppHeader } from '../../../components';
 
 interface DetailLembur {
   id_pengajuan: number;
@@ -80,46 +82,47 @@ export default function DetailLemburScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
+        <StatusBar style="dark" translucent={true} backgroundColor="transparent" />
+        <AppHeader 
+          title="Detail Lembur"
+          showBack={true}
+          fallbackRoute="/laporan/laporan-detail-lembur"
+        />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#004643" />
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   if (!data) {
     return (
-      <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
+        <StatusBar style="dark" translucent={true} backgroundColor="transparent" />
+        <AppHeader 
+          title="Detail Lembur"
+          showBack={true}
+          fallbackRoute="/laporan/laporan-detail-lembur"
+        />
         <View style={styles.errorContainer}>
           <Text>Data tidak ditemukan</Text>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+    <View style={styles.container}>
+      <StatusBar style="dark" translucent={true} backgroundColor="transparent" />
       
-      <View style={styles.header}>
-        <View style={styles.headerContent}>
-          <View style={styles.headerLeft}>
-            <TouchableOpacity 
-              style={styles.backBtn}
-              onPress={() => router.back()}
-            >
-              <Ionicons name="arrow-back" size={24} color="#004643" />
-            </TouchableOpacity>
-            <View style={styles.headerTitleContainer}>
-              <Ionicons name="moon" size={20} color="#004643" style={styles.headerIcon} />
-              <Text style={styles.headerTitle}>Detail Lembur</Text>
-            </View>
-          </View>
-        </View>
-      </View>
+      <AppHeader 
+        title="Detail Lembur"
+        showBack={true}
+        fallbackRoute="/laporan/laporan-detail-lembur"
+      />
 
-      <ScrollView style={styles.content}>
+      <ScrollView style={styles.contentWrapper}>
         {/* Profile Card */}
         <View style={styles.profileCard}>
           <View style={styles.avatar}>
@@ -213,50 +216,20 @@ export default function DetailLemburScreen() {
           </View>
         )}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFB' },
-  header: {
-    backgroundColor: '#fff',
-    paddingTop: 50,
-    paddingBottom: 20,
-    paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
-    elevation: 2,
+  container: { 
+    flex: 1, 
+    backgroundColor: "#fff",
   },
-  headerContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  contentWrapper: {
+    flex: 1,
+    backgroundColor: "#F8FAFB",
+    padding: 20
   },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1
-  },
-  headerTitleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  headerIcon: {
-    marginRight: 8,
-  },
-  backBtn: {
-    padding: 10,
-    marginRight: 15,
-    borderRadius: 10,
-    backgroundColor: '#E6F0EF'
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#004643',
-  },
-  content: { flex: 1, padding: 20 },
   profileCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', padding: 16, borderRadius: 12, marginBottom: 20, elevation: 2 },
   avatar: { width: 60, height: 60, borderRadius: 30, backgroundColor: '#E1BEE7', justifyContent: 'center', alignItems: 'center', marginRight: 12, overflow: 'hidden' },
   avatarImage: { width: 60, height: 60, borderRadius: 30 },

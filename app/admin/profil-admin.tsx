@@ -5,6 +5,7 @@ import React, { useEffect, useState } from "react";
 import {
   Alert,
   Modal,
+  Platform,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -365,8 +366,18 @@ export default function ProfilAdminScreen() {
       </Modal>
 
       {/* Modal Konfirmasi Logout */}
-      <Modal visible={logoutModal} transparent>
-        <View style={styles.modalOverlay}>
+      <Modal visible={logoutModal} transparent animationType="fade">
+        <TouchableOpacity 
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.5)",
+            justifyContent: "center",
+            alignItems: "center",
+            paddingTop: Platform.OS === 'ios' ? 50 : 30,
+          }}
+          activeOpacity={1}
+          onPress={() => setLogoutModal(false)}
+        >
           <View style={styles.logoutModalContent}>
             <View style={styles.logoutModalHeader}>
               <Ionicons name="log-out-outline" size={32} color="#FF4D4D" />
@@ -392,7 +403,7 @@ export default function ProfilAdminScreen() {
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </TouchableOpacity>
       </Modal>
     </SafeAreaView>
   );
@@ -588,10 +599,15 @@ const styles = StyleSheet.create({
   },
   loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
   modalOverlay: {
-    flex: 1,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     backgroundColor: "rgba(0,0,0,0.5)",
     justifyContent: "center",
     alignItems: "center",
+    zIndex: 9999,
   },
   modalContent: {
     backgroundColor: "#fff",

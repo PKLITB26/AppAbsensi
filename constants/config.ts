@@ -1,7 +1,7 @@
 // Konfigurasi API untuk HadirinApp - Node.js Backend
 
 const isDevelopment = __DEV__ || process.env.NODE_ENV === 'development';
-const BASE_URL = isDevelopment ? 'http://10.251.109.84:3000' : 'http://10.251.109.84:3000';
+const BASE_URL = 'http://10.251.109.151:3000';
 
 const debugLog = (message: string, data?: any) => {
   if (isDevelopment) {
@@ -28,6 +28,8 @@ export const API_CONFIG = {
     
     // Laporan
     LAPORAN: '/admin/laporan/api/laporan',
+    DETAIL_ABSEN_PEGAWAI: '/admin/laporan/api/detail-absen-pegawai',
+    DETAIL_ABSEN: '/admin/laporan/api/detail-absen',
     
     // Pengaturan
     LOKASI_KANTOR: '/admin/pengaturan/api/lokasi-kantor',
@@ -334,8 +336,6 @@ export const KelolaDinasAPI = {
   },
 };
 
-export default API_CONFIG;
-
 // Pengaturan API
 export const PengaturanAPI = {
   getLokasiKantor: async () => {
@@ -359,4 +359,85 @@ export const PengaturanAPI = {
       return { success: false, message: 'Tidak dapat terhubung ke server' };
     }
   },
+  
+  getHariLibur: async () => {
+    try {
+      const response = await fetchWithRetry(getApiUrl(API_CONFIG.ENDPOINTS.HARI_LIBUR));
+      return response.json();
+    } catch (error) {
+      return { success: false, message: 'Tidak dapat terhubung ke server', data: [] };
+    }
+  },
+  
+  getJamKerja: async () => {
+    try {
+      const response = await fetchWithRetry(getApiUrl(API_CONFIG.ENDPOINTS.JAM_KERJA));
+      return response.json();
+    } catch (error) {
+      return { success: false, message: 'Tidak dapat terhubung ke server', data: [] };
+    }
+  },
+  
+  saveJamKerja: async (data: any) => {
+    try {
+      const response = await fetchWithRetry(getApiUrl(API_CONFIG.ENDPOINTS.JAM_KERJA), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      return response.json();
+    } catch (error) {
+      return { success: false, message: 'Tidak dapat terhubung ke server' };
+    }
+  },
+  
+  saveHariLibur: async (data: any) => {
+    try {
+      const response = await fetchWithRetry(getApiUrl(API_CONFIG.ENDPOINTS.HARI_LIBUR), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      return response.json();
+    } catch (error) {
+      return { success: false, message: 'Tidak dapat terhubung ke server' };
+    }
+  },
+  
+  deleteHariLibur: async (id: number) => {
+    try {
+      const response = await fetchWithRetry(`${getApiUrl(API_CONFIG.ENDPOINTS.HARI_LIBUR)}/${id}`, {
+        method: 'DELETE',
+      });
+      return response.json();
+    } catch (error) {
+      return { success: false, message: 'Tidak dapat terhubung ke server' };
+    }
+  },
+  
+  updateLokasi: async (id: number, data: any) => {
+    try {
+      const response = await fetchWithRetry(`${getApiUrl(API_CONFIG.ENDPOINTS.LOKASI_KANTOR)}/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      return response.json();
+    } catch (error) {
+      return { success: false, message: 'Tidak dapat terhubung ke server' };
+    }
+  },
+  
+  deleteLokasi: async (id: number) => {
+    try {
+      const response = await fetchWithRetry(`${getApiUrl(API_CONFIG.ENDPOINTS.LOKASI_KANTOR)}/${id}`, {
+        method: 'DELETE',
+      });
+      return response.json();
+    } catch (error) {
+      return { success: false, message: 'Tidak dapat terhubung ke server' };
+    }
+  },
 };
+
+export default API_CONFIG;

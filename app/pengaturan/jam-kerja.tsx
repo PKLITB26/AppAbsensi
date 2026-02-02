@@ -14,8 +14,10 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { StatusBar } from 'expo-status-bar';
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { PengaturanAPI } from "../../constants/config";
+import { AppHeader } from "../../components";
 
 interface JamKerjaHari {
   hari: string;
@@ -195,18 +197,12 @@ export default function JamKerjaScreen() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
     >
-      {/* FIXED HEADER */}
-      <View style={styles.fixedHeader}>
-        <View style={styles.headerLeft}>
-          <TouchableOpacity
-            style={styles.backBtn}
-            onPress={() => router.back()}
-          >
-            <Ionicons name="arrow-back" size={24} color="#004643" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Jam Kerja</Text>
-        </View>
-      </View>
+      <StatusBar style="dark" translucent={true} backgroundColor="transparent" />
+      
+      <AppHeader 
+        title="Jam Kerja"
+        showBack={true}
+      />
 
       <View style={styles.contentWrapper}>
         <ScrollView
@@ -408,40 +404,8 @@ export default function JamKerjaScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F8FAFB" },
-  fixedHeader: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 1000,
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingTop: 50,
-    paddingBottom: 15,
-    backgroundColor: "#F8FAFB",
-    borderBottomWidth: 1,
-    borderBottomColor: "#E0E0E0",
-  },
   contentWrapper: {
     flex: 1,
-    marginTop: 120,
-  },
-  headerLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-  },
-  backBtn: {
-    padding: 10,
-    marginRight: 15,
-    borderRadius: 10,
-    backgroundColor: "#F5F5F5",
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#004643",
   },
   contentContainer: {
     flex: 1,

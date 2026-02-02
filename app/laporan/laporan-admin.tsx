@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, StatusBar, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { LaporanAPI } from '../../constants/config';
+import { getApiUrl, API_CONFIG } from '../../constants/config';
+import { AppHeader } from '../../components';
 
 export default function LaporanAdminScreen() {
   const router = useRouter();
@@ -21,13 +23,14 @@ export default function LaporanAdminScreen() {
   const fetchLaporanStats = async () => {
     try {
       console.log('Fetching laporan stats...');
-      const response = await LaporanAPI.getLaporan();
-      console.log('Laporan API Response:', response);
-      if (response && response.stats) {
-        console.log('Stats received:', response.stats);
-        setStats(response.stats);
+      const response = await fetch(getApiUrl(API_CONFIG.ENDPOINTS.LAPORAN));
+      const result = await response.json();
+      console.log('Laporan API Response:', result);
+      if (result && result.stats) {
+        console.log('Stats received:', result.stats);
+        setStats(result.stats);
       } else {
-        console.log('No stats in response:', response);
+        console.log('No stats in response:', result);
       }
     } catch (error) {
       console.error('Error fetching laporan stats:', error);
@@ -40,10 +43,14 @@ export default function LaporanAdminScreen() {
     try {
       Alert.alert('Export PDF', 'Sedang memproses export...');
       
-      const params = type ? { type } : {};
-      const blob = await LaporanAPI.exportPDF(params);
+      const params = type ? `?type=${type}` : '';
+      const response = await fetch(`${getApiUrl(API_CONFIG.ENDPOINTS.LAPORAN)}/export${params}`);
       
-      Alert.alert('Sukses', 'Laporan berhasil di-export ke PDF');
+      if (response.ok) {
+        Alert.alert('Sukses', 'Laporan berhasil di-export ke PDF');
+      } else {
+        Alert.alert('Error', 'Gagal export laporan');
+      }
     } catch (error) {
       Alert.alert('Error', 'Gagal export laporan');
     }
@@ -85,41 +92,15 @@ export default function LaporanAdminScreen() {
   ];
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+    <View style={styles.container}>
+      <StatusBar style="dark" translucent={true} backgroundColor="transparent" />
       
       {/* HEADER */}
-      <View style={styles.header}>
-        <View style={styles.headerContent}>
-          <View style={styles.headerLeft}>
-            <TouchableOpacity 
-              style={styles.backBtn}
-              onPress={() => router.back()}
-            >
-              <Ionicons name="arrow-back" size={24} color="#004643" />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>Laporan</Text>
-          </View>
-          <TouchableOpacity 
-            style={styles.exportBtn}
-            onPress={() => {
-              Alert.alert(
-                'Export PDF',
-                'Pilih laporan yang akan di-export:',
-                [
-                  { text: 'Semua Laporan', onPress: () => handleExportPDF() },
-                  { text: 'Laporan Absen', onPress: () => handleExportPDF('absen') },
-                  { text: 'Laporan Dinas', onPress: () => handleExportPDF('dinas') },
-                  { text: 'Batal', style: 'cancel' }
-                ]
-              );
-            }}
-          >
-            <Ionicons name="download-outline" size={18} color="#004643" />
-            <Text style={styles.exportText}>Export PDF</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+      <AppHeader 
+        title="Laporan"
+        showBack={true}
+        fallbackRoute="/admin/dashboard-admin"
+      />
 
       {loading ? (
         <View style={styles.loadingContainer}>
@@ -155,66 +136,14 @@ export default function LaporanAdminScreen() {
           </ScrollView>
         </View>
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFB' },
-  header: { 
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 1000,
-    backgroundColor: '#fff',
-    paddingTop: 50,
-    paddingBottom: 15,
-    paddingHorizontal: 20,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
   contentContainer: {
     flex: 1,
-    marginTop: 120
-  },
-  headerContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1
-  },
-  backBtn: {
-    padding: 10,
-    marginRight: 15,
-    borderRadius: 10,
-    backgroundColor: '#F5F5F5'
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#004643',
-  },
-  exportBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#E6F0EF',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    gap: 4,
-  },
-  exportText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#004643',
   },
   content: {
     flex: 1,

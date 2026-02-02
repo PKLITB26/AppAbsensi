@@ -85,10 +85,10 @@ const startServer = async () => {
       console.warn('Some endpoints may not work until database is available');
     }
     
-    app.listen(PORT, () => {
+    app.listen(PORT, '0.0.0.0', () => {
       console.log(`\n✅ Server running successfully!`);
       console.log(`🌐 Local: http://localhost:${PORT}`);
-      console.log(`📱 Mobile: http://192.168.1.100:${PORT}`);
+      console.log(`📱 Mobile: http://10.251.109.151:${PORT}`);
       console.log(`\n📄 Available endpoints:`);
       console.log(`   POST /auth/api/login`);
       console.log(`   GET  /auth/api/profile`);

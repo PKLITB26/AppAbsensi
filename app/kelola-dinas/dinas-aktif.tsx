@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, StatusBar, ScrollView, TouchableOpacity, FlatList, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, FlatList, TextInput } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { KelolaDinasAPI } from '../../constants/config';
@@ -197,8 +198,8 @@ export default function DinasAktifScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+    <View style={styles.container}>
+      <StatusBar style="dark" translucent={true} backgroundColor="transparent" />
       
       {/* HEADER */}
       <AppHeader 
@@ -206,6 +207,7 @@ export default function DinasAktifScreen() {
         showBack={true}
         showStats={true}
         statsText={`${filteredData.length} Dinas Aktif`}
+        fallbackRoute="/kelola-dinas"
       />
 
       <View style={styles.contentWrapper}>
@@ -321,7 +323,7 @@ export default function DinasAktifScreen() {
       >
         <Ionicons name="add" size={28} color="#fff" />
       </TouchableOpacity>
-    </SafeAreaView>
+    </View>
   );
 }
 
