@@ -110,7 +110,6 @@ export default function LaporanAdminScreen() {
       ) : (
         <View style={styles.contentContainer}>
           <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-          <Text style={styles.subtitle}>Pilih jenis laporan yang ingin dilihat</Text>
           
           <View style={styles.laporanGrid}>
             {laporanItems.map((item) => (

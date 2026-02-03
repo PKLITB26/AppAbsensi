@@ -16,12 +16,11 @@ const getLaporan = async (req, res) => {
       `);
       const totalAbsen = totalAbsenRows[0].total;
 
-      // Hitung total dinas yang approved
+      // Hitung total dinas (semua status)
       const [totalDinasRows] = await db.execute(`
         SELECT COUNT(*) as total 
         FROM pengajuan 
-        WHERE jenis_pengajuan IN ('dinas_luar_kota', 'dinas_lokal', 'dinas_luar_negeri') 
-        AND status = 'approved'
+        WHERE jenis_pengajuan IN ('dinas_luar_kota', 'dinas_lokal', 'dinas_luar_negeri')
       `);
       const totalDinas = totalDinasRows[0].total;
 
@@ -108,6 +107,140 @@ const getLaporan = async (req, res) => {
         }
       }));
 
+      res.json({
+        success: true,
+        data: data
+      });
+
+    } else if (type === 'dinas') {
+      // Get all dinas data with search and date filter
+      let query = `
+        SELECT 
+          peng.id_pengajuan as id,
+          p.nama_lengkap,
+          p.nip,
+          p.jabatan,
+          p.foto_profil,
+          peng.jenis_pengajuan,
+          peng.tanggal_mulai,
+          peng.tanggal_selesai,
+          peng.lokasi_dinas,
+          peng.status
+        FROM pengajuan peng
+        INNER JOIN pegawai p ON peng.id_pegawai = p.id_pegawai
+        WHERE peng.jenis_pengajuan IN ('dinas_luar_kota', 'dinas_lokal', 'dinas_luar_negeri')
+      `;
+      
+      const params = [];
+      
+      // Add date filter if provided
+      if (req.query.date) {
+        query += ` AND peng.tanggal_mulai <= ? AND peng.tanggal_selesai >= ?`;
+        params.push(req.query.date, req.query.date);
+      }
+      
+      // Add search filter if provided
+      if (req.query.search) {
+        query += ` AND (p.nama_lengkap LIKE ? OR peng.jenis_pengajuan LIKE ? OR peng.lokasi_dinas LIKE ?)`;
+        const searchTerm = `%${req.query.search}%`;
+        params.push(searchTerm, searchTerm, searchTerm);
+      }
+      
+      query += ` ORDER BY peng.tanggal_mulai DESC`;
+      
+      const [results] = await db.execute(query, params);
+      
+      const data = results.map(row => ({
+        id: parseInt(row.id),
+        nama_lengkap: row.nama_lengkap,
+        nip: row.nip,
+        jabatan: row.jabatan,
+        foto_profil: row.foto_profil,
+        jenis_pengajuan: row.jenis_pengajuan,
+        tanggal_mulai: row.tanggal_mulai,
+        tanggal_selesai: row.tanggal_selesai,
+        lokasi_dinas: row.lokasi_dinas,
+        status: row.status
+      }));
+      
+      res.json({
+        success: true,
+        data: data
+      });
+
+    } else if (type === 'izin') {
+      // Get all izin/cuti data
+      const [results] = await db.execute(`
+        SELECT 
+          peng.id_pengajuan as id,
+          p.nama_lengkap,
+          p.nip,
+          p.jabatan,
+          p.foto_profil,
+          peng.jenis_pengajuan,
+          peng.tanggal_mulai,
+          peng.tanggal_selesai,
+          peng.alasan_text,
+          peng.status
+        FROM pengajuan peng
+        INNER JOIN pegawai p ON peng.id_pegawai = p.id_pegawai
+        WHERE peng.jenis_pengajuan IN ('izin_pribadi', 'cuti_sakit', 'cuti_tahunan')
+        ORDER BY peng.tanggal_mulai DESC
+      `);
+      
+      const data = results.map(row => ({
+        id: parseInt(row.id),
+        nama_lengkap: row.nama_lengkap,
+        nip: row.nip,
+        jabatan: row.jabatan,
+        foto_profil: row.foto_profil,
+        jenis_pengajuan: row.jenis_pengajuan,
+        tanggal_mulai: row.tanggal_mulai,
+        tanggal_selesai: row.tanggal_selesai,
+        alasan_text: row.alasan_text,
+        status: row.status
+      }));
+      
+      res.json({
+        success: true,
+        data: data
+      });
+
+    } else if (type === 'lembur') {
+      // Get all lembur data
+      const [results] = await db.execute(`
+        SELECT 
+          peng.id_pengajuan as id,
+          p.nama_lengkap,
+          p.nip,
+          p.jabatan,
+          p.foto_profil,
+          peng.jenis_pengajuan,
+          peng.tanggal_mulai,
+          peng.jam_mulai,
+          peng.jam_selesai,
+          peng.alasan_text,
+          peng.status
+        FROM pengajuan peng
+        INNER JOIN pegawai p ON peng.id_pegawai = p.id_pegawai
+        WHERE peng.jenis_pengajuan IN ('lembur_weekday', 'lembur_weekend', 'lembur_holiday')
+        ORDER BY peng.tanggal_mulai DESC
+      `);
+      
+      const data = results.map(row => ({
+        id: parseInt(row.id),
+        nama_lengkap: row.nama_lengkap,
+        nip: row.nip,
+        jabatan: row.jabatan,
+        foto_profil: row.foto_profil,
+        jenis_pengajuan: row.jenis_pengajuan,
+        tanggal_mulai: row.tanggal_mulai,
+        jam_mulai: row.jam_mulai,
+        jam_selesai: row.jam_selesai,
+        alasan_text: row.alasan_text,
+        status: row.status
+      }));
+      
       res.json({
         success: true,
         data: data

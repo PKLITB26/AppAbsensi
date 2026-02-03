@@ -1,6 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   FlatList,
   Modal,
@@ -12,8 +10,11 @@ import {
   View,
 } from "react-native";
 import { StatusBar } from 'expo-status-bar';
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { KelolaDinasAPI } from "../../constants/config";
 import { AppHeader } from "../../components";
+import CustomCalendar from "../../components/CustomCalendar";
 
 interface RiwayatDinas {
   id: number;
@@ -35,9 +36,12 @@ export default function RiwayatDinasScreen() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedDateFilter, setSelectedDateFilter] = useState("semua");
-  const [showCalendar, setShowCalendar] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedDateFilter, setSelectedDateFilter] = useState("hari_ini");
+  const [showDateRangePicker, setShowDateRangePicker] = useState(false);
+  const [showStartDatePicker, setShowStartDatePicker] = useState(false);
+  const [showEndDatePicker, setShowEndDatePicker] = useState(false);
+  const [dateRange, setDateRange] = useState({ start: '', end: '' });
+  const [dateSelectionStep, setDateSelectionStep] = useState<'start' | 'end'>('start');
   const [riwayatDinas, setRiwayatDinas] = useState<RiwayatDinas[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalRecords, setTotalRecords] = useState(0);
@@ -46,24 +50,22 @@ export default function RiwayatDinasScreen() {
 
   useEffect(() => {
     fetchRiwayatDinas();
-  }, [currentPage, selectedDateFilter, searchQuery, selectedDate]);
+  }, [currentPage, selectedDateFilter, searchQuery, dateRange]);
 
   const fetchRiwayatDinas = async () => {
     try {
       setLoading(true);
       const params = {
         filter_date: selectedDateFilter,
-        selected_date:
-          selectedDateFilter === "tanggal_tertentu"
-            ? selectedDate.toISOString().split("T")[0]
-            : "",
+        start_date: selectedDateFilter === 'pilih_tanggal' ? dateRange.start : '',
+        end_date: selectedDateFilter === 'pilih_tanggal' ? dateRange.end : '',
         search: searchQuery,
         page: currentPage,
         limit: itemsPerPage,
       };
 
       console.log("Fetching riwayat dinas with params:", params);
-      const response = await KelolaDinasAPI.getRiwayatDinas(params);
+      const response = await KelolaDinasAPI.getRiwayatDinas();
 
       if (response && response.data) {
         setRiwayatDinas(response.data);
@@ -154,11 +156,13 @@ export default function RiwayatDinasScreen() {
           );
         });
         break;
-      case "tanggal_tertentu":
-        if (selectedDate) {
+      case "pilih_tanggal":
+        if (dateRange.start && dateRange.end) {
+          const startDate = new Date(dateRange.start);
+          const endDate = new Date(dateRange.end);
           filtered = riwayatDinas.filter((item) => {
             const itemDate = new Date(item.tanggal_mulai);
-            return itemDate.toDateString() === selectedDate.toDateString();
+            return itemDate >= startDate && itemDate <= endDate;
           });
         }
         break;
@@ -176,105 +180,48 @@ export default function RiwayatDinasScreen() {
     return filtered;
   };
 
-  const filteredData = riwayatDinas;
-  const currentData = riwayatDinas;
+  const filteredData = getFilteredData();
+  const currentData = filteredData;
 
-  const renderCalendarModal = () => {
-    const currentMonth = selectedDate.getMonth();
-    const currentYear = selectedDate.getFullYear();
-    const firstDay = new Date(currentYear, currentMonth, 1);
-    const lastDay = new Date(currentYear, currentMonth + 1, 0);
-    const daysInMonth = lastDay.getDate();
-    const startingDayOfWeek = firstDay.getDay();
-
-    const days = [];
-
-    // Empty cells for days before the first day of the month
-    for (let i = 0; i < startingDayOfWeek; i++) {
-      days.push(<View key={`empty-${i}`} style={styles.calendarDay} />);
-    }
-
-    // Days of the month
-    for (let day = 1; day <= daysInMonth; day++) {
-      const date = new Date(currentYear, currentMonth, day);
-      const isSelected = selectedDate.toDateString() === date.toDateString();
-      const isToday = new Date().toDateString() === date.toDateString();
-
-      days.push(
-        <TouchableOpacity
-          key={day}
-          style={[
-            styles.calendarDay,
-            isSelected && styles.selectedDay,
-            isToday && styles.todayDay,
-          ]}
-          onPress={() => {
-            setSelectedDate(date);
-            setSelectedDateFilter("tanggal_tertentu");
-            setShowCalendar(false);
-          }}
-        >
-          <Text
-            style={[
-              styles.calendarDayText,
-              isSelected && styles.selectedDayText,
-              isToday && styles.todayDayText,
-            ]}
-          >
-            {day}
-          </Text>
-        </TouchableOpacity>,
-      );
-    }
-
-    return (
-      <Modal visible={showCalendar} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
+      <Modal 
+        visible={showDateRangePicker} 
+        transparent
+        animationType="none"
+        statusBarTranslucent={true}
+      >
+        <View style={styles.fullScreenModal}>
+          <TouchableOpacity 
+            style={styles.modalBackdrop} 
+            activeOpacity={1}
+            onPress={() => setShowDateRangePicker(false)}
+          />
           <View style={styles.calendarModal}>
             <View style={styles.calendarHeader}>
-              <TouchableOpacity
-                onPress={() =>
-                  setSelectedDate(new Date(currentYear, currentMonth - 1, 1))
-                }
-              >
-                <Ionicons name="chevron-back" size={24} color="#004643" />
-              </TouchableOpacity>
               <Text style={styles.calendarTitle}>
-                {selectedDate.toLocaleDateString("id-ID", {
-                  month: "long",
-                  year: "numeric",
-                })}
+                {dateSelectionStep === 'start' ? 'Pilih Tanggal Mulai' : 'Pilih Tanggal Selesai'}
               </Text>
-              <TouchableOpacity
-                onPress={() =>
-                  setSelectedDate(new Date(currentYear, currentMonth + 1, 1))
-                }
-              >
-                <Ionicons name="chevron-forward" size={24} color="#004643" />
+              <TouchableOpacity onPress={() => setShowDateRangePicker(false)}>
+                <Ionicons name="close" size={24} color="#666" />
               </TouchableOpacity>
             </View>
-
-            <View style={styles.weekDays}>
-              {["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"].map((day) => (
-                <Text key={day} style={styles.weekDayText}>
-                  {day}
-                </Text>
-              ))}
-            </View>
-
-            <View style={styles.calendarGrid}>{days}</View>
-
-            <TouchableOpacity
-              style={styles.closeCalendarBtn}
-              onPress={() => setShowCalendar(false)}
-            >
-              <Text style={styles.closeCalendarText}>Tutup</Text>
-            </TouchableOpacity>
+            <CustomCalendar
+              events={[]}
+              onDatePress={(date) => {
+                const dateString = date.toISOString().split('T')[0];
+                if (dateSelectionStep === 'start') {
+                  setDateRange({...dateRange, start: dateString});
+                  setDateSelectionStep('end');
+                } else {
+                  setDateRange({...dateRange, end: dateString});
+                  setSelectedDateFilter('pilih_tanggal');
+                  setShowDateRangePicker(false);
+                  setDateSelectionStep('start');
+                }
+              }}
+            />
           </View>
         </View>
       </Modal>
-    );
-  };
 
   const renderRiwayatCard = ({ item }: { item: RiwayatDinas }) => {
     const hadirCount = item.pegawai.filter((p) => p.status === "hadir").length;
@@ -388,7 +335,7 @@ export default function RiwayatDinasScreen() {
           {/* Search Container */}
           <View style={styles.searchContainer}>
             <View style={styles.searchInputWrapper}>
-              <Ionicons name="search-outline" size={20} color="#666" style={styles.searchIcon} />
+              <Ionicons name="search-outline" size={20} color="#666" />
               <TextInput
                 style={styles.searchInput}
                 placeholder="Cari nama kegiatan atau nomor SPT..."
@@ -397,10 +344,7 @@ export default function RiwayatDinasScreen() {
                 placeholderTextColor="#999"
               />
               {searchQuery.length > 0 && (
-                <TouchableOpacity 
-                  onPress={() => setSearchQuery('')}
-                  style={styles.clearBtn}
-                >
+                <TouchableOpacity onPress={() => setSearchQuery('')}>
                   <Ionicons name="close-circle" size={20} color="#999" />
                 </TouchableOpacity>
               )}
@@ -411,55 +355,54 @@ export default function RiwayatDinasScreen() {
           <View style={styles.filterCard}>
             <View style={styles.filterHeader}>
               <Ionicons name="calendar-outline" size={20} color="#004643" />
-              <Text style={styles.filterTitle}>Filter Tanggal</Text>
+              <Text style={styles.filterTitle}>Filter Periode</Text>
             </View>
-
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={styles.filterChips}
-            >
+            
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterChips}>
               {[
-                { key: "semua", label: "Semua" },
-                { key: "hari_ini", label: "Hari Ini" },
-                { key: "minggu_ini", label: "Minggu Ini" },
-                { key: "bulan_ini", label: "Bulan Ini" },
-                { key: "tanggal_tertentu", label: "Pilih Tanggal" },
+                { key: 'hari_ini', label: 'Hari Ini' },
+                { key: 'minggu_ini', label: 'Minggu Ini' },
+                { key: 'bulan_ini', label: 'Bulan Ini' },
+                { key: 'pilih_tanggal', label: 'Pilih Tanggal' }
               ].map((filter) => (
                 <TouchableOpacity
                   key={filter.key}
                   style={[
                     styles.filterChip,
-                    selectedDateFilter === filter.key && styles.filterChipActive,
+                    selectedDateFilter === filter.key && styles.filterChipActive
                   ]}
                   onPress={() => {
-                    if (filter.key === "tanggal_tertentu") {
-                      setShowCalendar(true);
+                    if (filter.key === 'pilih_tanggal') {
+                      setShowStartDatePicker(true);
                     } else {
                       setSelectedDateFilter(filter.key);
+                      setDateRange({ start: '', end: '' });
                     }
                   }}
                 >
-                  <Text
-                    style={[
-                      styles.filterChipText,
-                      selectedDateFilter === filter.key &&
-                        styles.filterChipTextActive,
-                    ]}
-                  >
+                  <Text style={[
+                    styles.filterChipText,
+                    selectedDateFilter === filter.key && styles.filterChipTextActive
+                  ]}>
                     {filter.label}
                   </Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
-            
-            {selectedDateFilter === "tanggal_tertentu" && (
+
+            {selectedDateFilter === 'pilih_tanggal' && dateRange.start && dateRange.end && (
               <View style={styles.selectedDateInfo}>
                 <Text style={styles.selectedDateText}>
-                  Tanggal terpilih: {selectedDate.toLocaleDateString("id-ID")}
+                  Periode: {new Date(dateRange.start).toLocaleDateString('id-ID')} - {new Date(dateRange.end).toLocaleDateString('id-ID')}
                 </Text>
               </View>
             )}
+
+            <View style={styles.resultSummary}>
+              <Text style={styles.resultText}>
+                Menampilkan {filteredData.length} riwayat dinas
+              </Text>
+            </View>
           </View>
         </View>
 
@@ -483,70 +426,48 @@ export default function RiwayatDinasScreen() {
               </Text>
             </View>
           )}
-          ListFooterComponent={() => {
-            if (totalPages <= 1) return null;
-            return (
-              <View style={styles.paginationContainer}>
-                <TouchableOpacity
-                  style={[
-                    styles.pageBtn,
-                    currentPage === 1 && styles.pageBtnDisabled,
-                  ]}
-                  onPress={() => setCurrentPage(currentPage - 1)}
-                  disabled={currentPage === 1}
-                >
-                  <Ionicons
-                    name="chevron-back"
-                    size={16}
-                    color={currentPage === 1 ? "#ccc" : "#004643"}
-                  />
-                </TouchableOpacity>
-
-                <View style={styles.pageNumbers}>
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                    (page) => (
-                      <TouchableOpacity
-                        key={page}
-                        style={[
-                          styles.pageNumber,
-                          currentPage === page && styles.pageNumberActive,
-                        ]}
-                        onPress={() => setCurrentPage(page)}
-                      >
-                        <Text
-                          style={[
-                            styles.pageNumberText,
-                            currentPage === page && styles.pageNumberTextActive,
-                          ]}
-                        >
-                          {page}
-                        </Text>
-                      </TouchableOpacity>
-                    ),
-                  )}
-                </View>
-
-                <TouchableOpacity
-                  style={[
-                    styles.pageBtn,
-                    currentPage === totalPages && styles.pageBtnDisabled,
-                  ]}
-                  onPress={() => setCurrentPage(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                >
-                  <Ionicons
-                    name="chevron-forward"
-                    size={16}
-                    color={currentPage === totalPages ? "#ccc" : "#004643"}
-                  />
-                </TouchableOpacity>
-              </View>
-            );
-          }}
         />
       </View>
 
-      {renderCalendarModal()}
+      <Modal 
+        visible={showDateRangePicker} 
+        transparent
+        animationType="none"
+        statusBarTranslucent={true}
+      >
+        <View style={styles.fullScreenModal}>
+          <TouchableOpacity 
+            style={styles.modalBackdrop} 
+            activeOpacity={1}
+            onPress={() => setShowDateRangePicker(false)}
+          />
+          <View style={styles.calendarModal}>
+            <View style={styles.calendarHeader}>
+              <Text style={styles.calendarTitle}>
+                {dateSelectionStep === 'start' ? 'Pilih Tanggal Mulai' : 'Pilih Tanggal Selesai'}
+              </Text>
+              <TouchableOpacity onPress={() => setShowDateRangePicker(false)}>
+                <Ionicons name="close" size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
+            <CustomCalendar
+              events={[]}
+              onDatePress={(date) => {
+                const dateString = date.toISOString().split('T')[0];
+                if (dateSelectionStep === 'start') {
+                  setDateRange({...dateRange, start: dateString});
+                  setDateSelectionStep('end');
+                } else {
+                  setDateRange({...dateRange, end: dateString});
+                  setSelectedDateFilter('pilih_tanggal');
+                  setShowDateRangePicker(false);
+                  setDateSelectionStep('start');
+                }
+              }}
+            />
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -568,114 +489,109 @@ const styles = StyleSheet.create({
   },
 
   searchContainer: {
-    paddingHorizontal: 15,
+    paddingHorizontal: 20,
     paddingVertical: 8,
-    backgroundColor: "#F8FAFB",
+    backgroundColor: '#F8FAFB'
   },
   searchInputWrapper: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#fff",
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
     borderRadius: 12,
     paddingHorizontal: 15,
     elevation: 2,
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
-  },
-  searchIcon: {
-    marginRight: 10
+    gap: 10
   },
   searchInput: {
     flex: 1,
     fontSize: 16,
-    color: "#333",
-    paddingVertical: 12,
+    color: '#333',
+    paddingVertical: 12
   },
-  clearBtn: {
-    padding: 4
-  },
-
   filterCard: {
-    backgroundColor: "#fff",
-    marginHorizontal: 15,
+    backgroundColor: '#fff',
+    marginHorizontal: 20,
     marginVertical: 5,
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 15,
-    borderWidth: 1,
-    borderColor: "#E0E0E0",
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4
   },
   filterHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12
   },
   filterTitle: {
     fontSize: 16,
-    fontWeight: "600",
-    color: "#333",
-    marginLeft: 8,
+    fontWeight: '600',
+    color: '#333',
+    marginLeft: 8
   },
   filterChips: {
-    marginBottom: 10,
+    marginBottom: 10
   },
   filterChip: {
     paddingHorizontal: 16,
     paddingVertical: 8,
     marginRight: 8,
     borderRadius: 20,
-    backgroundColor: "#F5F5F5",
+    backgroundColor: '#F5F5F5',
     borderWidth: 1,
-    borderColor: "#E0E0E0",
+    borderColor: '#E0E0E0'
   },
   filterChipActive: {
-    backgroundColor: "#004643",
-    borderColor: "#004643",
+    backgroundColor: '#004643',
+    borderColor: '#004643'
   },
   filterChipText: {
     fontSize: 12,
-    color: "#666",
-    fontWeight: "500",
+    color: '#666',
+    fontWeight: '500'
   },
   filterChipTextActive: {
-    color: "#fff",
+    color: '#fff'
   },
   selectedDateInfo: {
-    backgroundColor: "#F0F8F7",
+    backgroundColor: '#F0F8F7',
     padding: 8,
     borderRadius: 8,
-    marginBottom: 10,
+    marginBottom: 10
   },
   selectedDateText: {
     fontSize: 12,
-    color: "#004643",
-    fontWeight: "500",
+    color: '#004643',
+    fontWeight: '500'
   },
   resultSummary: {
     paddingTop: 10,
     borderTopWidth: 1,
-    borderTopColor: "#F0F0F0",
+    borderTopColor: '#F0F0F0'
   },
   resultText: {
     fontSize: 14,
-    color: "#666",
-    fontWeight: "500",
+    color: '#666',
+    fontWeight: '500'
   },
 
   listContent: {
-    paddingHorizontal: 5,
+    paddingHorizontal: 20,
     paddingTop: 10,
     paddingBottom: 20,
   },
   dinasCard: {
     backgroundColor: "#fff",
     borderRadius: 12,
-    padding: 15,
+    padding: 16,
     marginBottom: 12,
-    marginHorizontal: 15,
-    borderWidth: 1,
-    borderColor: "#E0E0E0",
+    elevation: 2,
   },
   cardHeader: {
     flexDirection: "row",
@@ -778,125 +694,117 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
 
-  paginationContainer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    paddingVertical: 20,
-    marginTop: 10,
-  },
-  pageBtn: {
-    padding: 8,
-    borderRadius: 8,
-    backgroundColor: "#F5F5F5",
-  },
-  pageBtnDisabled: {
-    backgroundColor: "#F0F0F0",
-  },
-  pageNumbers: {
-    flexDirection: "row",
-    marginHorizontal: 15,
-  },
-  pageNumber: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginHorizontal: 2,
-    borderRadius: 8,
-    backgroundColor: "#F5F5F5",
-  },
-  pageNumberActive: {
-    backgroundColor: "#004643",
-  },
-  pageNumberText: {
-    fontSize: 14,
-    color: "#666",
-    fontWeight: "500",
-  },
-  pageNumberTextActive: {
-    color: "#fff",
-    fontWeight: "bold",
-  },
-
   // Calendar Modal Styles
-  modalOverlay: {
+  fullScreenModal: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   calendarModal: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 20,
-    margin: 20,
-    width: "90%",
-    maxWidth: 350,
+    backgroundColor: '#fff',
+    borderRadius: 15,
+    width: '90%',
+    maxWidth: 400
   },
   calendarHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0'
   },
   calendarTitle: {
     fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
+    fontWeight: 'bold',
+    color: '#004643'
   },
-  weekDays: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    marginBottom: 10,
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center'
   },
-  weekDayText: {
-    fontSize: 12,
-    fontWeight: "bold",
-    color: "#666",
-    textAlign: "center",
-    width: 40,
+  dateRangeModal: {
+    backgroundColor: '#fff',
+    borderRadius: 15,
+    width: '90%',
+    maxWidth: 400,
+    padding: 20
   },
-  calendarGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-around",
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20
   },
-  calendarDay: {
-    width: 40,
-    height: 40,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 5,
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#004643'
   },
-  selectedDay: {
-    backgroundColor: "#004643",
-    borderRadius: 20,
+  dateInputs: {
+    marginBottom: 20
   },
-  todayDay: {
-    borderWidth: 2,
-    borderColor: "#004643",
-    borderRadius: 20,
+  dateInputGroup: {
+    marginBottom: 15
   },
-  calendarDayText: {
+  dateLabel: {
     fontSize: 14,
-    color: "#333",
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8
   },
-  selectedDayText: {
-    color: "#fff",
-    fontWeight: "bold",
-  },
-  todayDayText: {
-    color: "#004643",
-    fontWeight: "bold",
-  },
-  closeCalendarBtn: {
-    backgroundColor: "#004643",
-    padding: 12,
+  dateInput: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F8F9FA',
     borderRadius: 8,
-    alignItems: "center",
-    marginTop: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: '#E0E0E0'
   },
-  closeCalendarText: {
-    color: "#fff",
-    fontWeight: "bold",
+  dateInputText: {
+    fontSize: 14,
+    color: '#333'
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: 10
+  },
+  cancelBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    backgroundColor: '#F5F5F5',
+    alignItems: 'center'
+  },
+  cancelBtnText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666'
+  },
+  confirmBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    backgroundColor: '#004643',
+    alignItems: 'center'
+  },
+  confirmBtnText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#fff'
   },
 });

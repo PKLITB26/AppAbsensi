@@ -296,9 +296,10 @@ export const PegawaiAkunAPI = {
 
 // Kelola Dinas API
 export const KelolaDinasAPI = {
-  getDinasAktif: async () => {
+  getDinasAktif: async (status?: string) => {
     try {
-      const response = await fetchWithRetry(getApiUrl(API_CONFIG.ENDPOINTS.DINAS_AKTIF));
+      const params = status ? `?status=${status}` : '';
+      const response = await fetchWithRetry(`${getApiUrl(API_CONFIG.ENDPOINTS.DINAS_AKTIF)}${params}`);
       return response.json();
     } catch (error) {
       return { success: false, message: 'Tidak dapat terhubung ke server', data: [] };

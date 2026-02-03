@@ -167,7 +167,7 @@ export default function DetailIzinScreen() {
           </Text>
         </View>
 
-        {/* Profile Card */}}
+        {/* Profile Card */}
         <View style={styles.profileCard}>
           <View style={styles.avatar}>
             {data.foto_profil ? (

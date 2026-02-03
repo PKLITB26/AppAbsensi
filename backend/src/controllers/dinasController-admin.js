@@ -2,7 +2,27 @@ const { getConnection } = require('../config/database');
 
 const getDinasAktifAdmin = async (req, res) => {
   try {
+    console.log('Getting dinas aktif data...');
+    const { status } = req.query;
     const db = await getConnection();
+
+    let whereClause = '';
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Filter berdasarkan status jika ada
+    if (status) {
+      switch (status) {
+        case 'berlangsung':
+          whereClause = `WHERE DATE(d.tanggal_mulai) <= '${today}' AND DATE(d.tanggal_selesai) >= '${today}'`;
+          break;
+        case 'selesai':
+          whereClause = `WHERE DATE(d.tanggal_selesai) < '${today}'`;
+          break;
+        case 'belum_dimulai':
+          whereClause = `WHERE DATE(d.tanggal_mulai) > '${today}'`;
+          break;
+      }
+    }
 
     const [rows] = await db.execute(`
       SELECT d.*, 
@@ -11,12 +31,12 @@ const getDinasAktifAdmin = async (req, res) => {
       FROM dinas d 
       LEFT JOIN dinas_pegawai dp ON d.id_dinas = dp.id_dinas 
       LEFT JOIN absen_dinas ad ON d.id_dinas = ad.id_dinas AND dp.id_user = ad.id_user
-      WHERE d.status = 'aktif' 
-      AND d.tanggal_selesai >= CURDATE()
+      ${whereClause}
       GROUP BY d.id_dinas 
-      ORDER BY d.tanggal_mulai ASC
+      ORDER BY d.tanggal_mulai DESC
     `);
 
+    console.log('Found', rows.length, 'dinas records');
     const dinas_list = [];
 
     for (const row of rows) {
@@ -59,7 +79,10 @@ const getDinasAktifAdmin = async (req, res) => {
       });
     }
 
-    res.json(dinas_list);
+    res.json({
+      success: true,
+      data: dinas_list
+    });
 
   } catch (error) {
     console.error('Get dinas aktif error:', error);

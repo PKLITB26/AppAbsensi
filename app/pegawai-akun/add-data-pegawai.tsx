@@ -608,7 +608,7 @@ export default function AddDataPegawaiForm() {
         <Modal 
           visible={showCalendar} 
           transparent
-          animationType="fade"
+          animationType="none"
           statusBarTranslucent={true}
           onRequestClose={() => setShowCalendar(false)}
         >

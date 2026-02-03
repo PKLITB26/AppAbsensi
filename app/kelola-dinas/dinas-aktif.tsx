@@ -24,8 +24,8 @@ interface DinasAktif {
 
 export default function DinasAktifScreen() {
   const router = useRouter();
-  const [selectedFilter, setSelectedFilter] = useState('semua');
-  const [isFilterExpanded, setIsFilterExpanded] = useState(true);
+  const [selectedFilter, setSelectedFilter] = useState('berlangsung');
+  const [isFilterExpanded, setIsFilterExpanded] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [dinasAktif, setDinasAktif] = useState<DinasAktif[]>([]);
@@ -34,15 +34,21 @@ export default function DinasAktifScreen() {
   
   useEffect(() => {
     fetchDinasAktif();
-  }, []);
+  }, [selectedFilter]);
 
   const fetchDinasAktif = async () => {
     try {
       setLoading(true);
-      const response = await KelolaDinasAPI.getDinasAktif();
+      console.log('Fetching dinas aktif data with filter:', selectedFilter);
+      const statusParam = selectedFilter === 'semua' ? undefined : selectedFilter;
+      const response = await KelolaDinasAPI.getDinasAktif(statusParam);
+      console.log('Dinas aktif API response:', response);
+      
       if (response && response.success && Array.isArray(response.data)) {
+        console.log('Setting dinas data:', response.data.length, 'items');
         setDinasAktif(response.data);
       } else {
+        console.log('No valid data received, setting empty array');
         setDinasAktif([]);
       }
     } catch (error) {
@@ -99,13 +105,24 @@ export default function DinasAktifScreen() {
       );
     }
     
-    filtered = filtered.filter(item => {
-      const today = new Date();
-      const selesai = new Date(item.tanggal_selesai);
-      today.setHours(0, 0, 0, 0);
-      selesai.setHours(23, 59, 59, 999);
-      return today <= selesai;
-    });
+    // Filter berdasarkan status dinas
+    if (selectedFilter !== 'semua') {
+      filtered = filtered.filter(item => {
+        const dinasStatusInfo = getDinasStatus(item.tanggal_mulai, item.tanggal_selesai);
+        const status = dinasStatusInfo.status;
+        
+        switch (selectedFilter) {
+          case 'berlangsung':
+            return status === 'Sedang Berlangsung';
+          case 'selesai':
+            return status === 'Selesai';
+          case 'belum_dimulai':
+            return status === 'Belum Dimulai';
+          default:
+            return true;
+        }
+      });
+    }
     
     return filtered;
   };
@@ -128,71 +145,90 @@ export default function DinasAktifScreen() {
             <Text style={styles.kegiatanName}>{item.namaKegiatan}</Text>
             <Text style={styles.sptNumber}>{item.nomorSpt}</Text>
           </View>
-          <View style={styles.headerRight}>
-            <View style={[styles.dinasStatusBadge, { backgroundColor: dinasStatusInfo.color + '20' }]}>
-              <Text style={[styles.dinasStatusText, { color: dinasStatusInfo.color }]}>
-                {dinasStatusInfo.status}
-              </Text>
-            </View>
+          <View style={[styles.dinasStatusBadge, { backgroundColor: dinasStatusInfo.color + '20' }]}>
+            <Text style={[styles.dinasStatusText, { color: dinasStatusInfo.color }]}>
+              {dinasStatusInfo.status === 'Sedang Berlangsung' ? 'Berlangsung' : 
+               dinasStatusInfo.status === 'Belum Dimulai' ? 'Belum Mulai' : 'Selesai'}
+            </Text>
           </View>
         </View>
 
         <View style={styles.cardInfo}>
           <View style={styles.infoRow}>
-            <Ionicons name="location-outline" size={16} color="#666" />
+            <Ionicons name="location-outline" size={14} color="#666" />
             <Text style={styles.infoText}>{item.lokasi}</Text>
           </View>
           <View style={styles.infoRow}>
-            <Ionicons name="time-outline" size={16} color="#666" />
+            <Ionicons name="time-outline" size={14} color="#666" />
             <Text style={styles.infoText}>{item.jamKerja}</Text>
           </View>
           <View style={styles.infoRow}>
-            <Ionicons name="radio-outline" size={16} color="#666" />
-            <Text style={styles.infoText}>{item.radius}m radius</Text>
+            <Ionicons name="calendar-outline" size={14} color="#666" />
+            <Text style={styles.infoText}>
+              {new Date(item.tanggal_mulai).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })} - 
+              {new Date(item.tanggal_selesai).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
+            </Text>
           </View>
         </View>
 
-        <View style={styles.statusSummary}>
-          <Text style={styles.statusText}>
-            Status Absen: {hadirCount}/{totalPegawai} Hadir
-          </Text>
-          <View style={styles.progressBar}>
-            <View 
-              style={[
-                styles.progressFill, 
-                { width: totalPegawai > 0 ? `${(hadirCount / totalPegawai) * 100}%` : '0%' }
-              ]} 
-            />
-          </View>
-        </View>
-
-        <View style={styles.pegawaiList}>
-          {pegawaiArray.length > 0 ? (
-            pegawaiArray.map((pegawai, index) => (
-              <View key={index} style={styles.pegawaiItem}>
-                <View style={styles.pegawaiInfo}>
-                  <Text style={styles.pegawaiName}>{pegawai.nama}</Text>
-                  {pegawai.jamAbsen && (
-                    <Text style={styles.jamAbsen}>({pegawai.jamAbsen})</Text>
-                  )}
-                </View>
-                <View style={[
-                  styles.statusBadge, 
-                  { backgroundColor: getStatusColor(pegawai.status) + '20' }
-                ]}>
-                  <Text style={[
-                    styles.statusBadgeText, 
-                    { color: getStatusColor(pegawai.status) }
-                  ]}>
-                    {getStatusLabel(pegawai.status)}
-                  </Text>
-                </View>
+        {/* Hanya tampilkan status absen jika dinas sedang berlangsung */}
+        {dinasStatusInfo.status === 'Sedang Berlangsung' && (
+          <>
+            <View style={styles.statusSummary}>
+              <Text style={styles.statusText}>
+                Status Absen: {hadirCount}/{totalPegawai} Hadir
+              </Text>
+              <View style={styles.progressBar}>
+                <View 
+                  style={[
+                    styles.progressFill, 
+                    { width: totalPegawai > 0 ? `${(hadirCount / totalPegawai) * 100}%` : '0%' }
+                  ]} 
+                />
               </View>
-            ))
-          ) : (
-            <Text style={styles.noPegawaiText}>Belum ada pegawai yang ditugaskan</Text>
-          )}
-        </View>
+            </View>
+
+            <View style={styles.pegawaiList}>
+              {pegawaiArray.length > 0 ? (
+                pegawaiArray.map((pegawai, index) => (
+                  <View key={index} style={styles.pegawaiItem}>
+                    <View style={styles.pegawaiInfo}>
+                      <Text style={styles.pegawaiName}>{pegawai.nama}</Text>
+                      {pegawai.jamAbsen && (
+                        <Text style={styles.jamAbsen}>({pegawai.jamAbsen})</Text>
+                      )}
+                    </View>
+                    <View style={[
+                      styles.statusBadge, 
+                      { backgroundColor: getStatusColor(pegawai.status) + '20' }
+                    ]}>
+                      <Text style={[
+                        styles.statusBadgeText, 
+                        { color: getStatusColor(pegawai.status) }
+                      ]}>
+                        {getStatusLabel(pegawai.status)}
+                      </Text>
+                    </View>
+                  </View>
+                ))
+              ) : (
+                <Text style={styles.noPegawaiText}>Belum ada pegawai yang ditugaskan</Text>
+              )}
+            </View>
+          </>
+        )}
+        
+        {/* Tampilkan info ringkas untuk dinas yang selesai atau belum dimulai */}
+        {dinasStatusInfo.status !== 'Sedang Berlangsung' && (
+          <View style={styles.dinasInfoSection}>
+            <Text style={styles.dinasInfoText}>
+              {dinasStatusInfo.status === 'Selesai' 
+                ? `Dinas telah selesai. Total ${totalPegawai} pegawai ditugaskan.`
+                : `Dinas belum dimulai. ${totalPegawai} pegawai akan ditugaskan.`
+              }
+            </Text>
+          </View>
+        )}
       </View>
     );
   };
@@ -203,10 +239,10 @@ export default function DinasAktifScreen() {
       
       {/* HEADER */}
       <AppHeader 
-        title="Data Dinas Aktif"
+        title="Data Dinas"
         showBack={true}
         showStats={true}
-        statsText={`${filteredData.length} Dinas Aktif`}
+        statsText={`${filteredData.length} Data Dinas`}
         fallbackRoute="/kelola-dinas"
       />
 
@@ -235,29 +271,70 @@ export default function DinasAktifScreen() {
             </View>
           </View>
 
-          {/* Fixed Date Summary */}
-          <View style={styles.filterSummaryCard}>
-            <View style={styles.summarySection}>
+          {/* Summary dengan Filter Toggle dan Tombol Tambah */}
+          <View style={styles.summaryCard}>
+            <View style={styles.summaryRow}>
               <View style={styles.summaryLeft}>
-                <View style={styles.dateContainer}>
-                  <Ionicons name="calendar-outline" size={16} color="#004643" />
-                  <Text style={styles.summaryDate}>
-                    {new Date().toLocaleDateString('id-ID', { 
-                      weekday: 'long', 
-                      day: 'numeric', 
-                      month: 'long' 
-                    })}
-                  </Text>
-                </View>
+                <TouchableOpacity 
+                  style={styles.filterToggle}
+                  onPress={() => setIsFilterExpanded(!isFilterExpanded)}
+                >
+                  <Ionicons name="funnel-outline" size={16} color="#004643" />
+                  <Text style={styles.filterToggleText}>Filter</Text>
+                  <Ionicons 
+                    name={isFilterExpanded ? "chevron-up" : "chevron-down"} 
+                    size={14} 
+                    color="#004643" 
+                  />
+                </TouchableOpacity>
               </View>
               <View style={styles.summaryRight}>
-                <View style={styles.countBadge}>
-                  <Text style={styles.countNumber}>{filteredData.length}</Text>
-                  <Text style={styles.countLabel}>Dinas Aktif</Text>
-                </View>
+                <TouchableOpacity 
+                  style={styles.addBtn}
+                  onPress={() => router.push('/kelola-dinas/tambah-dinas' as any)}
+                >
+                  <Ionicons name="add" size={14} color="#004643" />
+                  <Text style={styles.addBtnText}>Tambah</Text>
+                </TouchableOpacity>
               </View>
             </View>
           </View>
+
+          {/* Filter Status Dinas - Expandable */}
+          {isFilterExpanded && (
+            <View style={styles.filterContainer}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.filterScrollContent}
+              >
+                {[
+                  { key: 'semua', label: 'Semua' },
+                  { key: 'berlangsung', label: 'Berlangsung' },
+                  { key: 'selesai', label: 'Selesai' },
+                  { key: 'belum_dimulai', label: 'Belum Dimulai' }
+                ].map((filter) => (
+                  <TouchableOpacity
+                    key={filter.key}
+                    style={[
+                      styles.filterChip,
+                      selectedFilter === filter.key && styles.filterChipActive,
+                    ]}
+                    onPress={() => setSelectedFilter(filter.key)}
+                  >
+                    <Text
+                      style={[
+                        styles.filterChipText,
+                        selectedFilter === filter.key && styles.filterChipTextActive,
+                      ]}
+                    >
+                      {filter.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          )}
         </View>
 
         {/* Scrollable List */}
@@ -274,7 +351,7 @@ export default function DinasAktifScreen() {
             <View style={styles.emptyState}>
               <Ionicons name="briefcase-outline" size={60} color="#ccc" />
               <Text style={styles.emptyText}>
-                {loading ? 'Memuat data...' : 'Tidak ada dinas aktif'}
+                {loading ? 'Memuat data...' : 'Tidak ada data dinas'}
               </Text>
             </View>
           )}
@@ -316,13 +393,6 @@ export default function DinasAktifScreen() {
           }}
         />
       </View>
-      
-      <TouchableOpacity 
-        style={styles.floatingAddBtn}
-        onPress={() => router.push('/kelola-dinas/tambah-dinas' as any)}
-      >
-        <Ionicons name="add" size={28} color="#fff" />
-      </TouchableOpacity>
     </View>
   );
 }
@@ -343,35 +413,7 @@ const styles = StyleSheet.create({
   flatList: {
     flex: 1,
   },
-  addBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#004643',
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4
-  },
-  floatingAddBtn: {
-    position: 'absolute',
-    bottom: 30,
-    right: 20,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#004643',
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8
-  },
+
   searchContainer: {
     paddingHorizontal: 15,
     paddingVertical: 8,
@@ -401,119 +443,13 @@ const styles = StyleSheet.create({
   clearBtn: {
     padding: 4
   },
-  filterSummaryCard: {
-    backgroundColor: '#fff',
-    marginHorizontal: 15,
-    marginVertical: 5,
-    marginBottom: 10,
-    borderRadius: 16,
-    padding: 15,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4
-  },
-  summarySection: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center'
-  },
-  summaryLeft: {
-    flex: 1
-  },
-  dateContainer: {
-    flexDirection: 'row',
-    alignItems: 'center'
-  },
-  summaryDate: {
-    fontSize: 14,
-    color: '#666',
-    marginLeft: 8,
-    fontWeight: '500'
-  },
-  summaryRight: {
-    alignItems: 'flex-end'
-  },
-  countBadge: {
-    backgroundColor: '#F0F8F7',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 12,
-    alignItems: 'center',
-    minWidth: 80
-  },
-  countNumber: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#004643'
-  },
-  countLabel: {
-    fontSize: 10,
-    color: '#004643',
-    fontWeight: '500',
-    marginTop: 2
-  },
   listContent: {
     paddingHorizontal: 5,
     paddingTop: 10,
     paddingBottom: 20
   },
-  dinasCard: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 15,
-    marginHorizontal: 15,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 15
-  },
-  cardTitle: { flex: 1 },
-  headerRight: {
-    alignItems: 'flex-end',
-    gap: 8
-  },
-  dinasStatusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-    alignItems: 'center'
-  },
-  dinasStatusText: {
-    fontSize: 10,
-    fontWeight: 'bold'
-  },
-  kegiatanName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 4
-  },
-  sptNumber: {
-    fontSize: 12,
-    color: '#666'
-  },
-  cardInfo: { marginBottom: 15 },
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8
-  },
-  infoText: {
-    fontSize: 14,
-    color: '#666',
-    marginLeft: 8
-  },
-  statusSummary: { marginBottom: 15 },
+
+  statusSummary: { marginBottom: 12 },
   statusText: {
     fontSize: 14,
     fontWeight: '600',
@@ -530,7 +466,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#4CAF50',
     borderRadius: 3
   },
-  pegawaiList: { marginBottom: 15 },
+  pegawaiList: { marginBottom: 12 },
   pegawaiItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -545,14 +481,14 @@ const styles = StyleSheet.create({
     flex: 1
   },
   pegawaiName: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#333',
     fontWeight: '500'
   },
   jamAbsen: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#666',
-    marginLeft: 8
+    marginLeft: 6
   },
   statusBadge: {
     paddingHorizontal: 8,
@@ -617,5 +553,150 @@ const styles = StyleSheet.create({
   pageNumberTextActive: {
     color: '#fff',
     fontWeight: 'bold'
+  },
+
+  filterContainer: {
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+  },
+  filterScrollContent: {
+    paddingRight: 15,
+  },
+  filterChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginRight: 8,
+    borderRadius: 16,
+    backgroundColor: '#F5F5F5',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  filterChipActive: {
+    backgroundColor: '#004643',
+    borderColor: '#004643',
+  },
+  filterChipText: {
+    fontSize: 11,
+    color: '#666',
+    fontWeight: '500',
+  },
+  filterChipTextActive: {
+    color: '#fff',
+  },
+  summaryCard: {
+    backgroundColor: '#fff',
+    marginHorizontal: 15,
+    marginBottom: 8,
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center'
+  },
+  summaryLeft: {
+    flex: 1
+  },
+  summaryRight: {
+    alignItems: 'flex-end'
+  },
+  addBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    backgroundColor: '#F0F8F7',
+    borderWidth: 1,
+    borderColor: '#004643',
+  },
+  addBtnText: {
+    fontSize: 10,
+    color: '#004643',
+    fontWeight: '500',
+    marginLeft: 3
+  },
+  filterToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    backgroundColor: '#F0F8F7',
+    borderRadius: 8,
+    alignSelf: 'flex-start'
+  },
+  filterToggleText: {
+    fontSize: 12,
+    color: '#004643',
+    fontWeight: '500',
+    marginHorizontal: 4
+  },
+  summaryRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12
+  },
+
+
+  dinasCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 15,
+    marginBottom: 12,
+    marginHorizontal: 15,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 12
+  },
+  cardTitle: { flex: 1, marginRight: 10 },
+  dinasStatusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  dinasStatusText: {
+    fontSize: 10,
+    fontWeight: 'bold'
+  },
+  kegiatanName: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 2
+  },
+  sptNumber: {
+    fontSize: 11,
+    color: '#666'
+  },
+  cardInfo: { marginBottom: 12 },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6
+  },
+  infoText: {
+    fontSize: 12,
+    color: '#666',
+    marginLeft: 6
+  },
+  dinasInfoSection: {
+    backgroundColor: '#F8F9FA',
+    padding: 10,
+    borderRadius: 8,
+    marginTop: 8
+  },
+  dinasInfoText: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
+    fontStyle: 'italic'
   }
 });

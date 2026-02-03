@@ -392,8 +392,13 @@ export default function LaporanDetailLemburScreen() {
       </Modal>
       
       {showStartDatePicker && (
-        <Modal visible={showStartDatePicker} transparent>
+        <Modal visible={showStartDatePicker} transparent animationType="none" statusBarTranslucent={true}>
           <View style={styles.calendarModalOverlay}>
+            <TouchableOpacity 
+              style={styles.modalBackdrop} 
+              activeOpacity={1}
+              onPress={() => setShowStartDatePicker(false)}
+            />
             <View style={styles.calendarModalContainer}>
               <View style={styles.calendarHeader}>
                 <Text style={styles.calendarTitle}>Pilih Tanggal Mulai</Text>
@@ -426,8 +431,13 @@ export default function LaporanDetailLemburScreen() {
       )}
       
       {showEndDatePicker && (
-        <Modal visible={showEndDatePicker} transparent>
+        <Modal visible={showEndDatePicker} transparent animationType="none" statusBarTranslucent={true}>
           <View style={styles.calendarModalOverlay}>
+            <TouchableOpacity 
+              style={styles.modalBackdrop} 
+              activeOpacity={1}
+              onPress={() => setShowEndDatePicker(false)}
+            />
             <View style={styles.calendarModalContainer}>
               <View style={styles.calendarHeader}>
                 <Text style={styles.calendarTitle}>Pilih Tanggal Selesai</Text>
@@ -660,6 +670,13 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center'
+  },
+  modalBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   calendarModalContainer: {
     backgroundColor: '#fff',

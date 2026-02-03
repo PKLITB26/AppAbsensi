@@ -11,7 +11,7 @@ import * as Location from 'expo-location';
 import MapView, { Marker } from 'react-native-maps';
 import * as DocumentPicker from 'expo-document-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { AppHeader } from '../../components';
+import { AppHeader, CustomCalendar } from '../../components';
 
 export default function TambahDinasScreen() {
   const router = useRouter();
@@ -59,8 +59,6 @@ export default function TambahDinasScreen() {
   const [showJenisDinasDropdown, setShowJenisDinasDropdown] = useState(false);
   const [showDateMulaiPicker, setShowDateMulaiPicker] = useState(false);
   const [showDateSelesaiPicker, setShowDateSelesaiPicker] = useState(false);
-  const [selectedDateMulai, setSelectedDateMulai] = useState('');
-  const [selectedDateSelesai, setSelectedDateSelesai] = useState('');
   const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({});
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
@@ -511,19 +509,15 @@ export default function TambahDinasScreen() {
     return `${day}/${month}/${year}`;
   };
 
-  const handleDateMulaiSelect = (day: any) => {
-    const date = new Date(day.dateString);
+  const handleDateMulaiSelect = (date: Date) => {
     const formattedDate = formatDate(date);
-    setSelectedDateMulai(day.dateString);
     setFormData({...formData, tanggalMulai: formattedDate});
     validateField('tanggalMulai', formattedDate);
     setShowDateMulaiPicker(false);
   };
 
-  const handleDateSelesaiSelect = (day: any) => {
-    const date = new Date(day.dateString);
+  const handleDateSelesaiSelect = (date: Date) => {
     const formattedDate = formatDate(date);
-    setSelectedDateSelesai(day.dateString);
     setFormData({...formData, tanggalSelesai: formattedDate});
     validateField('tanggalSelesai', formattedDate);
     setShowDateSelesaiPicker(false);
@@ -1067,8 +1061,13 @@ export default function TambahDinasScreen() {
       </View>
 
       {/* Calendar Modals */}
-      <Modal visible={showDateMulaiPicker} transparent>
-        <View style={styles.calendarModalOverlay}>
+      <Modal visible={showDateMulaiPicker} transparent animationType="none" statusBarTranslucent={true}>
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity 
+            style={styles.modalBackdrop} 
+            activeOpacity={1}
+            onPress={() => setShowDateMulaiPicker(false)}
+          />
           <View style={styles.calendarModalContainer}>
             <View style={styles.calendarHeader}>
               <Text style={styles.calendarTitle}>Pilih Tanggal Mulai</Text>
@@ -1076,47 +1075,22 @@ export default function TambahDinasScreen() {
                 <Ionicons name="close" size={24} color="#666" />
               </TouchableOpacity>
             </View>
-            <Calendar
-              onDayPress={handleDateMulaiSelect}
-              markedDates={{
-                [selectedDateMulai]: {
-                  selected: true,
-                  selectedColor: '#004643'
-                }
-              }}
-              minDate={new Date().toISOString().split('T')[0]}
-              theme={{
-                backgroundColor: '#ffffff',
-                calendarBackground: '#ffffff',
-                textSectionTitleColor: '#004643',
-                selectedDayBackgroundColor: '#004643',
-                selectedDayTextColor: '#ffffff',
-                todayTextColor: '#004643',
-                dayTextColor: '#2d4150',
-                textDisabledColor: '#d9e1e8',
-                dotColor: '#004643',
-                selectedDotColor: '#ffffff',
-                arrowColor: '#004643',
-                disabledArrowColor: '#d9e1e8',
-                monthTextColor: '#004643',
-                indicatorColor: '#004643',
-                textDayFontFamily: 'System',
-                textMonthFontFamily: 'System',
-                textDayHeaderFontFamily: 'System',
-                textDayFontWeight: '400',
-                textMonthFontWeight: 'bold',
-                textDayHeaderFontWeight: '600',
-                textDayFontSize: 16,
-                textMonthFontSize: 18,
-                textDayHeaderFontSize: 14
-              }}
+            <CustomCalendar 
+              onDatePress={(date) => handleDateMulaiSelect(date)}
+              weekendDays={[0, 6]}
+              showWeekends={false}
             />
           </View>
         </View>
       </Modal>
 
-      <Modal visible={showDateSelesaiPicker} transparent>
-        <View style={styles.calendarModalOverlay}>
+      <Modal visible={showDateSelesaiPicker} transparent animationType="none" statusBarTranslucent={true}>
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity 
+            style={styles.modalBackdrop} 
+            activeOpacity={1}
+            onPress={() => setShowDateSelesaiPicker(false)}
+          />
           <View style={styles.calendarModalContainer}>
             <View style={styles.calendarHeader}>
               <Text style={styles.calendarTitle}>Pilih Tanggal Selesai</Text>
@@ -1124,40 +1098,10 @@ export default function TambahDinasScreen() {
                 <Ionicons name="close" size={24} color="#666" />
               </TouchableOpacity>
             </View>
-            <Calendar
-              onDayPress={handleDateSelesaiSelect}
-              markedDates={{
-                [selectedDateSelesai]: {
-                  selected: true,
-                  selectedColor: '#004643'
-                }
-              }}
-              minDate={selectedDateMulai || new Date().toISOString().split('T')[0]}
-              theme={{
-                backgroundColor: '#ffffff',
-                calendarBackground: '#ffffff',
-                textSectionTitleColor: '#004643',
-                selectedDayBackgroundColor: '#004643',
-                selectedDayTextColor: '#ffffff',
-                todayTextColor: '#004643',
-                dayTextColor: '#2d4150',
-                textDisabledColor: '#d9e1e8',
-                dotColor: '#004643',
-                selectedDotColor: '#ffffff',
-                arrowColor: '#004643',
-                disabledArrowColor: '#d9e1e8',
-                monthTextColor: '#004643',
-                indicatorColor: '#004643',
-                textDayFontFamily: 'System',
-                textMonthFontFamily: 'System',
-                textDayHeaderFontFamily: 'System',
-                textDayFontWeight: '400',
-                textMonthFontWeight: 'bold',
-                textDayHeaderFontWeight: '600',
-                textDayFontSize: 16,
-                textMonthFontSize: 18,
-                textDayHeaderFontSize: 14
-              }}
+            <CustomCalendar 
+              onDatePress={(date) => handleDateSelesaiSelect(date)}
+              weekendDays={[0, 6]}
+              showWeekends={false}
             />
           </View>
         </View>
@@ -1335,13 +1279,16 @@ export default function TambahDinasScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFB' },
+  content: {
+    flex: 1,
+  },
   contentContainer: {
-    flex: 1
+    flex: 1,
   },
   formContainer: {
     paddingHorizontal: 5,
     paddingTop: 20,
-    paddingBottom: 100
+    paddingBottom: 20
   },
   formCard: {
     backgroundColor: '#fff',
@@ -1569,6 +1516,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center'
   },
+  modalBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
   confirmModalContainer: {
     backgroundColor: '#fff',
     borderRadius: 15,
@@ -1640,17 +1594,16 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#fff'
   },
-  calendarModalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
   calendarModalContainer: {
     backgroundColor: '#fff',
-    borderRadius: 15,
+    borderRadius: 16,
     width: '90%',
-    maxWidth: 400
+    maxWidth: 350,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
   },
   calendarHeader: {
     flexDirection: 'row',

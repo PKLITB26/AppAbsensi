@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Calendar } from 'react-native-calendars';
 import { AppHeader } from '../../components';
+import CustomCalendar from '../../components/CustomCalendar';
 
 interface PegawaiAbsen {
   id_pegawai: number;
@@ -46,8 +47,7 @@ export default function LaporanDetailAbsenScreen() {
   const [selectedDateFilter, setSelectedDateFilter] = useState('hari_ini');
   const [showDateRangePicker, setShowDateRangePicker] = useState(false);
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
-  const [showStartDatePicker, setShowStartDatePicker] = useState(false);
-  const [showEndDatePicker, setShowEndDatePicker] = useState(false);
+  const [dateSelectionStep, setDateSelectionStep] = useState<'start' | 'end'>('start');
 
   useEffect(() => {
     fetchData();
@@ -85,68 +85,40 @@ export default function LaporanDetailAbsenScreen() {
     }
   };
 
-  const renderDateRangeModal = () => (
-    <Modal visible={showDateRangePicker} transparent>
-      <View style={styles.modalOverlay}>
-        <View style={styles.dateRangeModal}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Pilih Periode Tanggal</Text>
-            <TouchableOpacity onPress={() => setShowDateRangePicker(false)}>
-              <Ionicons name="close" size={24} color="#666" />
-            </TouchableOpacity>
-          </View>
-          
-          <View style={styles.dateInputs}>
-            <View style={styles.dateInputGroup}>
-              <Text style={styles.dateLabel}>Tanggal Mulai</Text>
-              <TouchableOpacity 
-                style={styles.dateInput}
-                onPress={() => setShowStartDatePicker(true)}
-              >
-                <Text style={styles.dateInputText}>
-                  {dateRange.start ? new Date(dateRange.start).toLocaleDateString('id-ID') : 'Pilih tanggal mulai'}
-                </Text>
-                <Ionicons name="calendar-outline" size={20} color="#004643" />
+      <Modal visible={showDateRangePicker} transparent animationType="none" statusBarTranslucent={true}>
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity 
+            style={styles.modalBackdrop} 
+            activeOpacity={1}
+            onPress={() => setShowDateRangePicker(false)}
+          />
+          <View style={styles.calendarModal}>
+            <View style={styles.calendarHeader}>
+              <Text style={styles.calendarTitle}>
+                {dateSelectionStep === 'start' ? 'Pilih Tanggal Mulai' : 'Pilih Tanggal Selesai'}
+              </Text>
+              <TouchableOpacity onPress={() => setShowDateRangePicker(false)}>
+                <Ionicons name="close" size={24} color="#666" />
               </TouchableOpacity>
             </View>
-            
-            <View style={styles.dateInputGroup}>
-              <Text style={styles.dateLabel}>Tanggal Selesai</Text>
-              <TouchableOpacity 
-                style={styles.dateInput}
-                onPress={() => setShowEndDatePicker(true)}
-              >
-                <Text style={styles.dateInputText}>
-                  {dateRange.end ? new Date(dateRange.end).toLocaleDateString('id-ID') : 'Pilih tanggal selesai'}
-                </Text>
-                <Ionicons name="calendar-outline" size={20} color="#004643" />
-              </TouchableOpacity>
-            </View>
-          </View>
-          
-          <View style={styles.modalButtons}>
-            <TouchableOpacity 
-              style={styles.cancelBtn}
-              onPress={() => setShowDateRangePicker(false)}
-            >
-              <Text style={styles.cancelBtnText}>Batal</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.confirmBtn}
-              onPress={() => {
-                if (dateRange.start && dateRange.end) {
+            <CustomCalendar
+              events={[]}
+              onDatePress={(date) => {
+                const dateString = date.toISOString().split('T')[0];
+                if (dateSelectionStep === 'start') {
+                  setDateRange({...dateRange, start: dateString});
+                  setDateSelectionStep('end');
+                } else {
+                  setDateRange({...dateRange, end: dateString});
                   setSelectedDateFilter('pilih_tanggal');
                   setShowDateRangePicker(false);
+                  setDateSelectionStep('start');
                 }
               }}
-            >
-              <Text style={styles.confirmBtnText}>Terapkan</Text>
-            </TouchableOpacity>
+            />
           </View>
         </View>
-      </View>
-    </Modal>
-  );
+      </Modal>
 
   const renderStatusBadge = (status: string, count: number) => {
     if (count === 0) return null;
@@ -261,6 +233,7 @@ export default function LaporanDetailAbsenScreen() {
                   ]}
                   onPress={() => {
                     if (filter.key === 'pilih_tanggal') {
+                      setDateSelectionStep('start');
                       setShowDateRangePicker(true);
                     } else {
                       setSelectedDateFilter(filter.key);
@@ -304,76 +277,40 @@ export default function LaporanDetailAbsenScreen() {
         </View>
       )}
       
-      {renderDateRangeModal()}
-      
-      {showStartDatePicker && (
-        <Modal visible={showStartDatePicker} transparent>
-          <View style={styles.modalOverlay}>
-            <View style={styles.calendarModal}>
-              <View style={styles.calendarHeader}>
-                <Text style={styles.calendarTitle}>Pilih Tanggal Mulai</Text>
-                <TouchableOpacity onPress={() => setShowStartDatePicker(false)}>
-                  <Ionicons name="close" size={24} color="#666" />
-                </TouchableOpacity>
-              </View>
-              <Calendar
-                onDayPress={(day) => {
-                  setDateRange({...dateRange, start: day.dateString});
-                  setShowStartDatePicker(false);
-                }}
-                maxDate={new Date().toISOString().split('T')[0]}
-                theme={{
-                  backgroundColor: '#ffffff',
-                  calendarBackground: '#ffffff',
-                  textSectionTitleColor: '#004643',
-                  selectedDayBackgroundColor: '#004643',
-                  selectedDayTextColor: '#ffffff',
-                  todayTextColor: '#004643',
-                  dayTextColor: '#2d4150',
-                  textDisabledColor: '#d9e1e8',
-                  arrowColor: '#004643',
-                  monthTextColor: '#004643'
-                }}
-              />
+      <Modal visible={showDateRangePicker} transparent animationType="none" statusBarTranslucent={true}>
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity 
+            style={styles.modalBackdrop} 
+            activeOpacity={1}
+            onPress={() => setShowDateRangePicker(false)}
+          />
+          <View style={styles.calendarModal}>
+            <View style={styles.calendarHeader}>
+              <Text style={styles.calendarTitle}>
+                {dateSelectionStep === 'start' ? 'Pilih Tanggal Mulai' : 'Pilih Tanggal Selesai'}
+              </Text>
+              <TouchableOpacity onPress={() => setShowDateRangePicker(false)}>
+                <Ionicons name="close" size={24} color="#666" />
+              </TouchableOpacity>
             </View>
+            <CustomCalendar
+              events={[]}
+              onDatePress={(date) => {
+                const dateString = date.toISOString().split('T')[0];
+                if (dateSelectionStep === 'start') {
+                  setDateRange({...dateRange, start: dateString});
+                  setDateSelectionStep('end');
+                } else {
+                  setDateRange({...dateRange, end: dateString});
+                  setSelectedDateFilter('pilih_tanggal');
+                  setShowDateRangePicker(false);
+                  setDateSelectionStep('start');
+                }
+              }}
+            />
           </View>
-        </Modal>
-      )}
-      
-      {showEndDatePicker && (
-        <Modal visible={showEndDatePicker} transparent>
-          <View style={styles.modalOverlay}>
-            <View style={styles.calendarModal}>
-              <View style={styles.calendarHeader}>
-                <Text style={styles.calendarTitle}>Pilih Tanggal Selesai</Text>
-                <TouchableOpacity onPress={() => setShowEndDatePicker(false)}>
-                  <Ionicons name="close" size={24} color="#666" />
-                </TouchableOpacity>
-              </View>
-              <Calendar
-                onDayPress={(day) => {
-                  setDateRange({...dateRange, end: day.dateString});
-                  setShowEndDatePicker(false);
-                }}
-                minDate={dateRange.start || undefined}
-                maxDate={new Date().toISOString().split('T')[0]}
-                theme={{
-                  backgroundColor: '#ffffff',
-                  calendarBackground: '#ffffff',
-                  textSectionTitleColor: '#004643',
-                  selectedDayBackgroundColor: '#004643',
-                  selectedDayTextColor: '#ffffff',
-                  todayTextColor: '#004643',
-                  dayTextColor: '#2d4150',
-                  textDisabledColor: '#d9e1e8',
-                  arrowColor: '#004643',
-                  monthTextColor: '#004643'
-                }}
-              />
-            </View>
-          </View>
-        </Modal>
-      )}
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -550,6 +487,13 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center'
+  },
+  modalBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   calendarModal: {
     backgroundColor: '#fff',

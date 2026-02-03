@@ -599,10 +599,14 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingHorizontal: 15,
     elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2
+    ...(Platform.OS === 'web' ? {
+      boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.1)'
+    } : {
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 2
+    })
   },
   input: {
     flex: 1,
@@ -622,10 +626,14 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 10,
     elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 1
+    ...(Platform.OS === 'web' ? {
+      boxShadow: '0px 1px 1px rgba(0, 0, 0, 0.1)'
+    } : {
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 1
+    })
   },
   mapBtnText: {
     fontSize: 14,
@@ -658,11 +666,15 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderTopWidth: 1,
     borderTopColor: '#e0e0e0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
     elevation: 5,
+    ...(Platform.OS === 'web' ? {
+      boxShadow: '0px -2px 4px rgba(0, 0, 0, 0.1)'
+    } : {
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: -2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4
+    }),
   },
   submitBtn: {
     backgroundColor: '#004643',
@@ -709,10 +721,14 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginTop: 8,
     elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2
+    ...(Platform.OS === 'web' ? {
+      boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.1)'
+    } : {
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 2
+    })
   },
   searchResultItem: {
     flexDirection: 'row',
@@ -767,10 +783,14 @@ const styles = StyleSheet.create({
     borderBottomColor: '#F0F0F0',
     backgroundColor: '#fff',
     elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4
+    ...(Platform.OS === 'web' ? {
+      boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)'
+    } : {
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4
+    })
   },
   backButton: {
     padding: 10,

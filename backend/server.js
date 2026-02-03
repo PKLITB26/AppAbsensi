@@ -107,6 +107,10 @@ const startServer = async () => {
       console.log(`   PUT  /admin/pengaturan/api/lokasi-kantor/:id`);
       console.log(`   DEL  /admin/pengaturan/api/lokasi-kantor/:id`);
       console.log(`   GET  /admin/presensi/api/tracking`);
+      console.log(`   GET  /admin/kelola-dinas/api/dinas-aktif`);
+      console.log(`   POST /admin/kelola-dinas/api/create-dinas`);
+      console.log(`   GET  /admin/kelola-dinas/api/riwayat-dinas`);
+      console.log(`   GET  /admin/kelola-dinas/api/validasi-absen`);
       console.log(`   GET  /admin/kelola-dinas/api/stats`);
       console.log(`\n🔄 Ready to serve HadirinApp mobile app\n`);
     });
