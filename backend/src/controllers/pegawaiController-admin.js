@@ -3,7 +3,7 @@ const bcrypt = require('bcryptjs');
 
 const getPegawaiData = async (req, res) => {
   try {
-    const db = getConnection();
+    const db = await getConnection();
     
     const [rows] = await db.execute(`
       SELECT 
@@ -47,7 +47,7 @@ const getPegawaiData = async (req, res) => {
 // Kelola Pegawai - GET all employees
 const getKelolaPegawai = async (req, res) => {
   try {
-    const db = getConnection();
+    const db = await getConnection();
     
     const [rows] = await db.execute(`
       SELECT u.id_user, u.email, u.role, p.nama_lengkap, p.nip, p.jabatan, p.divisi, p.status_pegawai 
@@ -72,7 +72,7 @@ const createKelolaPegawai = async (req, res) => {
   try {
     const { email, password, role, nama_lengkap, nip, jenis_kelamin, jabatan, divisi, no_telepon, alamat, tanggal_lahir } = req.body;
     
-    const db = getConnection();
+    const db = await getConnection();
     await db.beginTransaction();
     
     try {
@@ -113,7 +113,7 @@ const deleteKelolaPegawai = async (req, res) => {
   try {
     const { id_user } = req.body;
     
-    const db = getConnection();
+    const db = await getConnection();
     await db.beginTransaction();
     
     try {
@@ -152,7 +152,7 @@ const getDetailPegawai = async (req, res) => {
       });
     }
 
-    const db = getConnection();
+    const db = await getConnection();
     
     // Query dengan JOIN untuk mendapatkan data lengkap
     let [rows] = await db.execute(`
@@ -244,7 +244,7 @@ const createPegawai = async (req, res) => {
       }
     }
 
-    const db = getConnection();
+    const db = await getConnection();
     
     try {
       await db.beginTransaction();
@@ -290,7 +290,7 @@ const createPegawai = async (req, res) => {
 const deletePegawai = async (req, res) => {
   try {
     const { id } = req.params;
-    const db = getConnection();
+    const db = await getConnection();
 
     // Get user_id first
     const [pegawaiRows] = await db.execute('SELECT id_user FROM pegawai WHERE id_pegawai = ?', [id]);
@@ -329,7 +329,7 @@ const updatePegawai = async (req, res) => {
     const { id } = req.params;
     const { nama_lengkap, nip, email, jenis_kelamin, jabatan, divisi, no_telepon, alamat, tanggal_lahir } = req.body;
 
-    const db = getConnection();
+    const db = await getConnection();
 
     // Get user_id first
     const [pegawaiRows] = await db.execute('SELECT id_user FROM pegawai WHERE id_pegawai = ?', [id]);

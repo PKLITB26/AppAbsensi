@@ -24,7 +24,7 @@ const getPresensi = async (req, res) => {
       return res.json({ success: false, message: 'User ID diperlukan' });
     }
 
-    const db = getConnection();
+    const db = await getConnection();
 
     // Get today's attendance
     const [todayRows] = await db.execute(
@@ -60,7 +60,7 @@ const submitPresensi = async (req, res) => {
       return res.json({ success: false, message: 'Data tidak lengkap' });
     }
 
-    const db = getConnection();
+    const db = await getConnection();
 
     // Validasi lokasi
     let lokasi_valid = false;

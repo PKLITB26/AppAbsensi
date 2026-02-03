@@ -2,7 +2,7 @@ const { getConnection } = require('../config/database');
 
 const getApproval = async (req, res) => {
   try {
-    const db = getConnection();
+    const db = await getConnection();
 
     // Get pengajuan from pegawai only (exclude admin) - ONLY PENDING status
     const [results] = await db.execute(`
@@ -48,7 +48,7 @@ const updateApproval = async (req, res) => {
       return res.json({ success: false, message: 'Status tidak valid' });
     }
 
-    const db = getConnection();
+    const db = await getConnection();
 
     const [result] = await db.execute(`
       UPDATE pengajuan 

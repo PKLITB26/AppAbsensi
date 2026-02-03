@@ -2,7 +2,7 @@ const { getConnection } = require('../config/database');
 
 const getLokasiKantor = async (req, res) => {
   try {
-    const db = getConnection();
+    const db = await getConnection();
     
     const [locations] = await db.execute(`
       SELECT 
@@ -61,7 +61,7 @@ const createLokasiKantor = async (req, res) => {
       }
     }
 
-    const db = getConnection();
+    const db = await getConnection();
 
     const [result] = await db.execute(`
       INSERT INTO lokasi_kantor (
@@ -112,7 +112,7 @@ const updateLokasiKantor = async (req, res) => {
       }
     }
 
-    const db = getConnection();
+    const db = await getConnection();
 
     // Check if location exists
     const [checkRows] = await db.execute('SELECT id FROM lokasi_kantor WHERE id = ?', [id]);
@@ -158,7 +158,7 @@ const updateLokasiKantor = async (req, res) => {
 const deleteLokasiKantor = async (req, res) => {
   try {
     const { id } = req.params;
-    const db = getConnection();
+    const db = await getConnection();
 
     // Cek penggunaan di dinas_lokasi
     const [countRows] = await db.execute('SELECT COUNT(*) as count FROM dinas_lokasi WHERE id_lokasi = ?', [id]);
@@ -198,7 +198,7 @@ const deleteLokasiKantor = async (req, res) => {
 // Jam Kerja functions
 const getJamKerja = async (req, res) => {
   try {
-    const db = getConnection();
+    const db = await getConnection();
     
     const [data] = await db.execute(`
       SELECT hari, jam_masuk, batas_absen, jam_pulang, is_kerja 
@@ -237,7 +237,7 @@ const saveJamKerja = async (req, res) => {
       });
     }
 
-    const db = getConnection();
+    const db = await getConnection();
     await db.beginTransaction();
 
     try {
@@ -283,7 +283,7 @@ const saveJamKerja = async (req, res) => {
 // Hari Libur functions
 const getHariLibur = async (req, res) => {
   try {
-    const db = getConnection();
+    const db = await getConnection();
     
     const [data] = await db.execute(`
       SELECT * FROM hari_libur 
@@ -316,7 +316,7 @@ const createHariLibur = async (req, res) => {
       });
     }
 
-    const db = getConnection();
+    const db = await getConnection();
 
     // Check if holiday already exists
     const [checkRows] = await db.execute(
@@ -365,7 +365,7 @@ const deleteHariLibur = async (req, res) => {
       });
     }
 
-    const db = getConnection();
+    const db = await getConnection();
 
     const [result] = await db.execute(
       'UPDATE hari_libur SET is_active = 0 WHERE id = ?',

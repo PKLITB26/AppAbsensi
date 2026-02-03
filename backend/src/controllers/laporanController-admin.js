@@ -3,7 +3,7 @@ const { getConnection } = require('../config/database');
 const getLaporan = async (req, res) => {
   try {
     const { type } = req.query;
-    const db = getConnection();
+    const db = await getConnection();
 
     // Jika tidak ada type, return statistik untuk dashboard
     if (!type) {
@@ -132,7 +132,7 @@ const getDetailAbsenPegawai = async (req, res) => {
       return res.json({ success: false, message: 'ID pegawai diperlukan' });
     }
     
-    const db = getConnection();
+    const db = await getConnection();
     
     // Ambil data pegawai
     const [pegawaiRows] = await db.execute('SELECT p.nama_lengkap, p.nip, p.id_user FROM pegawai p WHERE p.id_pegawai = ?', [id]);
@@ -217,7 +217,7 @@ const getDetailAbsenPegawai = async (req, res) => {
 const getDetailLaporan = async (req, res) => {
   try {
     const { type = 'absen', id, date, start_date, end_date } = req.query;
-    const db = getConnection();
+    const db = await getConnection();
     
     // Jika ada ID, ambil detail single record
     if (id && type === 'dinas') {
@@ -269,7 +269,7 @@ const getDetailAbsen = async (req, res) => {
       return res.json({ success: false, message: 'Tanggal dan User ID diperlukan' });
     }
     
-    const db = getConnection();
+    const db = await getConnection();
     
     // Query untuk mengambil detail absen
     const [rows] = await db.execute(`
@@ -347,7 +347,7 @@ const exportPDF = async (req, res) => {
     const startDate = start_date || currentDate;
     const endDate = end_date || currentDate;
     
-    const db = getConnection();
+    const db = await getConnection();
     let filename = '';
     let data = [];
     

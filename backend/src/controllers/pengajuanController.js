@@ -8,7 +8,7 @@ const getPengajuan = async (req, res) => {
       return res.json({ success: false, message: 'User ID diperlukan' });
     }
 
-    const db = getConnection();
+    const db = await getConnection();
 
     const [pengajuan] = await db.execute(
       'SELECT * FROM pengajuan WHERE id_user = ? ORDER BY tanggal_pengajuan DESC',
@@ -34,7 +34,7 @@ const submitPengajuan = async (req, res) => {
       return res.json({ success: false, message: 'Data tidak lengkap' });
     }
 
-    const db = getConnection();
+    const db = await getConnection();
     const tanggal_pengajuan = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
     const [result] = await db.execute(`

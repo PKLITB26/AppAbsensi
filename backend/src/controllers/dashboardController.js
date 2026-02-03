@@ -8,7 +8,7 @@ const getDashboard = async (req, res) => {
       return res.json({ success: false, message: 'User ID diperlukan' });
     }
 
-    const db = getConnection();
+    const db = await getConnection();
     
     // Get pegawai info
     const [pegawaiRows] = await db.execute(`

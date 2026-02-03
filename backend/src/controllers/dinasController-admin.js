@@ -2,7 +2,7 @@ const { getConnection } = require('../config/database');
 
 const getDinasAktifAdmin = async (req, res) => {
   try {
-    const db = getConnection();
+    const db = await getConnection();
 
     const [rows] = await db.execute(`
       SELECT d.*, 
@@ -89,7 +89,7 @@ const createDinasAdmin = async (req, res) => {
       });
     }
 
-    const db = getConnection();
+    const db = await getConnection();
 
     // Get valid admin user ID for created_by
     const [adminRows] = await db.execute('SELECT id_user FROM users WHERE role = "admin" ORDER BY id_user LIMIT 1');
@@ -181,7 +181,7 @@ const createDinasAdmin = async (req, res) => {
 
 const getRiwayatDinasAdmin = async (req, res) => {
   try {
-    const db = getConnection();
+    const db = await getConnection();
 
     const [rows] = await db.execute(`
       SELECT d.*, 
@@ -208,7 +208,7 @@ const getRiwayatDinasAdmin = async (req, res) => {
 
 const getValidasiAbsenAdmin = async (req, res) => {
   try {
-    const db = getConnection();
+    const db = await getConnection();
 
     const [rows] = await db.execute(`
       SELECT ad.*, p.nama_lengkap, p.nip, d.nama_kegiatan

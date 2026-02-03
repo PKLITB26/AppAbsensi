@@ -8,7 +8,7 @@ const getProfile = async (req, res) => {
       return res.json({ success: false, message: 'User ID diperlukan' });
     }
 
-    const db = getConnection();
+    const db = await getConnection();
 
     // First check if user exists
     const [userRows] = await db.execute('SELECT id_user, email, role FROM users WHERE id_user = ?', [user_id]);
@@ -66,7 +66,7 @@ const updateProfile = async (req, res) => {
       return res.json({ success: false, message: 'User ID diperlukan' });
     }
 
-    const db = getConnection();
+    const db = await getConnection();
 
     // Check if pegawai record exists
     const [checkRows] = await db.execute('SELECT id_user FROM pegawai WHERE id_user = ?', [user_id]);

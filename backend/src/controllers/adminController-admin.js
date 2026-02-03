@@ -4,7 +4,7 @@ const { getConnection } = require('../config/database');
 const getAdminData = async (req, res) => {
   try {
     const { user_id } = req.query;
-    const db = getConnection();
+    const db = await getConnection();
 
     // Get admin info
     let adminQuery = 'SELECT id_user, email, role FROM users WHERE role = "admin"';
@@ -103,7 +103,7 @@ const updateAdminProfile = async (req, res) => {
       return res.json({ success: false, message: 'Email harus diisi' });
     }
 
-    const db = getConnection();
+    const db = await getConnection();
 
     // Update email
     await db.execute('UPDATE users SET email = ? WHERE id_user = ?', [email, user_id]);

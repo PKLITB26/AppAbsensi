@@ -261,83 +261,45 @@ const styles = StyleSheet.create({
     marginBottom: 30,
     marginTop: Platform.OS === 'android' ? 10 : 0
   },
-  emptyState: { 
-    alignItems: 'center', 
-    paddingVertical: Platform.OS === 'android' ? 30 : 40 
-  },
-  emptyText: { 
-    fontSize: Platform.OS === 'android' ? 13 : 14, 
-    color: '#999', 
-    marginTop: 10,
-    textAlign: 'center',
-    lineHeight: Platform.OS === 'android' ? 16 : 18
-  },
-});
-: 'center'
-  },
-  statNumber: {
-    fontSize: Platform.OS === 'android' ? 20 : 24,
+  sectionTitle: {
+    fontSize: Platform.OS === 'android' ? 15 : 16,
     fontWeight: 'bold',
     color: '#333',
-    marginBottom: 4,
-    lineHeight: Platform.OS === 'android' ? 24 : 28
+    marginBottom: 12,
+    lineHeight: Platform.OS === 'android' ? 18 : 20
   },
-  statLabel: {
-    fontSize: Platform.OS === 'android' ? 11 : 12,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 2,
-    textAlign: 'center',
-    lineHeight: Platform.OS === 'android' ? 14 : 16
+  statsSection: {
+    paddingHorizontal: 20,
+    marginBottom: 20,
+    marginTop: Platform.OS === 'android' ? 5 : 10
   },
-  statSubtext: {
-    fontSize: Platform.OS === 'android' ? 9 : 10,
-    color: '#666',
-    textAlign: 'center',
-    lineHeight: Platform.OS === 'android' ? 12 : 14
-  },
-
-  menuSection: { 
-    marginTop: -10, 
-    marginHorizontal: 20, 
-    backgroundColor: '#fff', 
-    borderRadius: 16, 
-    padding: 20,
-    elevation: 4,
+  statsList: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
-    shadowRadius: 8,
-    marginBottom: 20
+    shadowRadius: 2
   },
-  mainMenuRow: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    paddingHorizontal: Platform.OS === 'ios' ? 5 : 0,
+  statsItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0'
   },
-  mainMenuItem: { 
-    width: Platform.OS === 'ios' ? '30%' : '31%', 
-    alignItems: 'center' 
+  statsLabel: {
+    flex: 1,
+    fontSize: 14,
+    color: '#333',
+    marginLeft: 12
   },
-  menuIconCircle: { 
-    width: Platform.OS === 'ios' ? 52 : 56, 
-    height: Platform.OS === 'ios' ? 52 : 56, 
-    borderRadius: 16, 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    marginBottom: 8 
-  },
-  menuLabel: { 
-    fontSize: 11, 
-    color: '#444', 
-    fontWeight: '500', 
-    textAlign: 'center' 
-  },
-
-  recentSection: { 
-    paddingHorizontal: 20, 
-    marginBottom: 30,
-    marginTop: Platform.OS === 'android' ? 10 : 0
+  statsNumber: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#004643'
   },
   emptyState: { 
     alignItems: 'center', 
@@ -349,5 +311,5 @@ const styles = StyleSheet.create({
     marginTop: 10,
     textAlign: 'center',
     lineHeight: Platform.OS === 'android' ? 16 : 18
-  },
+  }
 });

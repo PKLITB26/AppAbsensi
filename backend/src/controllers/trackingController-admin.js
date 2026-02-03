@@ -2,7 +2,7 @@ const { getConnection } = require('../config/database');
 
 const getTracking = async (req, res) => {
   try {
-    const db = getConnection();
+    const db = await getConnection();
 
     // Get tracking data for pegawai only (exclude admin)
     const [results] = await db.execute(`

@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, StatusBar, ScrollView, TouchableOpacity, TextInput, Alert, Modal, ActivityIndicator, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, ActivityIndicator, Platform } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { PengaturanAPI } from '../../constants/config';
 import * as Location from 'expo-location';
 import { NetworkDiagnostic } from '../../components/NetworkDiagnostic';
+import { AppHeader } from '../../components';
 
 export default function TambahLokasiScreen() {
   const router = useRouter();
@@ -381,22 +383,15 @@ export default function TambahLokasiScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
-      
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <TouchableOpacity 
-            style={styles.backBtn}
-            onPress={() => router.back()}
-          >
-            <Ionicons name="arrow-back" size={24} color="#004643" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Tambah Lokasi</Text>
-        </View>
-      </View>
+    <View style={styles.container}>
+      <StatusBar style="dark" translucent={true} backgroundColor="transparent" />
+      <AppHeader 
+        title="Tambah Lokasi"
+        showBack={true}
+        fallbackRoute="/pengaturan"
+      />
 
-      <ScrollView style={styles.content}>
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {/* Network Diagnostic */}
         <NetworkDiagnostic />
         
@@ -517,8 +512,7 @@ export default function TambahLokasiScreen() {
         </View>
       </ScrollView>
 
-      {/* Sticky Save Button */}
-      <View style={styles.stickyFooter}>
+      <View style={styles.buttonFooter}>
         <TouchableOpacity 
           style={[styles.submitBtn, loading && styles.submitBtnDisabled]} 
           onPress={handleSave}
@@ -534,51 +528,19 @@ export default function TambahLokasiScreen() {
           )}
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFB' },
-  header: { 
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 1000,
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    paddingHorizontal: 20,
-    paddingTop: 50,
-    paddingBottom: 15,
-    backgroundColor: '#fff',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1
-  },
-  backBtn: {
-    padding: 10,
-    marginRight: 15,
-    borderRadius: 10,
-    backgroundColor: '#F5F5F5'
-  },
-  headerTitle: { 
-    fontSize: 20, 
-    fontWeight: 'bold', 
-    color: '#004643' 
-  },
   content: {
     flex: 1,
-    paddingBottom: 120,
-    paddingTop: 12,
-    marginTop: 120
+    paddingHorizontal: 5,
+    paddingTop: 20,
+  },
+  scrollContent: {
+    paddingBottom: 20,
   },
   infoCard: {
     backgroundColor: '#F0F8F7',
@@ -693,32 +655,37 @@ const styles = StyleSheet.create({
     marginTop: 4,
     marginLeft: 4
   },
-  stickyFooter: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'rgba(248, 250, 251, 0.98)',
-    paddingHorizontal: 20,
-    paddingTop: 15,
-    paddingBottom: 30
+  buttonFooter: {
+    backgroundColor: 'white',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 5,
   },
   submitBtn: {
     backgroundColor: '#004643',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
-    borderRadius: 12
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    minHeight: 50
   },
   submitBtnDisabled: {
     backgroundColor: '#ccc'
   },
   submitText: {
     color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginLeft: 8
+    fontSize: 15,
+    fontWeight: '600',
+    marginLeft: 6,
+    textAlign: 'center'
   },
   searchContainer: {
     padding: 15,
@@ -788,25 +755,7 @@ const styles = StyleSheet.create({
     color: '#4CAF50',
     fontWeight: '500'
   },
-  saveBtn: {
-    flexDirection: 'row',
-    backgroundColor: '#004643',
-    padding: 15,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 10,
-    marginBottom: 30
-  },
-  saveBtnDisabled: {
-    backgroundColor: '#999'
-  },
-  saveBtnText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginLeft: 8
-  },
+
   mapModalContainer: {
     flex: 1,
     backgroundColor: '#fff'

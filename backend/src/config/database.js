@@ -5,21 +5,31 @@ const dbConfig = {
   user: 'root',
   password: '',
   database: 'hadirin_db',
-  charset: 'utf8'
+  charset: 'utf8',
+  connectionLimit: 10,
+  acquireTimeout: 60000,
+  timeout: 60000,
+  reconnect: true
 };
 
-let connection;
+let pool;
 
 const connectDB = async () => {
   try {
-    console.log('🔄 Attempting to connect to database...');
+    console.log('🔄 Creating database connection pool...');
     console.log('📍 Host:', dbConfig.host);
     console.log('👤 User:', dbConfig.user);
     console.log('🗄️  Database:', dbConfig.database);
     
-    connection = await mysql.createConnection(dbConfig);
-    console.log('✅ Database connected successfully to hadirin_db');
-    return connection;
+    pool = mysql.createPool(dbConfig);
+    
+    // Test connection
+    const connection = await pool.getConnection();
+    await connection.ping();
+    connection.release();
+    
+    console.log('✅ Database pool created successfully for hadirin_db');
+    return pool;
   } catch (error) {
     console.error('❌ Database connection failed:');
     console.error('Error code:', error.code);
@@ -32,19 +42,15 @@ const connectDB = async () => {
       console.error('3. Make sure database "hadirin_db" exists\n');
     }
     
-    // Don't exit in development, just log the error
-    if (process.env.NODE_ENV !== 'development') {
-      process.exit(1);
-    }
     throw error;
   }
 };
 
-const getConnection = () => {
-  if (!connection) {
-    throw new Error('Database not connected');
+const getConnection = async () => {
+  if (!pool) {
+    await connectDB();
   }
-  return connection;
+  return pool;
 };
 
 module.exports = { connectDB, getConnection };

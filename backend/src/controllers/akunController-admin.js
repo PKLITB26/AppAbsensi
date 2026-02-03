@@ -3,7 +3,7 @@ const { getConnection } = require('../config/database');
 
 const getAkunLogin = async (req, res) => {
   try {
-    const db = getConnection();
+    const db = await getConnection();
     
     const [rows] = await db.execute(`
       SELECT u.*, p.nama_lengkap 
@@ -32,7 +32,7 @@ const createAkun = async (req, res) => {
       return res.json({ success: false, message: 'Email, password, dan role diperlukan' });
     }
     
-    const db = getConnection();
+    const db = await getConnection();
     const hashedPassword = await bcrypt.hash(password, 10);
     
     await db.execute('INSERT INTO users (email, password, role) VALUES (?, ?, ?)', [email, hashedPassword, role]);
@@ -52,7 +52,7 @@ const deleteAkun = async (req, res) => {
   try {
     const { id } = req.params;
     
-    const db = getConnection();
+    const db = await getConnection();
     await db.execute('DELETE FROM users WHERE id_user = ?', [id]);
     
     res.json({
@@ -68,7 +68,7 @@ const deleteAkun = async (req, res) => {
 
 const checkEmails = async (req, res) => {
   try {
-    const db = getConnection();
+    const db = await getConnection();
     
     const [rows] = await db.execute('SELECT email FROM users ORDER BY email ASC');
     

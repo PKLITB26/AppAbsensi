@@ -9,7 +9,7 @@ const login = async (req, res) => {
       return res.json({ success: false, message: 'Email dan password harus diisi' });
     }
 
-    const db = getConnection();
+    const db = await getConnection();
     const [rows] = await db.execute('SELECT * FROM users WHERE email = ?', [email]);
     const user = rows[0];
 
@@ -40,7 +40,7 @@ const getProfile = async (req, res) => {
       return res.json({ success: false, message: 'User ID diperlukan' });
     }
 
-    const db = getConnection();
+    const db = await getConnection();
     const [rows] = await db.execute('SELECT * FROM users WHERE id_user = ?', [user_id]);
     const user = rows[0];
 
