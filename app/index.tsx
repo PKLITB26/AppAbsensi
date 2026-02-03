@@ -86,18 +86,18 @@ export default function LoginScreen() {
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 800,
-        useNativeDriver: true,
+        useNativeDriver: false,
       }),
       Animated.spring(logoAnim, {
         toValue: 1,
         tension: 50,
         friction: 7,
-        useNativeDriver: true,
+        useNativeDriver: false,
       }),
       Animated.timing(formAnim, {
         toValue: 0,
         duration: 600,
-        useNativeDriver: true,
+        useNativeDriver: false,
       })
     ]).start();
   }, []);
@@ -113,12 +113,12 @@ export default function LoginScreen() {
       Animated.timing(buttonScale, {
         toValue: 0.95,
         duration: 100,
-        useNativeDriver: true,
+        useNativeDriver: false,
       }),
       Animated.timing(buttonScale, {
         toValue: 1,
         duration: 100,
-        useNativeDriver: true,
+        useNativeDriver: false,
       })
     ]).start();
 
@@ -334,8 +334,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 2,
     borderColor: '#004643',
-    boxShadow: '0 4px 8px rgba(0, 70, 67, 0.15)',
-    elevation: 6
+    elevation: 6,
+    shadowColor: '#004643',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8
   },
   logoImage: {
     width: 140,
@@ -368,13 +371,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16, 
     marginBottom: 16,
     height: 58,
-    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)',
-    elevation: 2
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4
   },
   inputFocused: {
     borderColor: '#004643',
-    boxShadow: '0 6px 12px rgba(0, 70, 67, 0.1)',
-    elevation: 4
+    elevation: 4,
+    shadowColor: '#004643',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12
   },
   inputIcon: { 
     marginRight: 12 
@@ -420,12 +429,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center', 
     alignItems: 'center',
     marginTop: 10,
-    boxShadow: '0 4px 8px rgba(0, 70, 67, 0.3)',
-    elevation: 6
+    elevation: 6,
+    shadowColor: '#004643',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8
   },
   loginBtnDisabled: {
     backgroundColor: '#7A9B99',
-    boxShadow: '0 4px 8px rgba(0, 70, 67, 0.1)',
+    shadowColor: '#004643',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
   },
   loginText: { 
     color: '#fff', 

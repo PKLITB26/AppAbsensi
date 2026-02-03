@@ -627,17 +627,22 @@ const styles = StyleSheet.create({
   },
   saveBtn: {
     backgroundColor: '#004643',
-    padding: 15,
-    borderRadius: 12,
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 10
+    justifyContent: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    minHeight: 50
   },
   saveBtnDisabled: {
     backgroundColor: '#999'
   },
   saveBtnText: {
     color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold'
+    fontSize: 15,
+    fontWeight: '600',
+    marginLeft: 6,
+    textAlign: 'center'
   }
 });

@@ -267,16 +267,16 @@ export default function JamKerjaScreen() {
         </ScrollView>
       </View>
 
-      {/* Sticky Save Button */}
-      <View style={styles.stickyFooter}>
+      {/* Button Footer - Fixed di bawah seperti header */}
+      <View style={styles.buttonFooter}>
         <TouchableOpacity
           style={[styles.saveBtn, loading && styles.saveBtnDisabled]}
           onPress={handleSave}
           disabled={loading}
         >
-          <Ionicons name="checkmark-circle" size={20} color="#fff" />
+          <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
           <Text style={styles.saveBtnText}>
-            {loading ? "Menyimpan..." : "Simpan"}
+            {loading ? "Menyimpan..." : "Simpan Jam Kerja"}
           </Text>
         </TouchableOpacity>
       </View>
@@ -484,31 +484,36 @@ const styles = StyleSheet.create({
     backgroundColor: "#F5F5F5",
   },
   saveBtn: {
-    flexDirection: "row",
     backgroundColor: "#004643",
-    paddingVertical: 16,
-    borderRadius: 12,
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    minHeight: 50
   },
   saveBtnDisabled: {
     backgroundColor: "#999",
   },
   saveBtnText: {
     color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
-    marginLeft: 8,
+    fontSize: 15,
+    fontWeight: "600",
+    marginLeft: 6,
+    textAlign: "center"
   },
-  stickyFooter: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: "rgba(248, 250, 251, 0.98)",
-    paddingHorizontal: 20,
-    paddingTop: 15,
-    paddingBottom: 30,
+  buttonFooter: {
+    backgroundColor: 'white',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 5,
   },
   modalOverlay: {
     flex: 1,

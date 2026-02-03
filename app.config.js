@@ -4,56 +4,28 @@ export default {
     slug: "HadirinApp", 
     version: "1.0.0",
     orientation: "portrait",
-    icon: "./assets/images/hadir.in.jpeg",
-    scheme: "hadir.in",
-    userInterfaceStyle: "automatic",
+    icon: "./assets/images/icon.png",
+    userInterfaceStyle: "light",
+    splash: {
+      image: "./assets/images/splash-icon.png",
+      resizeMode: "contain",
+      backgroundColor: "#ffffff"
+    },
     ios: {
-      supportsTablet: true,
-      infoPlist: {
-        NSLocationWhenInUseUsageDescription: "HadirinApp memerlukan akses lokasi untuk mencatat kehadiran Anda.",
-        NSLocationAlwaysAndWhenInUseUsageDescription: "HadirinApp memerlukan akses lokasi untuk mencatat kehadiran Anda."
-      }
+      supportsTablet: true
     },
     android: {
       adaptiveIcon: {
-        backgroundColor: "#E6F4FE",
-        foregroundImage: "./assets/images/android-icon-foreground.png",
-        backgroundImage: "./assets/images/android-icon-background.png",
-        monochromeImage: "./assets/images/android-icon-monochrome.png"
-      },
-      permissions: [
-        "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION"
-      ],
-      edgeToEdgeEnabled: true,
-      predictiveBackGestureEnabled: false
+        foregroundImage: "./assets/images/icon.png",
+        backgroundColor: "#ffffff"
+      }
     },
     web: {
       output: "static",
       favicon: "./assets/images/favicon.png"
     },
     plugins: [
-      "expo-router",
-      [
-        "expo-splash-screen",
-        {
-          image: "./assets/images/splash-icon.png",
-          imageWidth: 200,
-          resizeMode: "contain",
-          backgroundColor: "#ffffff",
-          dark: {
-            backgroundColor: "#000000"
-          }
-        }
-      ],
-      "@react-native-community/datetimepicker",
-      [
-        "expo-location",
-        {
-          locationAlwaysAndWhenInUsePermission: "HadirinApp memerlukan akses lokasi untuk mencatat kehadiran Anda."
-        }
-      ],
-      "expo-font"
+      "expo-router"
     ],
     experiments: {
       typedRoutes: true

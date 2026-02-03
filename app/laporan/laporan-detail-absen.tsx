@@ -43,13 +43,15 @@ export default function LaporanDetailAbsenScreen() {
   const [data, setData] = useState<PegawaiAbsen[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedDateFilter, setSelectedDateFilter] = useState('semua');
-  const [showCalendar, setShowCalendar] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedDateFilter, setSelectedDateFilter] = useState('hari_ini');
+  const [showDateRangePicker, setShowDateRangePicker] = useState(false);
+  const [dateRange, setDateRange] = useState({ start: '', end: '' });
+  const [showStartDatePicker, setShowStartDatePicker] = useState(false);
+  const [showEndDatePicker, setShowEndDatePicker] = useState(false);
 
   useEffect(() => {
     fetchData();
-  }, [selectedDateFilter, searchQuery, selectedDate]);
+  }, [selectedDateFilter, searchQuery, dateRange]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -58,7 +60,8 @@ export default function LaporanDetailAbsenScreen() {
       const params = new URLSearchParams({
         type: 'absen',
         filter_date: selectedDateFilter,
-        selected_date: selectedDateFilter === 'tanggal_tertentu' ? selectedDate.toISOString().split('T')[0] : '',
+        start_date: selectedDateFilter === 'pilih_tanggal' ? dateRange.start : '',
+        end_date: selectedDateFilter === 'pilih_tanggal' ? dateRange.end : '',
         search: searchQuery
       });
       
@@ -82,55 +85,64 @@ export default function LaporanDetailAbsenScreen() {
     }
   };
 
-  const renderCalendarModal = () => (
-    <Modal visible={showCalendar} transparent>
+  const renderDateRangeModal = () => (
+    <Modal visible={showDateRangePicker} transparent>
       <View style={styles.modalOverlay}>
-        <View style={styles.calendarModal}>
-          <View style={styles.calendarHeader}>
-            <Text style={styles.calendarTitle}>Pilih Tanggal</Text>
-            <TouchableOpacity onPress={() => setShowCalendar(false)}>
+        <View style={styles.dateRangeModal}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Pilih Periode Tanggal</Text>
+            <TouchableOpacity onPress={() => setShowDateRangePicker(false)}>
               <Ionicons name="close" size={24} color="#666" />
             </TouchableOpacity>
           </View>
-          <Calendar
-            onDayPress={(day) => {
-              setSelectedDate(new Date(day.dateString));
-              setSelectedDateFilter('tanggal_tertentu');
-              setShowCalendar(false);
-            }}
-            markedDates={{
-              [selectedDate.toISOString().split('T')[0]]: {
-                selected: true,
-                selectedColor: '#004643'
-              }
-            }}
-            maxDate={new Date().toISOString().split('T')[0]}
-            theme={{
-              backgroundColor: '#ffffff',
-              calendarBackground: '#ffffff',
-              textSectionTitleColor: '#004643',
-              selectedDayBackgroundColor: '#004643',
-              selectedDayTextColor: '#ffffff',
-              todayTextColor: '#004643',
-              dayTextColor: '#2d4150',
-              textDisabledColor: '#d9e1e8',
-              dotColor: '#004643',
-              selectedDotColor: '#ffffff',
-              arrowColor: '#004643',
-              disabledArrowColor: '#d9e1e8',
-              monthTextColor: '#004643',
-              indicatorColor: '#004643',
-              textDayFontFamily: 'System',
-              textMonthFontFamily: 'System',
-              textDayHeaderFontFamily: 'System',
-              textDayFontWeight: '400',
-              textMonthFontWeight: 'bold',
-              textDayHeaderFontWeight: '600',
-              textDayFontSize: 16,
-              textMonthFontSize: 18,
-              textDayHeaderFontSize: 14
-            }}
-          />
+          
+          <View style={styles.dateInputs}>
+            <View style={styles.dateInputGroup}>
+              <Text style={styles.dateLabel}>Tanggal Mulai</Text>
+              <TouchableOpacity 
+                style={styles.dateInput}
+                onPress={() => setShowStartDatePicker(true)}
+              >
+                <Text style={styles.dateInputText}>
+                  {dateRange.start ? new Date(dateRange.start).toLocaleDateString('id-ID') : 'Pilih tanggal mulai'}
+                </Text>
+                <Ionicons name="calendar-outline" size={20} color="#004643" />
+              </TouchableOpacity>
+            </View>
+            
+            <View style={styles.dateInputGroup}>
+              <Text style={styles.dateLabel}>Tanggal Selesai</Text>
+              <TouchableOpacity 
+                style={styles.dateInput}
+                onPress={() => setShowEndDatePicker(true)}
+              >
+                <Text style={styles.dateInputText}>
+                  {dateRange.end ? new Date(dateRange.end).toLocaleDateString('id-ID') : 'Pilih tanggal selesai'}
+                </Text>
+                <Ionicons name="calendar-outline" size={20} color="#004643" />
+              </TouchableOpacity>
+            </View>
+          </View>
+          
+          <View style={styles.modalButtons}>
+            <TouchableOpacity 
+              style={styles.cancelBtn}
+              onPress={() => setShowDateRangePicker(false)}
+            >
+              <Text style={styles.cancelBtnText}>Batal</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.confirmBtn}
+              onPress={() => {
+                if (dateRange.start && dateRange.end) {
+                  setSelectedDateFilter('pilih_tanggal');
+                  setShowDateRangePicker(false);
+                }
+              }}
+            >
+              <Text style={styles.confirmBtnText}>Terapkan</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     </Modal>
@@ -151,7 +163,15 @@ export default function LaporanDetailAbsenScreen() {
   const renderItem = ({ item }: { item: PegawaiAbsen }) => (
     <TouchableOpacity 
       style={styles.pegawaiCard}
-      onPress={() => router.push(`/laporan/detail-absen/${item.id_pegawai}` as any)}
+      onPress={() => {
+        // Pass filter parameters to detail page
+        const params = new URLSearchParams({
+          filter: selectedDateFilter,
+          start_date: selectedDateFilter === 'pilih_tanggal' ? dateRange.start : '',
+          end_date: selectedDateFilter === 'pilih_tanggal' ? dateRange.end : ''
+        });
+        router.push(`/laporan/detail-absen/${item.id_pegawai}?${params.toString()}` as any);
+      }}
     >
       <View style={styles.cardHeader}>
         <View style={styles.avatar}>
@@ -228,11 +248,10 @@ export default function LaporanDetailAbsenScreen() {
             
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterChips}>
               {[
-                { key: 'semua', label: 'Semua' },
                 { key: 'hari_ini', label: 'Hari Ini' },
                 { key: 'minggu_ini', label: 'Minggu Ini' },
                 { key: 'bulan_ini', label: 'Bulan Ini' },
-                { key: 'tanggal_tertentu', label: 'Pilih Tanggal' }
+                { key: 'pilih_tanggal', label: 'Pilih Tanggal' }
               ].map((filter) => (
                 <TouchableOpacity
                   key={filter.key}
@@ -241,10 +260,11 @@ export default function LaporanDetailAbsenScreen() {
                     selectedDateFilter === filter.key && styles.filterChipActive
                   ]}
                   onPress={() => {
-                    if (filter.key === 'tanggal_tertentu') {
-                      setShowCalendar(true);
+                    if (filter.key === 'pilih_tanggal') {
+                      setShowDateRangePicker(true);
                     } else {
                       setSelectedDateFilter(filter.key);
+                      setDateRange({ start: '', end: '' }); // Reset date range when switching to other filters
                     }
                   }}
                 >
@@ -258,10 +278,10 @@ export default function LaporanDetailAbsenScreen() {
               ))}
             </ScrollView>
 
-            {selectedDateFilter === 'tanggal_tertentu' && (
+            {selectedDateFilter === 'pilih_tanggal' && dateRange.start && dateRange.end && (
               <View style={styles.selectedDateInfo}>
                 <Text style={styles.selectedDateText}>
-                  Tanggal terpilih: {selectedDate.toLocaleDateString('id-ID')}
+                  Periode: {new Date(dateRange.start).toLocaleDateString('id-ID')} - {new Date(dateRange.end).toLocaleDateString('id-ID')}
                 </Text>
               </View>
             )}
@@ -284,7 +304,76 @@ export default function LaporanDetailAbsenScreen() {
         </View>
       )}
       
-      {renderCalendarModal()}
+      {renderDateRangeModal()}
+      
+      {showStartDatePicker && (
+        <Modal visible={showStartDatePicker} transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.calendarModal}>
+              <View style={styles.calendarHeader}>
+                <Text style={styles.calendarTitle}>Pilih Tanggal Mulai</Text>
+                <TouchableOpacity onPress={() => setShowStartDatePicker(false)}>
+                  <Ionicons name="close" size={24} color="#666" />
+                </TouchableOpacity>
+              </View>
+              <Calendar
+                onDayPress={(day) => {
+                  setDateRange({...dateRange, start: day.dateString});
+                  setShowStartDatePicker(false);
+                }}
+                maxDate={new Date().toISOString().split('T')[0]}
+                theme={{
+                  backgroundColor: '#ffffff',
+                  calendarBackground: '#ffffff',
+                  textSectionTitleColor: '#004643',
+                  selectedDayBackgroundColor: '#004643',
+                  selectedDayTextColor: '#ffffff',
+                  todayTextColor: '#004643',
+                  dayTextColor: '#2d4150',
+                  textDisabledColor: '#d9e1e8',
+                  arrowColor: '#004643',
+                  monthTextColor: '#004643'
+                }}
+              />
+            </View>
+          </View>
+        </Modal>
+      )}
+      
+      {showEndDatePicker && (
+        <Modal visible={showEndDatePicker} transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.calendarModal}>
+              <View style={styles.calendarHeader}>
+                <Text style={styles.calendarTitle}>Pilih Tanggal Selesai</Text>
+                <TouchableOpacity onPress={() => setShowEndDatePicker(false)}>
+                  <Ionicons name="close" size={24} color="#666" />
+                </TouchableOpacity>
+              </View>
+              <Calendar
+                onDayPress={(day) => {
+                  setDateRange({...dateRange, end: day.dateString});
+                  setShowEndDatePicker(false);
+                }}
+                minDate={dateRange.start || undefined}
+                maxDate={new Date().toISOString().split('T')[0]}
+                theme={{
+                  backgroundColor: '#ffffff',
+                  calendarBackground: '#ffffff',
+                  textSectionTitleColor: '#004643',
+                  selectedDayBackgroundColor: '#004643',
+                  selectedDayTextColor: '#ffffff',
+                  todayTextColor: '#004643',
+                  dayTextColor: '#2d4150',
+                  textDisabledColor: '#d9e1e8',
+                  arrowColor: '#004643',
+                  monthTextColor: '#004643'
+                }}
+              />
+            </View>
+          </View>
+        </Modal>
+      )}
     </View>
   );
 }
@@ -481,5 +570,78 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: '#004643'
+  },
+  dateRangeModal: {
+    backgroundColor: '#fff',
+    borderRadius: 15,
+    width: '90%',
+    maxWidth: 400,
+    padding: 20
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#004643'
+  },
+  dateInputs: {
+    marginBottom: 20
+  },
+  dateInputGroup: {
+    marginBottom: 15
+  },
+  dateLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8
+  },
+  dateInput: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F8F9FA',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: '#E0E0E0'
+  },
+  dateInputText: {
+    fontSize: 14,
+    color: '#333'
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: 10
+  },
+  cancelBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    backgroundColor: '#F5F5F5',
+    alignItems: 'center'
+  },
+  cancelBtnText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666'
+  },
+  confirmBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    backgroundColor: '#004643',
+    alignItems: 'center'
+  },
+  confirmBtnText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#fff'
   },
 });

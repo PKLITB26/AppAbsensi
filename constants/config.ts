@@ -1,7 +1,7 @@
 // Konfigurasi API untuk HadirinApp - Node.js Backend
 
 const isDevelopment = __DEV__ || process.env.NODE_ENV === 'development';
-const BASE_URL = 'http://10.251.109.92:3000';
+const BASE_URL = __DEV__ ? 'http://10.251.109.92:3000' : 'http://10.251.109.92:3000';
 
 const debugLog = (message: string, data?: any) => {
   if (isDevelopment) {
@@ -28,6 +28,7 @@ export const API_CONFIG = {
     
     // Laporan
     LAPORAN: '/admin/laporan/api/laporan',
+    DETAIL_LAPORAN: '/admin/laporan/api/detail-laporan',
     DETAIL_ABSEN_PEGAWAI: '/admin/laporan/api/detail-absen-pegawai',
     DETAIL_ABSEN: '/admin/laporan/api/detail-absen',
     

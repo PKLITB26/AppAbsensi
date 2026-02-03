@@ -295,16 +295,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 14,
-    borderRadius: 10,
-    gap: 8
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    minHeight: 50
   },
   submitBtnDisabled: {
     backgroundColor: '#ccc'
   },
   submitText: {
     color: '#fff',
-    fontSize: 16,
-    fontWeight: '600'
+    fontSize: 15,
+    fontWeight: '600',
+    marginLeft: 6,
+    textAlign: 'center'
   }
 });

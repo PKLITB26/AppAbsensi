@@ -31,7 +31,7 @@ import { API_CONFIG, getApiUrl } from '../../../constants/config';
 
 export default function DetailAbsenPegawai() {
   const router = useRouter();
-  const { id } = useLocalSearchParams();
+  const { id, filter, start_date, end_date } = useLocalSearchParams();
   const [pegawai, setPegawai] = useState({ nama: '', nip: '', user_id: '' });
   const [absenData, setAbsenData] = useState<AbsenDetail[]>([]);
   const [hariLibur, setHariLibur] = useState<{tanggal: string, nama_libur: string}[]>([]);
@@ -39,14 +39,44 @@ export default function DetailAbsenPegawai() {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [detailAbsen, setDetailAbsen] = useState<any>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [showMonthPicker, setShowMonthPicker] = useState(false);
+  const [periodInfo, setPeriodInfo] = useState('');
 
   useEffect(() => {
     fetchDetailAbsen();
     fetchHariLibur();
-  }, [selectedMonth, selectedYear]);
+    generatePeriodInfo();
+  }, []);
+
+  const generatePeriodInfo = () => {
+    const today = new Date();
+    const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+    
+    switch(filter) {
+      case 'hari_ini':
+        setPeriodInfo(`${days[today.getDay()]}, ${today.getDate()} ${months[today.getMonth()]} ${today.getFullYear()}`);
+        break;
+      case 'minggu_ini':
+        const startOfWeek = new Date(today);
+        startOfWeek.setDate(today.getDate() - today.getDay());
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(startOfWeek.getDate() + 6);
+        setPeriodInfo(`Minggu, ${startOfWeek.getDate()}-${endOfWeek.getDate()} ${months[today.getMonth()]} ${today.getFullYear()}`);
+        break;
+      case 'bulan_ini':
+        setPeriodInfo(`${months[today.getMonth()]} ${today.getFullYear()}`);
+        break;
+      case 'pilih_tanggal':
+        if (start_date && end_date) {
+          const startDate = new Date(start_date as string);
+          const endDate = new Date(end_date as string);
+          setPeriodInfo(`${startDate.getDate()} ${months[startDate.getMonth()].slice(0,3)} - ${endDate.getDate()} ${months[endDate.getMonth()].slice(0,3)} ${endDate.getFullYear()}`);
+        }
+        break;
+      default:
+        setPeriodInfo('Periode tidak diketahui');
+    }
+  };
 
   const fetchHariLibur = async () => {
     try {
@@ -100,9 +130,34 @@ export default function DetailAbsenPegawai() {
   
   const fetchAbsenData = async (userId: string) => {
     try {
-      // Coba ambil data presensi untuk bulan ini
-      const startDate = new Date(selectedYear, selectedMonth - 1, 1).toISOString().split('T')[0];
-      const endDate = new Date(selectedYear, selectedMonth, 0).toISOString().split('T')[0];
+      // Determine date range based on filter
+      let startDate, endDate;
+      const today = new Date();
+      
+      switch(filter) {
+        case 'hari_ini':
+          startDate = endDate = today.toISOString().split('T')[0];
+          break;
+        case 'minggu_ini':
+          const startOfWeek = new Date(today);
+          startOfWeek.setDate(today.getDate() - today.getDay());
+          const endOfWeek = new Date(startOfWeek);
+          endOfWeek.setDate(startOfWeek.getDate() + 6);
+          startDate = startOfWeek.toISOString().split('T')[0];
+          endDate = endOfWeek.toISOString().split('T')[0];
+          break;
+        case 'bulan_ini':
+          startDate = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
+          endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().split('T')[0];
+          break;
+        case 'pilih_tanggal':
+          startDate = start_date as string;
+          endDate = end_date as string;
+          break;
+        default:
+          startDate = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
+          endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().split('T')[0];
+      }
       
       const response = await fetch(`${getApiUrl(API_CONFIG.ENDPOINTS.PEGAWAI_PRESENSI)}?user_id=${userId}&start_date=${startDate}&end_date=${endDate}`);
       const data = await response.json();
@@ -111,32 +166,36 @@ export default function DetailAbsenPegawai() {
       
       if (data.success && data.data) {
         // Transform data presensi ke format yang dibutuhkan
-        const transformedData = transformPresensiData(data.data);
+        const transformedData = transformPresensiData(data.data, startDate, endDate);
         setAbsenData(transformedData);
       } else {
         console.log('No presensi data found, using empty data');
-        // Jika tidak ada data, buat data kosong untuk bulan ini
-        const emptyData = generateEmptyAbsenData(selectedMonth, selectedYear);
+        // Jika tidak ada data, buat data kosong untuk periode yang dipilih
+        const emptyData = generateEmptyAbsenData(startDate, endDate);
         setAbsenData(emptyData);
       }
     } catch (error) {
       console.error('Error fetching absen data:', error);
       // Fallback ke data kosong
-      const emptyData = generateEmptyAbsenData(selectedMonth, selectedYear);
+      const today = new Date();
+      const startDate = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
+      const endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().split('T')[0];
+      const emptyData = generateEmptyAbsenData(startDate, endDate);
       setAbsenData(emptyData);
     }
   };
   
-  const transformPresensiData = (presensiData: any) => {
-    const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
+  const transformPresensiData = (presensiData: any, startDateStr: string, endDateStr: string) => {
+    const startDate = new Date(startDateStr);
+    const endDate = new Date(endDateStr);
     const absenData = [];
     
     // Pastikan presensiData adalah array
     const dataArray = Array.isArray(presensiData) ? presensiData : [];
     
-    for (let day = 1; day <= daysInMonth; day++) {
-      const date = new Date(selectedYear, selectedMonth - 1, day);
-      const dateString = date.toISOString().split('T')[0];
+    // Loop through each day in the date range
+    for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+      const dateString = d.toISOString().split('T')[0];
       
       // Cari data presensi untuk tanggal ini
       const presensi = dataArray.find(p => p.tanggal === dateString);
@@ -151,7 +210,7 @@ export default function DetailAbsenPegawai() {
         });
       } else {
         // Tidak ada data presensi
-        const dayOfWeek = date.getDay();
+        const dayOfWeek = d.getDay();
         const today = new Date();
         const currentTime = new Date();
         const itemDate = new Date(dateString);
@@ -204,14 +263,15 @@ export default function DetailAbsenPegawai() {
     return absenData;
   };
   
-  const generateEmptyAbsenData = (month: number, year: number) => {
-    const daysInMonth = new Date(year, month, 0).getDate();
+  const generateEmptyAbsenData = (startDateStr: string, endDateStr: string) => {
+    const startDate = new Date(startDateStr);
+    const endDate = new Date(endDateStr);
     const absenData = [];
     
-    for (let day = 1; day <= daysInMonth; day++) {
-      const date = new Date(year, month - 1, day);
-      const dateString = date.toISOString().split('T')[0];
-      const dayOfWeek = date.getDay();
+    // Loop through each day in the date range
+    for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+      const dateString = d.toISOString().split('T')[0];
+      const dayOfWeek = d.getDay();
       const today = new Date();
       const currentTime = new Date();
       const itemDate = new Date(dateString);
@@ -398,45 +458,7 @@ export default function DetailAbsenPegawai() {
     };
   };
 
-  const getMonthName = (month: number) => {
-    const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-    return months[month - 1];
-  };
 
-  const navigateMonth = (direction: 'prev' | 'next') => {
-    if (direction === 'prev') {
-      if (selectedMonth === 1) {
-        setSelectedMonth(12);
-        setSelectedYear(selectedYear - 1);
-      } else {
-        setSelectedMonth(selectedMonth - 1);
-      }
-    } else {
-      if (selectedMonth === 12) {
-        setSelectedMonth(1);
-        setSelectedYear(selectedYear + 1);
-      } else {
-        setSelectedMonth(selectedMonth + 1);
-      }
-    }
-  };
-
-  const generateMonthYearOptions = () => {
-    const months = [
-      { value: 1, label: 'Januari' }, { value: 2, label: 'Februari' }, { value: 3, label: 'Maret' },
-      { value: 4, label: 'April' }, { value: 5, label: 'Mei' }, { value: 6, label: 'Juni' },
-      { value: 7, label: 'Juli' }, { value: 8, label: 'Agustus' }, { value: 9, label: 'September' },
-      { value: 10, label: 'Oktober' }, { value: 11, label: 'November' }, { value: 12, label: 'Desember' }
-    ];
-    
-    const currentYear = new Date().getFullYear();
-    const years = [];
-    for (let i = 2020; i <= currentYear + 5; i++) {
-      years.push(i);
-    }
-    
-    return { months, years };
-  };
 
   const renderAbsenItem = ({ item }: { item: AbsenDetail }) => {
     const dateInfo = formatDate(item.tanggal);
@@ -554,90 +576,7 @@ export default function DetailAbsenPegawai() {
     );
   };
 
-  const renderMonthPicker = () => {
-    const { months, years } = generateMonthYearOptions();
-    
-    return (
-      <Modal
-        visible={showMonthPicker}
-        transparent={true}
-        animationType="none"
-        onRequestClose={() => setShowMonthPicker(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.monthPickerContainer}>
-            <View style={styles.monthPickerHeader}>
-              <Text style={styles.monthPickerTitle}>Pilih Bulan & Tahun</Text>
-              <TouchableOpacity onPress={() => setShowMonthPicker(false)}>
-                <Ionicons name="close" size={24} color="#666" />
-              </TouchableOpacity>
-            </View>
-            
-            <View style={styles.pickerRow}>
-              <View style={styles.pickerColumn}>
-                <Text style={styles.pickerLabel}>Bulan</Text>
-                <FlatList
-                  data={months}
-                  keyExtractor={(item) => item.value.toString()}
-                  renderItem={({ item }) => (
-                    <TouchableOpacity
-                      style={[
-                        styles.pickerItem,
-                        selectedMonth === item.value && styles.selectedPickerItem
-                      ]}
-                      onPress={() => setSelectedMonth(item.value)}
-                    >
-                      <Text style={[
-                        styles.pickerItemText,
-                        selectedMonth === item.value && styles.selectedPickerItemText
-                      ]}>
-                        {item.label}
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-                  showsVerticalScrollIndicator={false}
-                  style={styles.pickerList}
-                />
-              </View>
-              
-              <View style={styles.pickerColumn}>
-                <Text style={styles.pickerLabel}>Tahun</Text>
-                <FlatList
-                  data={years}
-                  keyExtractor={(item) => item.toString()}
-                  renderItem={({ item }) => (
-                    <TouchableOpacity
-                      style={[
-                        styles.pickerItem,
-                        selectedYear === item && styles.selectedPickerItem
-                      ]}
-                      onPress={() => setSelectedYear(item)}
-                    >
-                      <Text style={[
-                        styles.pickerItemText,
-                        selectedYear === item && styles.selectedPickerItemText
-                      ]}>
-                        {item}
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-                  showsVerticalScrollIndicator={false}
-                  style={styles.pickerList}
-                />
-              </View>
-            </View>
-            
-            <TouchableOpacity
-              style={styles.confirmButton}
-              onPress={() => setShowMonthPicker(false)}
-            >
-              <Text style={styles.confirmButtonText}>Konfirmasi</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-    );
-  };
+
 
   const renderDetailModal = () => {
     if (!detailAbsen) return null;
@@ -881,20 +820,14 @@ export default function DetailAbsenPegawai() {
 
 
 
-      <View style={styles.monthNavigation}>
-        <TouchableOpacity onPress={() => navigateMonth('prev')} style={styles.navButton}>
-          <Ionicons name="chevron-back" size={20} color="#004643" />
-        </TouchableOpacity>
-        
-        <TouchableOpacity onPress={() => setShowMonthPicker(true)} style={styles.monthButton}>
-          <Ionicons name="calendar" size={16} color="#004643" />
-          <Text style={styles.monthText}>{getMonthName(selectedMonth)} {selectedYear}</Text>
-          <Ionicons name="chevron-down" size={16} color="#004643" />
-        </TouchableOpacity>
-        
-        <TouchableOpacity onPress={() => navigateMonth('next')} style={styles.navButton}>
-          <Ionicons name="chevron-forward" size={20} color="#004643" />
-        </TouchableOpacity>
+      <View style={styles.periodInfo}>
+        <View style={styles.periodHeader}>
+          <Ionicons name="calendar-outline" size={20} color="#004643" />
+          <Text style={styles.periodTitle}>Periode Laporan</Text>
+        </View>
+        <Text style={styles.periodText}>
+          {periodInfo}
+        </Text>
       </View>
 
       <FlatList
@@ -904,8 +837,6 @@ export default function DetailAbsenPegawai() {
         contentContainerStyle={styles.listContainer}
         showsVerticalScrollIndicator={false}
       />
-      
-      {renderMonthPicker()}
       {renderDetailModal()}
     </View>
   );
@@ -953,37 +884,32 @@ const styles = StyleSheet.create({
     color: '#666',
     fontWeight: '500',
   },
-  monthNavigation: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+  periodInfo: {
+    backgroundColor: '#F0F8F7',
     marginHorizontal: 20,
     marginBottom: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
-    backgroundColor: '#fff',
+    borderColor: '#E0F2F1',
   },
-  navButton: {
-    padding: 10,
-    borderRadius: 8,
-    backgroundColor: '#F5F5F5',
-  },
-  monthButton: {
+  periodHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    backgroundColor: '#F0F8F7',
-    borderRadius: 8,
-    gap: 6,
+    marginBottom: 4,
   },
-  monthText: {
+  periodTitle: {
     fontSize: 14,
     fontWeight: '600',
     color: '#004643',
+    marginLeft: 8,
+  },
+  periodText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#004643',
+    textAlign: 'center',
   },
   listContainer: {
     paddingHorizontal: 20,
@@ -1075,72 +1001,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 20,
-  },
-  monthPickerContainer: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 20,
-    width: '100%',
-    maxWidth: 400,
-    maxHeight: '70%',
-  },
-  monthPickerHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  monthPickerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-  },
-  pickerRow: {
-    flexDirection: 'row',
-    gap: 20,
-  },
-  pickerColumn: {
-    flex: 1,
-  },
-  pickerLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 10,
-    textAlign: 'center',
-  },
-  pickerList: {
-    maxHeight: 200,
-  },
-  pickerItem: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    marginBottom: 4,
-  },
-  selectedPickerItem: {
-    backgroundColor: '#004643',
-  },
-  pickerItemText: {
-    fontSize: 14,
-    color: '#333',
-    textAlign: 'center',
-  },
-  selectedPickerItemText: {
-    color: 'white',
-    fontWeight: '600',
-  },
-  confirmButton: {
-    backgroundColor: '#004643',
-    paddingVertical: 12,
-    borderRadius: 8,
-    marginTop: 20,
-  },
-  confirmButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
-    textAlign: 'center',
   },
   detailModalContainer: {
     backgroundColor: 'white',
@@ -1236,24 +1096,5 @@ const styles = StyleSheet.create({
     height: 100,
     borderRadius: 8,
     backgroundColor: '#E0E0E0',
-  },
-  debugSection: {
-    backgroundColor: '#FFF3CD',
-    padding: 10,
-    borderRadius: 6,
-    marginVertical: 8,
-    borderLeftWidth: 3,
-    borderLeftColor: '#FFC107',
-  },
-  debugTitle: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#856404',
-    marginBottom: 4,
-  },
-  debugText: {
-    fontSize: 10,
-    color: '#856404',
-    marginBottom: 2,
   },
 });

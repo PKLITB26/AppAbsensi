@@ -8,7 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { getApiUrl, API_CONFIG } from '../../constants/config';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { AppHeader } from '../../components';
+import { AppHeader, CustomCalendar } from '../../components';
 
 export default function AddDataPegawaiForm() {
   const router = useRouter();
@@ -26,9 +26,6 @@ export default function AddDataPegawaiForm() {
   });
   const [loading, setLoading] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
-  const [showMonthPicker, setShowMonthPicker] = useState(false);
-  const [showYearPicker, setShowYearPicker] = useState(false);
-  const [currentMonth, setCurrentMonth] = useState(new Date());
   const [existingEmails, setExistingEmails] = useState<string[]>([]);
   
   // New states for improvements
@@ -274,77 +271,6 @@ export default function AddDataPegawaiForm() {
     setShowCalendar(false);
   };
 
-  const getDaysInMonth = () => {
-    const year = currentMonth.getFullYear();
-    const month = currentMonth.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const daysInMonth = lastDay.getDate();
-    const startingDayOfWeek = firstDay.getDay();
-
-    const days = [];
-    for (let i = 0; i < startingDayOfWeek; i++) {
-      days.push(null);
-    }
-    for (let i = 1; i <= daysInMonth; i++) {
-      days.push(new Date(year, month, i));
-    }
-    return days;
-  };
-
-  const changeMonth = (direction: number) => {
-    const newMonth = new Date(currentMonth);
-    newMonth.setMonth(currentMonth.getMonth() + direction);
-    setCurrentMonth(newMonth);
-  };
-
-  const selectMonth = (monthIndex: number) => {
-    const newMonth = new Date(currentMonth);
-    newMonth.setMonth(monthIndex);
-    setCurrentMonth(newMonth);
-    setShowMonthPicker(false);
-  };
-
-  const selectYear = (year: number) => {
-    const newMonth = new Date(currentMonth);
-    newMonth.setFullYear(year);
-    setCurrentMonth(newMonth);
-    setShowYearPicker(false);
-  };
-
-  const getMonths = () => {
-    return [
-      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
-    ];
-  };
-
-  const getYears = () => {
-    const currentYear = new Date().getFullYear();
-    const years = [];
-    for (let i = currentYear - 80; i <= currentYear; i++) {
-      years.push(i);
-    }
-    return years.reverse();
-  };
-
-  const generateMonthYearOptions = () => {
-    const months = [
-      { value: 0, label: 'Januari' }, { value: 1, label: 'Februari' }, { value: 2, label: 'Maret' },
-      { value: 3, label: 'April' }, { value: 4, label: 'Mei' }, { value: 5, label: 'Juni' },
-      { value: 6, label: 'Juli' }, { value: 7, label: 'Agustus' }, { value: 8, label: 'September' },
-      { value: 9, label: 'Oktober' }, { value: 10, label: 'November' }, { value: 11, label: 'Desember' }
-    ];
-    
-    const currentYear = new Date().getFullYear();
-    const years = [];
-    for (let i = currentYear - 80; i <= currentYear; i++) {
-      years.push(i);
-    }
-    
-    return { months, years: years.reverse() };
-  };
-
   const showCalendarModal = () => {
     setShowCalendar(true);
   };
@@ -514,23 +440,24 @@ export default function AddDataPegawaiForm() {
                 </View>
 
                 <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Tanggal Lahir</Text>
-                  <View style={styles.dateInputContainer}>
-                    <TextInput
-                      style={styles.textInput}
-                      placeholder="DD/MM/YYYY"
-                      value={formData.tanggal_lahir}
-                      onChangeText={(text) => {
-                        const formatted = formatTanggal(text);
-                        setFormData({...formData, tanggal_lahir: formatted});
-                      }}
-                      keyboardType="numeric"
-                      maxLength={10}
-                    />
-                    <TouchableOpacity onPress={showCalendarModal} style={styles.calendarButton}>
-                      <Ionicons name="calendar" size={20} color="#004643" />
+                  <View style={styles.labelWithButton}>
+                    <Text style={styles.inputLabel}>Tanggal Lahir</Text>
+                    <TouchableOpacity onPress={showCalendarModal} style={styles.calendarButtonTop}>
+                      <Ionicons name="calendar" size={18} color="#004643" />
+                      <Text style={styles.calendarButtonText}>Pilih Tanggal</Text>
                     </TouchableOpacity>
                   </View>
+                  <TextInput
+                    style={styles.textInput}
+                    placeholder="DD/MM/YYYY"
+                    value={formData.tanggal_lahir}
+                    onChangeText={(text) => {
+                      const formatted = formatTanggal(text);
+                      setFormData({...formData, tanggal_lahir: formatted});
+                    }}
+                    keyboardType="numeric"
+                    maxLength={10}
+                  />
                 </View>
 
                 <View style={styles.inputGroup}>
@@ -681,159 +608,23 @@ export default function AddDataPegawaiForm() {
         <Modal 
           visible={showCalendar} 
           transparent
-          accessible={false}
-          accessibilityViewIsModal={false}
-        >
-          <View style={styles.calendarModalOverlay}>
-            <View style={styles.calendarModalContainer}>
-              <View style={styles.calendarHeader}>
-                <TouchableOpacity onPress={() => changeMonth(-1)} style={styles.monthBtn}>
-                  <Ionicons name="chevron-back" size={24} color="#004643" />
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => setShowMonthPicker(true)} style={styles.monthYearBtn}>
-                  <Text style={styles.calendarTitle}>
-                    {currentMonth.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}
-                  </Text>
-                  <Ionicons name="chevron-down" size={16} color="#004643" />
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => changeMonth(1)} style={styles.monthBtn}>
-                  <Ionicons name="chevron-forward" size={24} color="#004643" />
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => setShowCalendar(false)} style={styles.closeBtn}>
-                  <Ionicons name="close" size={24} color="#666" />
-                </TouchableOpacity>
-              </View>
-              
-              <View style={styles.weekDays}>
-                {['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'].map((day, i) => (
-                  <Text key={i} style={styles.weekDayText}>{day}</Text>
-                ))}
-              </View>
-
-              <View style={styles.daysGrid}>
-                {getDaysInMonth().map((date, index) => {
-                  const isToday = date && date.toDateString() === new Date().toDateString();
-                  const isFuture = date && date > new Date();
-                  
-                  return (
-                    <TouchableOpacity
-                      key={index}
-                      style={[
-                        styles.dayCell,
-                        !date && styles.emptyCell,
-                        isToday && styles.todayCell,
-                        isFuture && styles.futureCell
-                      ]}
-                      onPress={() => date && !isFuture && handleDateSelect(date)}
-                      disabled={!date || isFuture}
-                    >
-                      {date && (
-                        <Text style={[
-                          styles.dayText,
-                          isToday && styles.todayText,
-                          isFuture && styles.futureText
-                        ]}>
-                          {date.getDate()}
-                        </Text>
-                      )}
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </View>
-          </View>
-        </Modal>
-
-        {/* Month Picker Modal - Fullscreen */}
-        <Modal 
-          visible={showMonthPicker} 
-          transparent
-          animationType="none"
+          animationType="fade"
           statusBarTranslucent={true}
-          onRequestClose={() => setShowMonthPicker(false)}
+          onRequestClose={() => setShowCalendar(false)}
         >
-          <View style={styles.fullscreenModalOverlay}>
-            <TouchableOpacity 
-              style={styles.modalBackdrop} 
-              activeOpacity={1}
-              onPress={() => setShowMonthPicker(false)}
-            />
-            <View style={styles.fullscreenModalContainer}>
-              {/* Handle Bar */}
-              <View style={styles.handleContainer}>
-                <View style={styles.handleBar} />
-              </View>
-              
-              <View style={styles.monthPickerHeader}>
-                <Text style={styles.monthPickerTitle}>Pilih Bulan & Tahun</Text>
-                <TouchableOpacity onPress={() => setShowMonthPicker(false)}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.calendarModalContainer}>
+              <View style={styles.calendarModalHeader}>
+                <Text style={styles.calendarModalTitle}>Pilih Tanggal Lahir</Text>
+                <TouchableOpacity onPress={() => setShowCalendar(false)}>
                   <Ionicons name="close" size={24} color="#666" />
                 </TouchableOpacity>
               </View>
-              
-              <View style={styles.pickerRow}>
-                <View style={styles.pickerColumn}>
-                  <Text style={styles.pickerLabel}>Bulan</Text>
-                  <ScrollView style={styles.pickerList} showsVerticalScrollIndicator={false}>
-                    {generateMonthYearOptions().months.map((month) => (
-                      <TouchableOpacity
-                        key={month.value}
-                        style={[
-                          styles.pickerItem,
-                          currentMonth.getMonth() === month.value && styles.selectedPickerItem
-                        ]}
-                        onPress={() => {
-                          const newMonth = new Date(currentMonth);
-                          newMonth.setMonth(month.value);
-                          setCurrentMonth(newMonth);
-                        }}
-                      >
-                        <Text style={[
-                          styles.pickerItemText,
-                          currentMonth.getMonth() === month.value && styles.selectedPickerItemText
-                        ]}>
-                          {month.label}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </ScrollView>
-                </View>
-                
-                <View style={styles.pickerColumn}>
-                  <Text style={styles.pickerLabel}>Tahun</Text>
-                  <ScrollView style={styles.pickerList} showsVerticalScrollIndicator={false}>
-                    {generateMonthYearOptions().years.map((year) => (
-                      <TouchableOpacity
-                        key={year}
-                        style={[
-                          styles.pickerItem,
-                          currentMonth.getFullYear() === year && styles.selectedPickerItem
-                        ]}
-                        onPress={() => {
-                          const newMonth = new Date(currentMonth);
-                          newMonth.setFullYear(year);
-                          setCurrentMonth(newMonth);
-                        }}
-                      >
-                        <Text style={[
-                          styles.pickerItemText,
-                          currentMonth.getFullYear() === year && styles.selectedPickerItemText
-                        ]}>
-                          {year}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </ScrollView>
-                </View>
-              </View>
-              
-              <TouchableOpacity
-                style={styles.confirmButton}
-                onPress={() => setShowMonthPicker(false)}
-              >
-                <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
-                <Text style={styles.confirmButtonText}>Konfirmasi</Text>
-              </TouchableOpacity>
+              <CustomCalendar 
+                onDatePress={(date) => handleDateSelect(date)}
+                weekendDays={[0, 6]}
+                showWeekends={false}
+              />
             </View>
           </View>
         </Modal>
@@ -1022,23 +813,34 @@ const styles = StyleSheet.create({
   genderTextActive: {
     color: '#fff'
   },
-  dateInputContainer: {
-    position: 'relative'
+  labelWithButton: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8
   },
-  calendarButton: {
-    position: 'absolute',
-    right: 12,
-    top: 12,
-    padding: 4,
-    borderRadius: 4,
-    backgroundColor: '#F0F8F0'
+  calendarButtonTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    backgroundColor: '#E6F0EF',
+    borderWidth: 1,
+    borderColor: '#004643'
+  },
+  calendarButtonText: {
+    fontSize: 12,
+    color: '#004643',
+    fontWeight: '600',
+    marginLeft: 4
   },
   submitBtn: {
     backgroundColor: '#004643',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 14,
+    paddingVertical: 16,
     paddingHorizontal: 16,
     borderRadius: 12,
     minHeight: 50
@@ -1153,19 +955,25 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#fff'
   },
-  calendarModalOverlay: {
+  centerModalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
-    alignItems: 'center'
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    paddingHorizontal: 20,
   },
   calendarModalContainer: {
     backgroundColor: '#fff',
-    borderRadius: 15,
+    borderRadius: 16,
     width: '90%',
-    maxWidth: 400
+    maxWidth: 350,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
   },
-  calendarHeader: {
+  calendarModalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -1173,6 +981,11 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     borderBottomWidth: 1,
     borderBottomColor: '#F0F0F0'
+  },
+  calendarModalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
   },
   monthBtn: {
     padding: 8,
@@ -1209,16 +1022,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 6,
-    marginBottom: 4
+    marginBottom: 4,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    backgroundColor: '#FFFFFF',
   },
   emptyCell: {
-    backgroundColor: 'transparent'
+    backgroundColor: 'transparent',
+    borderColor: 'transparent',
   },
   todayCell: {
-    backgroundColor: '#004643'
+    backgroundColor: '#004643',
+    borderColor: '#004643',
   },
   futureCell: {
-    backgroundColor: '#F5F5F5'
+    backgroundColor: '#F5F5F5',
+    borderColor: '#E0E0E0',
   },
   dayText: {
     fontSize: 14,
@@ -1228,6 +1047,15 @@ const styles = StyleSheet.create({
   todayText: {
     color: '#FFFFFF',
     fontWeight: '700'
+  },
+  futureText: {
+    color: '#999',
+    fontWeight: '400'
+  },
+  calendarTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#004643',
   },
   monthYearBtn: {
     flexDirection: 'row',
@@ -1300,48 +1128,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 14,
+    paddingVertical: 12,
     paddingHorizontal: 16,
-    borderRadius: 12,
-    marginTop: 20,
+    borderRadius: 8,
+    marginTop: 16,
     marginHorizontal: 20,
-    minHeight: 50,
-  },
-  fullscreenModalOverlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    paddingTop: Platform.OS === 'android' ? 0 : 50,
+    marginBottom: 20,
   },
   modalBackdrop: {
     flex: 1,
-  },
-  fullscreenModalContainer: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingBottom: Platform.OS === 'ios' ? 34 : 20,
-    maxHeight: '80%',
-  },
-  handleContainer: {
-    paddingVertical: 12,
-    alignItems: 'center',
-    width: '100%',
-  },
-  handleBar: {
-    width: 40,
-    height: 4,
-    backgroundColor: '#DDD',
-    borderRadius: 2,
-    alignSelf: 'center',
-    marginTop: 8,
-    marginBottom: 16,
-  },
-  confirmButtonText: {
-    color: '#fff',
-    fontSize: 15,
-    fontWeight: '600',
-    marginLeft: 6,
   },
   progressContainer: {
     paddingHorizontal: 20,

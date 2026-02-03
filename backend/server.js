@@ -88,7 +88,7 @@ const startServer = async () => {
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`\n✅ Server running successfully!`);
       console.log(`🌐 Local: http://localhost:${PORT}`);
-      console.log(`📱 Mobile: http://10.251.109.151:${PORT}`);
+      console.log(`📱 Mobile: http://${process.env.HOST || '10.251.109.92'}:${PORT}`);
       console.log(`\n📄 Available endpoints:`);
       console.log(`   POST /auth/api/login`);
       console.log(`   GET  /auth/api/profile`);
@@ -107,6 +107,7 @@ const startServer = async () => {
       console.log(`   PUT  /admin/pengaturan/api/lokasi-kantor/:id`);
       console.log(`   DEL  /admin/pengaturan/api/lokasi-kantor/:id`);
       console.log(`   GET  /admin/presensi/api/tracking`);
+      console.log(`   GET  /admin/kelola-dinas/api/stats`);
       console.log(`\n🔄 Ready to serve HadirinApp mobile app\n`);
     });
   } catch (error) {

@@ -231,9 +231,83 @@ const getValidasiAbsenAdmin = async (req, res) => {
   }
 };
 
+const getDinasStats = async (req, res) => {
+  try {
+    const db = await getConnection();
+    
+    // Get today's date
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Count active dinas (dinas that are ongoing today)
+    const [dinasAktifRows] = await db.execute(`
+      SELECT COUNT(*) as count 
+      FROM dinas 
+      WHERE DATE(tanggal_mulai) <= ? 
+      AND (DATE(tanggal_selesai) >= ? OR tanggal_selesai IS NULL)
+      AND status = 'aktif'
+    `, [today, today]);
+    
+    // Count completed dinas today
+    const [selesaiDinasRows] = await db.execute(`
+      SELECT COUNT(*) as count 
+      FROM dinas 
+      WHERE DATE(tanggal_selesai) = ? 
+      AND status = 'selesai'
+    `, [today]);
+    
+    // Count total employees on dinas today
+    const [pegawaiDinasRows] = await db.execute(`
+      SELECT COUNT(DISTINCT dp.id_user) as count 
+      FROM dinas d
+      JOIN dinas_pegawai dp ON d.id_dinas = dp.id_dinas
+      WHERE DATE(d.tanggal_mulai) <= ? 
+      AND (DATE(d.tanggal_selesai) >= ? OR d.tanggal_selesai IS NULL)
+      AND d.status = 'aktif'
+    `, [today, today]);
+    
+    // Count employees who haven't checked in today (among those on dinas)
+    const [belumAbsenRows] = await db.execute(`
+      SELECT COUNT(DISTINCT dp.id_user) as count 
+      FROM dinas d
+      JOIN dinas_pegawai dp ON d.id_dinas = dp.id_dinas
+      LEFT JOIN absen_dinas ad ON dp.id_dinas = ad.id_dinas AND dp.id_user = ad.id_user AND DATE(ad.tanggal_absen) = ?
+      WHERE DATE(d.tanggal_mulai) <= ? 
+      AND (DATE(d.tanggal_selesai) >= ? OR d.tanggal_selesai IS NULL)
+      AND d.status = 'aktif'
+      AND ad.id_user IS NULL
+    `, [today, today, today]);
+    
+    const stats = {
+      dinasAktif: dinasAktifRows[0].count || 0,
+      selesaiDinas: selesaiDinasRows[0].count || 0,
+      pegawaiDinas: pegawaiDinasRows[0].count || 0,
+      belumAbsen: belumAbsenRows[0].count || 0
+    };
+    
+    res.json({
+      success: true,
+      data: stats
+    });
+    
+  } catch (error) {
+    console.error('Error fetching dinas stats:', error);
+    res.json({
+      success: false,
+      message: 'Database error: ' + error.message,
+      data: {
+        dinasAktif: 0,
+        selesaiDinas: 0,
+        pegawaiDinas: 0,
+        belumAbsen: 0
+      }
+    });
+  }
+};
+
 module.exports = { 
   getDinasAktifAdmin, 
   createDinasAdmin, 
   getRiwayatDinasAdmin, 
-  getValidasiAbsenAdmin 
+  getValidasiAbsenAdmin,
+  getDinasStats
 };

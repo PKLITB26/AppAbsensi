@@ -26,12 +26,14 @@ interface DetailDinas {
 
 export default function DetailDinasScreen() {
   const router = useRouter();
-  const { id } = useLocalSearchParams();
+  const { id, filter, start_date, end_date } = useLocalSearchParams();
   const [data, setData] = useState<DetailDinas | null>(null);
   const [loading, setLoading] = useState(true);
+  const [periodInfo, setPeriodInfo] = useState('');
 
   useEffect(() => {
     fetchDetail();
+    generatePeriodInfo();
   }, [id]);
 
   const fetchDetail = async () => {
@@ -49,6 +51,37 @@ export default function DetailDinasScreen() {
       console.error('Error fetching detail:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const generatePeriodInfo = () => {
+    const today = new Date();
+    const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+    
+    switch(filter) {
+      case 'hari_ini':
+        setPeriodInfo(`${days[today.getDay()]}, ${today.getDate()} ${months[today.getMonth()]} ${today.getFullYear()}`);
+        break;
+      case 'minggu_ini':
+        const startOfWeek = new Date(today);
+        startOfWeek.setDate(today.getDate() - today.getDay());
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(startOfWeek.getDate() + 6);
+        setPeriodInfo(`Minggu, ${startOfWeek.getDate()}-${endOfWeek.getDate()} ${months[today.getMonth()]} ${today.getFullYear()}`);
+        break;
+      case 'bulan_ini':
+        setPeriodInfo(`${months[today.getMonth()]} ${today.getFullYear()}`);
+        break;
+      case 'pilih_tanggal':
+        if (start_date && end_date) {
+          const startDate = new Date(start_date as string);
+          const endDate = new Date(end_date as string);
+          setPeriodInfo(`${startDate.getDate()} ${months[startDate.getMonth()].slice(0,3)} - ${endDate.getDate()} ${months[endDate.getMonth()].slice(0,3)} ${endDate.getFullYear()}`);
+        }
+        break;
+      default:
+        setPeriodInfo('Periode tidak diketahui');
     }
   };
 
@@ -117,6 +150,17 @@ export default function DetailDinasScreen() {
       />
 
       <ScrollView style={styles.content}>
+        {/* Period Info */}
+        <View style={styles.periodInfo}>
+          <View style={styles.periodHeader}>
+            <Ionicons name="calendar-outline" size={20} color="#004643" />
+            <Text style={styles.periodTitle}>Periode Laporan</Text>
+          </View>
+          <Text style={styles.periodText}>
+            {periodInfo}
+          </Text>
+        </View>
+
         {/* Profile Card */}
         <View style={styles.profileCard}>
           <View style={styles.avatar}>
@@ -217,6 +261,32 @@ export default function DetailDinasScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFB' },
   content: { flex: 1, padding: 20 },
+  periodInfo: {
+    backgroundColor: '#F0F8F7',
+    marginBottom: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E0F2F1',
+  },
+  periodHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  periodTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#004643',
+    marginLeft: 8,
+  },
+  periodText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#004643',
+    textAlign: 'center',
+  },
   profileCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', padding: 16, borderRadius: 12, marginBottom: 20, elevation: 2 },
   avatar: { width: 60, height: 60, borderRadius: 30, backgroundColor: '#E3F2FD', justifyContent: 'center', alignItems: 'center', marginRight: 12, overflow: 'hidden' },
   avatarImage: { width: 60, height: 60, borderRadius: 30 },

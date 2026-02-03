@@ -5,7 +5,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { PengaturanAPI } from '../../constants/config';
 import * as Location from 'expo-location';
-import { NetworkDiagnostic } from '../../components/NetworkDiagnostic';
 import { AppHeader } from '../../components';
 
 export default function TambahLokasiScreen() {
@@ -392,8 +391,6 @@ export default function TambahLokasiScreen() {
       />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        {/* Network Diagnostic */}
-        <NetworkDiagnostic />
         
         {/* Info Card */}
         <View style={styles.infoCard}>

@@ -445,7 +445,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 16,
-    borderRadius: 12
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    minHeight: 50
   },
   saveButtonText: {
     color: '#fff',
