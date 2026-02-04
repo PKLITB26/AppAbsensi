@@ -4,7 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { getApiUrl, API_CONFIG } from '../../constants/config';
-import { AppHeader } from '../../components';
+import { AppHeader, SkeletonLoader } from '../../components';
 
 export default function LaporanAdminScreen() {
   const router = useRouter();
@@ -103,10 +103,7 @@ export default function LaporanAdminScreen() {
       />
 
       {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#004643" />
-          <Text style={styles.loadingText}>Memuat statistik laporan...</Text>
-        </View>
+        <SkeletonLoader type="list" count={4} message="Memuat statistik laporan..." />
       ) : (
         <View style={styles.contentContainer}>
           <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { StyleSheet, View, Text, ScrollView, TouchableOpacity, SafeAreaView, RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { SkeletonLoader } from '../components';
 
 interface Notification {
   id: number;
@@ -39,7 +40,7 @@ export default function NotifikasiAdmin() {
           priority: 'high' as const,
           icon: 'checkbox-outline',
           color: '#FF6B6B',
-          actionUrl: '/approval-admin',
+          actionUrl: '/admin/pusat-validasi',
           time: '2 menit yang lalu'
         }
       ];
@@ -84,7 +85,9 @@ export default function NotifikasiAdmin() {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={loadNotifications} />}
       >
-        {notifications.length === 0 ? (
+        {loading ? (
+          <SkeletonLoader type="list" count={4} message="Memuat notifikasi..." />
+        ) : notifications.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="notifications-off-outline" size={60} color="#ccc" />
             <Text style={styles.emptyText}>Tidak ada notifikasi</Text>

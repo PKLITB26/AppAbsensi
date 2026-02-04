@@ -69,28 +69,30 @@ const getKelolaPegawai = async (req, res) => {
 
 // Kelola Pegawai - POST add new employee
 const createKelolaPegawai = async (req, res) => {
+  let connection;
   try {
     const { email, password, role, nama_lengkap, nip, jenis_kelamin, jabatan, divisi, no_telepon, alamat, tanggal_lahir } = req.body;
     
     const db = await getConnection();
-    await db.beginTransaction();
+    connection = await db.getConnection();
+    await connection.beginTransaction();
     
     try {
       // Insert user
       const hashedPassword = await bcrypt.hash(password, 10);
-      const [userResult] = await db.execute(
+      const [userResult] = await connection.execute(
         'INSERT INTO users (email, password, role) VALUES (?, ?, ?)',
         [email, hashedPassword, role]
       );
       const userId = userResult.insertId;
       
       // Insert pegawai
-      await db.execute(`
+      await connection.execute(`
         INSERT INTO pegawai (id_user, nama_lengkap, nip, jenis_kelamin, jabatan, divisi, no_telepon, alamat, tanggal_lahir) 
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `, [userId, nama_lengkap, nip, jenis_kelamin, jabatan, divisi, no_telepon, alamat, tanggal_lahir]);
       
-      await db.commit();
+      await connection.commit();
       
       res.json({
         success: true,
@@ -98,32 +100,38 @@ const createKelolaPegawai = async (req, res) => {
       });
       
     } catch (error) {
-      await db.rollback();
+      await connection.rollback();
       throw error;
     }
     
   } catch (error) {
     console.error('Create kelola pegawai error:', error);
     res.json({ success: false, message: 'Error: ' + error.message });
+  } finally {
+    if (connection) {
+      connection.release();
+    }
   }
 };
 
 // Kelola Pegawai - DELETE employee
 const deleteKelolaPegawai = async (req, res) => {
+  let connection;
   try {
     const { id_user } = req.body;
     
     const db = await getConnection();
-    await db.beginTransaction();
+    connection = await db.getConnection();
+    await connection.beginTransaction();
     
     try {
       // Delete pegawai first
-      await db.execute('DELETE FROM pegawai WHERE id_user = ?', [id_user]);
+      await connection.execute('DELETE FROM pegawai WHERE id_user = ?', [id_user]);
       
       // Delete user
-      await db.execute('DELETE FROM users WHERE id_user = ?', [id_user]);
+      await connection.execute('DELETE FROM users WHERE id_user = ?', [id_user]);
       
-      await db.commit();
+      await connection.commit();
       
       res.json({
         success: true,
@@ -131,13 +139,17 @@ const deleteKelolaPegawai = async (req, res) => {
       });
       
     } catch (error) {
-      await db.rollback();
+      await connection.rollback();
       throw error;
     }
     
   } catch (error) {
     console.error('Delete kelola pegawai error:', error);
     res.json({ success: false, message: 'Error: ' + error.message });
+  } finally {
+    if (connection) {
+      connection.release();
+    }
   }
 };
 
@@ -233,6 +245,7 @@ const getDetailPegawai = async (req, res) => {
 };
 
 const createPegawai = async (req, res) => {
+  let connection;
   try {
     const { nama_lengkap, nip, email, password, jenis_kelamin, jabatan, divisi, no_telepon, alamat, tanggal_lahir } = req.body;
 
@@ -245,20 +258,21 @@ const createPegawai = async (req, res) => {
     }
 
     const db = await getConnection();
+    connection = await db.getConnection();
     
     try {
-      await db.beginTransaction();
+      await connection.beginTransaction();
 
       // Insert ke tabel users dulu
       const hashedPassword = await bcrypt.hash(password, 10);
-      const [userResult] = await db.execute(
+      const [userResult] = await connection.execute(
         'INSERT INTO users (email, password, role) VALUES (?, ?, "pegawai")',
         [email, hashedPassword]
       );
       const userId = userResult.insertId;
 
       // Insert ke tabel pegawai
-      const [pegawaiResult] = await db.execute(`
+      const [pegawaiResult] = await connection.execute(`
         INSERT INTO pegawai (
           id_user, nama_lengkap, nip, jenis_kelamin, jabatan, divisi, 
           no_telepon, alamat, tanggal_lahir, status_pegawai, tanggal_masuk
@@ -268,7 +282,7 @@ const createPegawai = async (req, res) => {
         divisi || null, no_telepon || null, alamat || null, tanggal_lahir || null
       ]);
 
-      await db.commit();
+      await connection.commit();
 
       res.json({
         success: true,
@@ -277,17 +291,22 @@ const createPegawai = async (req, res) => {
       });
 
     } catch (error) {
-      await db.rollback();
+      await connection.rollback();
       throw error;
     }
 
   } catch (error) {
     console.error('Create pegawai error:', error);
     res.json({ success: false, message: 'Gagal menambahkan data: ' + error.message });
+  } finally {
+    if (connection) {
+      connection.release();
+    }
   }
 };
 
 const deletePegawai = async (req, res) => {
+  let connection;
   try {
     const { id } = req.params;
     const db = await getConnection();
@@ -299,32 +318,38 @@ const deletePegawai = async (req, res) => {
     }
 
     const userId = pegawaiRows[0].id_user;
+    connection = await db.getConnection();
 
     try {
-      await db.beginTransaction();
+      await connection.beginTransaction();
 
       // Delete from pegawai table first
-      await db.execute('DELETE FROM pegawai WHERE id_pegawai = ?', [id]);
+      await connection.execute('DELETE FROM pegawai WHERE id_pegawai = ?', [id]);
       
       // Delete from users table
-      await db.execute('DELETE FROM users WHERE id_user = ?', [userId]);
+      await connection.execute('DELETE FROM users WHERE id_user = ?', [userId]);
 
-      await db.commit();
+      await connection.commit();
 
       res.json({ success: true, message: 'Data pegawai berhasil dihapus' });
 
     } catch (error) {
-      await db.rollback();
+      await connection.rollback();
       throw error;
     }
 
   } catch (error) {
     console.error('Delete pegawai error:', error);
     res.json({ success: false, message: 'Gagal menghapus data: ' + error.message });
+  } finally {
+    if (connection) {
+      connection.release();
+    }
   }
 };
 
 const updatePegawai = async (req, res) => {
+  let connection;
   try {
     const { id } = req.params;
     const { nama_lengkap, nip, email, jenis_kelamin, jabatan, divisi, no_telepon, alamat, tanggal_lahir } = req.body;
@@ -338,35 +363,40 @@ const updatePegawai = async (req, res) => {
     }
 
     const userId = pegawaiRows[0].id_user;
+    connection = await db.getConnection();
 
     try {
-      await db.beginTransaction();
+      await connection.beginTransaction();
 
       // Update users table
       if (email) {
-        await db.execute('UPDATE users SET email = ? WHERE id_user = ?', [email, userId]);
+        await connection.execute('UPDATE users SET email = ? WHERE id_user = ?', [email, userId]);
       }
 
       // Update pegawai table
-      await db.execute(`
+      await connection.execute(`
         UPDATE pegawai SET 
           nama_lengkap = ?, nip = ?, jenis_kelamin = ?, jabatan = ?, 
           divisi = ?, no_telepon = ?, alamat = ?, tanggal_lahir = ?
         WHERE id_pegawai = ?
       `, [nama_lengkap, nip, jenis_kelamin, jabatan, divisi, no_telepon, alamat, tanggal_lahir, id]);
 
-      await db.commit();
+      await connection.commit();
 
       res.json({ success: true, message: 'Data pegawai berhasil diupdate' });
 
     } catch (error) {
-      await db.rollback();
+      await connection.rollback();
       throw error;
     }
 
   } catch (error) {
     console.error('Update pegawai error:', error);
     res.json({ success: false, message: 'Gagal mengupdate data: ' + error.message });
+  } finally {
+    if (connection) {
+      connection.release();
+    }
   }
 };
 

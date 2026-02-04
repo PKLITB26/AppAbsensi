@@ -9,6 +9,7 @@ import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { getApiUrl, API_CONFIG } from '../../constants/config';
+import { SkeletonLoader } from '../../components';
 
 interface RecentActivity {
   nama_lengkap: string;
@@ -113,6 +114,8 @@ export default function AdminDashboard() {
       <ScrollView 
         showsVerticalScrollIndicator={false} 
         contentContainerStyle={styles.scrollContent}
+        bounces={false}
+        overScrollMode="never"
         refreshControl={<RefreshControl refreshing={loading} onRefresh={getDashboardData} />}
       >
         {/* Background Gradient */}
@@ -202,8 +205,8 @@ export default function AdminDashboard() {
                 {[
                 { id: 1, name: 'Pegawai', icon: 'people', color: '#E8F5E9', iconColor: '#2E7D32', route: '/pegawai-akun' },
                 { id: 2, name: 'Dinas', icon: 'business', color: '#E3F2FD', iconColor: '#1976D2', route: '/kelola-dinas' },
-                { id: 3, name: 'Persetujuan', icon: 'checkbox', color: '#FFF3E0', iconColor: '#F57C00', route: '/approval-admin' },
-                { id: 4, name: 'Laporan', icon: 'document-text', color: '#F3E5F5', iconColor: '#7B1FA2', route: '/laporan/laporan-admin' },
+                { id: 3, name: 'Laporan', icon: 'document-text', color: '#F3E5F5', iconColor: '#7B1FA2', route: '/laporan/laporan-admin' },
+                { id: 4, name: 'Pengaturan', icon: 'settings', color: '#FFEBEE', iconColor: '#D32F2F', route: '/pengaturan' },
                 ].map((item) => (
                 <TouchableOpacity 
                   key={item.id} 
@@ -217,43 +220,34 @@ export default function AdminDashboard() {
                 </TouchableOpacity>
                 ))}
             </View>
-            
-            {/* Baris kedua - Pengaturan di bawah Pegawai */}
-            <View style={styles.settingsRow}>
-                <TouchableOpacity 
-                  style={styles.mainMenuItem}
-                  onPress={() => router.push('/pengaturan' as any)}
-                >
-                    <View style={[styles.menuIconCircle, { backgroundColor: '#FFEBEE' }]}>
-                    <Ionicons name="settings" size={22} color="#D32F2F" />
-                    </View>
-                    <Text style={styles.menuLabel}>Pengaturan</Text>
-                </TouchableOpacity>
-            </View>
         </View>
 
         {/* SECTION 4: LOG AKTIVITAS */}
         <View style={styles.recentList}>
           <Text style={styles.sectionTitle}>Aktivitas Terbaru</Text>
           
-          {(data.recent && Array.isArray(data.recent) && data.recent.length > 0) ? (
-            data.recent.map((item: any, index: number) => (
-              <View key={index} style={styles.activityCard}>
-                <Image 
-                    source={{ uri: `https://ui-avatars.com/api/?name=${item.nama_lengkap}&background=random` }} 
-                    style={styles.avatar} 
-                />
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.nameText}>{item.nama_lengkap}</Text>
-                  <Text style={styles.activityText}>{item.status} • {item.jam_masuk ? item.jam_masuk.substring(0,5) : '-'} WIB</Text>
-                </View>
-                <View style={[styles.statusBadge, { backgroundColor: item.status === 'Hadir' ? '#E8F5E9' : '#FFF4E5' }]}>
-                  <Text style={{ color: item.status === 'Hadir' ? '#2E7D32' : '#F9BC60', fontSize: 10, fontWeight: 'bold' }}>{item.status}</Text>
-                </View>
-              </View>
-            ))
+          {loading ? (
+            <SkeletonLoader type="list" count={3} message="Memuat aktivitas..." />
           ) : (
-            <Text style={{ textAlign: 'center', color: '#999', marginTop: 20 }}>Belum ada aktivitas hari ini</Text>
+            (data.recent && Array.isArray(data.recent) && data.recent.length > 0) ? (
+              data.recent.map((item: any, index: number) => (
+                <View key={index} style={styles.activityCard}>
+                  <Image 
+                      source={{ uri: `https://ui-avatars.com/api/?name=${item.nama_lengkap}&background=random` }} 
+                      style={styles.avatar} 
+                  />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.nameText}>{item.nama_lengkap}</Text>
+                    <Text style={styles.activityText}>{item.status} • {item.jam_masuk ? item.jam_masuk.substring(0,5) : '-'} WIB</Text>
+                  </View>
+                  <View style={[styles.statusBadge, { backgroundColor: item.status === 'Hadir' ? '#E8F5E9' : '#FFF4E5' }]}>
+                    <Text style={{ color: item.status === 'Hadir' ? '#2E7D32' : '#F9BC60', fontSize: 10, fontWeight: 'bold' }}>{item.status}</Text>
+                  </View>
+                </View>
+              ))
+            ) : (
+              <Text style={{ textAlign: 'center', color: '#999', marginTop: 20 }}>Belum ada aktivitas hari ini</Text>
+            )
           )}
         </View>
 
@@ -265,6 +259,7 @@ export default function AdminDashboard() {
         visible={showNotifications}
         animationType="fade"
         transparent={true}
+        statusBarTranslucent={true}
         onRequestClose={() => setShowNotifications(false)}
       >
         <TouchableOpacity 
@@ -312,8 +307,8 @@ export default function AdminDashboard() {
                   <Ionicons name="checkmark-circle" size={16} color="#2196F3" />
                 </View>
                 <View style={styles.notificationContent}>
-                  <Text style={styles.notificationTitle}>Persetujuan Cuti</Text>
-                  <Text style={styles.notificationDesc}>3 pengajuan cuti menunggu persetujuan</Text>
+                  <Text style={styles.notificationTitle}>Validasi Diperlukan</Text>
+                  <Text style={styles.notificationDesc}>3 item menunggu validasi di Pusat Validasi</Text>
                   <Text style={styles.notificationTime}>30 menit yang lalu</Text>
                 </View>
               </View>
@@ -452,7 +447,6 @@ const styles = StyleSheet.create({
     width: Platform.OS === 'ios' ? '22%' : '23%', 
     alignItems: 'center' 
   },
-  settingsRow: { flexDirection: 'row', justifyContent: 'flex-start', marginTop: 10 },
   menuIconCircle: { 
     width: Platform.OS === 'ios' ? 52 : 56, 
     height: Platform.OS === 'ios' ? 52 : 56, 
@@ -470,7 +464,10 @@ const styles = StyleSheet.create({
   statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
   footer: { marginTop: 20, alignItems: 'center' },
   footerText: { fontSize: 10, color: '#BBB' },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.3)' },
+  modalOverlay: { 
+    flex: 1, 
+    backgroundColor: 'rgba(0,0,0,0.3)' 
+  },
   notificationDropdown: { 
     position: 'absolute', 
     top: Platform.OS === 'ios' ? 100 : 80, 

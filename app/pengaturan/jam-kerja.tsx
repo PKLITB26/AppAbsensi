@@ -16,8 +16,8 @@ import {
 } from "react-native";
 import { StatusBar } from 'expo-status-bar';
 import DateTimePickerModal from "react-native-modal-datetime-picker";
-import { PengaturanAPI } from "../../constants/config";
-import { AppHeader } from "../../components";
+import { PengaturanAPI, API_CONFIG, getApiUrl } from "../../constants/config";
+import { AppHeader, SkeletonLoader } from "../../components";
 
 interface JamKerjaHari {
   hari: string;
@@ -170,24 +170,66 @@ export default function JamKerjaScreen() {
   const handleSave = async () => {
     try {
       setLoading(true);
-      const response = await PengaturanAPI.saveJamKerja({
-        jam_kerja: jamKerjaList,
+      
+      const payload = { jam_kerja: jamKerjaList };
+      console.log('Trying payload format:', JSON.stringify(payload, null, 2));
+      
+      const response = await fetch(getApiUrl(API_CONFIG.ENDPOINTS.JAM_KERJA), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
       });
+      
+      const responseText = await response.text();
+      console.log('Response status:', response.status);
+      console.log('Raw response:', responseText);
+      
+      let result;
+      try {
+        result = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('JSON parse error:', parseError);
+        setLoading(false);
+        Alert.alert("Error", `Server response error: ${responseText}`);
+        return;
+      }
 
-      if (response.success) {
+      if (response.ok && result.success) {
         Alert.alert("Sukses", "Pengaturan jam kerja berhasil disimpan", [
           {
             text: "OK",
-            onPress: () => router.back(),
+            onPress: () => {
+              setLoading(false);
+              router.back();
+            },
           },
         ]);
       } else {
-        Alert.alert("Error", response.message || "Gagal menyimpan pengaturan");
+        setLoading(false);
+        
+        // Handle specific database error
+        if (result.message && result.message.includes('beginTransaction')) {
+          Alert.alert(
+            "Error Database", 
+            "Terjadi masalah pada server database. Silakan hubungi administrator sistem.\n\nDetail: " + result.message,
+            [
+              { text: "OK" },
+              { 
+                text: "Kembali", 
+                onPress: () => router.back() 
+              }
+            ]
+          );
+        } else {
+          Alert.alert("Error", result.message || `Server error: ${response.status}`);
+        }
       }
     } catch (error) {
-      Alert.alert("Error", "Terjadi kesalahan saat menyimpan");
-    } finally {
       setLoading(false);
+      console.error('Save error:', error);
+      Alert.alert("Error", `Network error: ${error.message}`);
     }
   };
 
@@ -218,51 +260,50 @@ export default function JamKerjaScreen() {
               </Text>
             </View>
 
-            {jamKerjaList.map((item, index) => (
-              <View key={index} style={styles.hariCard}>
-                <View style={styles.hariInfo}>
-                  <View style={styles.hariLeft}>
-                    <Text style={styles.hariNama}>{item.hari}</Text>
-                    <Text style={styles.hariJam}>
-                      {item.is_kerja
-                        ? `${item.jam_masuk} - ${item.jam_pulang}`
-                        : "Libur"}
-                    </Text>
-                    {item.is_kerja && (
-                      <Text style={styles.hariBatas}>
-                        Batas absen: {item.batas_absen}
+            {loading ? (
+              <SkeletonLoader type="schedule" count={7} message="Memuat jam kerja..." />
+            ) : (
+              jamKerjaList.map((item, index) => (
+                <View key={index} style={styles.hariCard}>
+                  <View style={styles.hariInfo}>
+                    <View style={styles.hariLeft}>
+                      <Text style={styles.hariNama}>{item.hari}</Text>
+                      <Text style={styles.hariJam}>
+                        {item.is_kerja
+                          ? `${item.jam_masuk} - ${item.jam_pulang}`
+                          : "Libur"}
                       </Text>
-                    )}
-                  </View>
+                    </View>
 
-                  <View style={styles.hariRight}>
-                    <Switch
-                      value={item.is_kerja}
-                      onValueChange={() => toggleHariKerja(index)}
-                      trackColor={{ false: "#E0E0E0", true: "#A8D5BA" }}
-                      thumbColor={item.is_kerja ? "#004643" : "#f4f3f4"}
-                    />
-
-                    <TouchableOpacity
-                      style={[
-                        styles.editBtn,
-                        !item.is_kerja && styles.editBtnDisabled,
-                      ]}
-                      onPress={() =>
-                        item.is_kerja && handleEditJam(item, index)
-                      }
-                      disabled={!item.is_kerja}
-                    >
-                      <Ionicons
-                        name="create-outline"
-                        size={20}
-                        color={item.is_kerja ? "#004643" : "#ccc"}
+                    <View style={styles.hariRight}>
+                      <Switch
+                        value={item.is_kerja}
+                        onValueChange={() => toggleHariKerja(index)}
+                        trackColor={{ false: "#E0E0E0", true: "#A8D5BA" }}
+                        thumbColor={item.is_kerja ? "#004643" : "#f4f3f4"}
                       />
-                    </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={[
+                          styles.editBtn,
+                          !item.is_kerja && styles.editBtnDisabled,
+                        ]}
+                        onPress={() =>
+                          item.is_kerja && handleEditJam(item, index)
+                        }
+                        disabled={!item.is_kerja}
+                      >
+                        <Ionicons
+                          name="create-outline"
+                          size={20}
+                          color={item.is_kerja ? "#004643" : "#ccc"}
+                        />
+                      </TouchableOpacity>
+                    </View>
                   </View>
                 </View>
-              </View>
-            ))}
+              ))
+            )}
           </View>
         </ScrollView>
       </View>
@@ -274,15 +315,22 @@ export default function JamKerjaScreen() {
           onPress={handleSave}
           disabled={loading}
         >
-          <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
-          <Text style={styles.saveBtnText}>
-            {loading ? "Menyimpan..." : "Simpan Jam Kerja"}
-          </Text>
+          {loading ? (
+            <>
+              <Ionicons name="hourglass-outline" size={20} color="#fff" />
+              <Text style={styles.saveBtnText}>Menyimpan...</Text>
+            </>
+          ) : (
+            <>
+              <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
+              <Text style={styles.saveBtnText}>Simpan Jam Kerja</Text>
+            </>
+          )}
         </TouchableOpacity>
       </View>
 
       {/* Edit Modal */}
-      <Modal visible={showEditModal} animationType="none" transparent>
+      <Modal visible={showEditModal} animationType="none" transparent statusBarTranslucent={true}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
             <Text style={styles.modalTitle}>
@@ -414,7 +462,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 5,
     paddingTop: 15,
-    paddingBottom: 100,
+    paddingBottom: 20,
   },
   infoCard: {
     flexDirection: "row",

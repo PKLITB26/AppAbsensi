@@ -1,69 +1,302 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Platform, RefreshControl } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, FlatList, TextInput, Modal, Animated, PanResponder, Platform } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { AppHeader } from '../../components';
-import { getApiUrl, API_CONFIG } from '../../constants/config';
+import { KelolaDinasAPI } from '../../constants/config';
+import { AppHeader, SkeletonLoader } from '../../components';
+
+interface DinasAktif {
+  id: number;
+  namaKegiatan: string;
+  nomorSpt: string;
+  lokasi: string;
+  jamKerja: string;
+  radius: number;
+  tanggal_mulai: string;
+  tanggal_selesai: string;
+  pegawai: Array<{
+    nama: string;
+    status: 'hadir' | 'terlambat' | 'belum_absen';
+    jamAbsen?: string;
+  }>;
+}
 
 export default function KelolaDinasScreen() {
   const router = useRouter();
-  const [refreshing, setRefreshing] = useState(false);
+  const [selectedFilter, setSelectedFilter] = useState('berlangsung');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [dinasAktif, setDinasAktif] = useState<DinasAktif[]>([]);
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({
-    dinasAktif: 0,
-    pegawaiDinas: 0,
-    belumAbsen: 0,
-    selesaiDinas: 0
+  const [showMenuModal, setShowMenuModal] = useState(false);
+  const [selectedDinas, setSelectedDinas] = useState<DinasAktif | null>(null);
+  const itemsPerPage = 10;
+  const translateY = useRef(new Animated.Value(300)).current;
+  
+  const openModal = () => {
+    setShowMenuModal(true);
+    Animated.timing(translateY, {
+      toValue: 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const closeModal = () => {
+    Animated.timing(translateY, {
+      toValue: 300,
+      duration: 200,
+      useNativeDriver: true,
+    }).start(() => {
+      setShowMenuModal(false);
+    });
+  };
+
+  const panResponder = PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponder: (_, gestureState) => {
+      return gestureState.dy > 5;
+    },
+    onPanResponderMove: (_, gestureState) => {
+      if (gestureState.dy > 0) {
+        translateY.setValue(gestureState.dy);
+      }
+    },
+    onPanResponderRelease: (_, gestureState) => {
+      if (gestureState.dy > 100) {
+        closeModal();
+      } else {
+        Animated.spring(translateY, {
+          toValue: 0,
+          useNativeDriver: true,
+        }).start();
+      }
+    },
   });
 
+  const handleMenuAction = (action: string) => {
+    closeModal();
+    
+    switch (action) {
+      case 'detail':
+        // Navigate to detail dinas
+        console.log('Detail dinas:', selectedDinas?.id);
+        break;
+    }
+  };
+  
   useEffect(() => {
-    fetchDinasData();
-  }, []);
+    fetchDinasAktif();
+  }, [selectedFilter]);
 
-  const fetchDinasData = async () => {
+  const fetchDinasAktif = async () => {
     try {
       setLoading(true);
-      // Fetch dinas statistics from API
-      const response = await fetch(getApiUrl('/admin/kelola-dinas/api/stats'));
-      const result = await response.json();
+      console.log('Fetching dinas aktif data with filter:', selectedFilter);
+      const statusParam = selectedFilter === 'semua' ? undefined : selectedFilter;
+      const response = await KelolaDinasAPI.getDinasAktif(statusParam);
+      console.log('Dinas aktif API response:', response);
       
-      if (result.success) {
-        setStats({
-          dinasAktif: result.data.dinasAktif || 0,
-          pegawaiDinas: result.data.pegawaiDinas || 0,
-          belumAbsen: result.data.belumAbsen || 0,
-          selesaiDinas: result.data.selesaiDinas || 0
-        });
+      if (response && response.success && Array.isArray(response.data)) {
+        console.log('Setting dinas data:', response.data.length, 'items');
+        setDinasAktif(response.data);
+      } else {
+        console.log('No valid data received, setting empty array');
+        setDinasAktif([]);
       }
     } catch (error) {
-      console.log('Error fetching dinas data:', error);
-      // Keep default values on error
+      console.error('Error fetching dinas aktif:', error);
+      setDinasAktif([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await fetchDinasData();
-    setRefreshing(false);
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'hadir': return '#4CAF50';
+      case 'terlambat': return '#FF9800';
+      case 'belum_absen': return '#F44336';
+      default: return '#666';
+    }
   };
 
-  const getCurrentDate = () => {
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'hadir': return 'Hadir';
+      case 'terlambat': return 'Terlambat';
+      case 'belum_absen': return 'Belum Absen';
+      default: return status;
+    }
+  };
+
+  const getDinasStatus = (tanggalMulai: string, tanggalSelesai: string) => {
     const today = new Date();
-    const options: Intl.DateTimeFormatOptions = { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    };
-    return today.toLocaleDateString('id-ID', options);
+    const mulai = new Date(tanggalMulai);
+    const selesai = new Date(tanggalSelesai);
+    
+    today.setHours(0, 0, 0, 0);
+    mulai.setHours(0, 0, 0, 0);
+    selesai.setHours(23, 59, 59, 999);
+    
+    if (today < mulai) {
+      return { status: 'Belum Dimulai', color: '#FF9800' };
+    } else if (today >= mulai && today <= selesai) {
+      return { status: 'Sedang Berlangsung', color: '#4CAF50' };
+    } else {
+      return { status: 'Selesai', color: '#2196F3' };
+    }
   };
 
-  const totalDinas = stats.dinasAktif + stats.selesaiDinas;
-  const absenPercentage = stats.pegawaiDinas > 0 ? Math.round(((stats.pegawaiDinas - stats.belumAbsen) / stats.pegawaiDinas) * 100) : 0;
-  const belumAbsenPercentage = stats.pegawaiDinas > 0 ? Math.round((stats.belumAbsen / stats.pegawaiDinas) * 100) : 0;
+  const getFilteredData = () => {
+    let filtered = dinasAktif;
+    
+    if (searchQuery) {
+      filtered = filtered.filter(item => 
+        item.namaKegiatan.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.nomorSpt.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+    
+    // Filter berdasarkan status dinas
+    if (selectedFilter !== 'semua') {
+      filtered = filtered.filter(item => {
+        const dinasStatusInfo = getDinasStatus(item.tanggal_mulai, item.tanggal_selesai);
+        const status = dinasStatusInfo.status;
+        
+        switch (selectedFilter) {
+          case 'berlangsung':
+            return status === 'Sedang Berlangsung';
+          case 'selesai':
+            return status === 'Selesai';
+          case 'belum_dimulai':
+            return status === 'Belum Dimulai';
+          default:
+            return true;
+        }
+      });
+    }
+    
+    return filtered;
+  };
+
+  const filteredData = getFilteredData();
+  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const currentData = filteredData.slice(startIndex, startIndex + itemsPerPage);
+
+  const renderDinasCard = ({ item }: { item: DinasAktif }) => {
+    const pegawaiArray = item.pegawai || [];
+    const hadirCount = pegawaiArray.filter(p => p.status === 'hadir').length;
+    const totalPegawai = pegawaiArray.length;
+    const dinasStatusInfo = getDinasStatus(item.tanggal_mulai, item.tanggal_selesai);
+
+    return (
+      <View style={styles.dinasCard}>
+        <View style={styles.cardHeader}>
+          <View style={styles.cardTitle}>
+            <Text style={styles.kegiatanName}>{item.namaKegiatan}</Text>
+            <Text style={styles.sptNumber}>{item.nomorSpt}</Text>
+          </View>
+          <View style={styles.cardHeaderRight}>
+            <View style={[styles.dinasStatusBadge, { backgroundColor: dinasStatusInfo.color + '20' }]}>
+              <Text style={[styles.dinasStatusText, { color: dinasStatusInfo.color }]}>
+                {dinasStatusInfo.status === 'Sedang Berlangsung' ? 'Berlangsung' : 
+                 dinasStatusInfo.status === 'Belum Dimulai' ? 'Belum Mulai' : 'Selesai'}
+              </Text>
+            </View>
+            <TouchableOpacity 
+              style={styles.moreBtn}
+              onPress={() => {
+                setSelectedDinas(item);
+                openModal();
+              }}
+            >
+              <Ionicons name="options-outline" size={18} color="#666" />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={styles.cardInfo}>
+          <View style={styles.infoRow}>
+            <Ionicons name="location-outline" size={14} color="#666" />
+            <Text style={styles.infoText}>{item.lokasi}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Ionicons name="time-outline" size={14} color="#666" />
+            <Text style={styles.infoText}>{item.jamKerja}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Ionicons name="calendar-outline" size={14} color="#666" />
+            <Text style={styles.infoText}>
+              {new Date(item.tanggal_mulai).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })} - 
+              {new Date(item.tanggal_selesai).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
+            </Text>
+          </View>
+        </View>
+
+        {/* Hanya tampilkan status absen jika dinas sedang berlangsung */}
+        {dinasStatusInfo.status === 'Sedang Berlangsung' && (
+          <>
+            <View style={styles.statusSummary}>
+              <Text style={styles.statusText}>
+                Status Absen: {hadirCount}/{totalPegawai} Hadir
+              </Text>
+              <View style={styles.progressBar}>
+                <View 
+                  style={[
+                    styles.progressFill, 
+                    { width: totalPegawai > 0 ? `${(hadirCount / totalPegawai) * 100}%` : '0%' }
+                  ]} 
+                />
+              </View>
+            </View>
+
+            <View style={styles.pegawaiList}>
+              {pegawaiArray.length > 0 ? (
+                pegawaiArray.map((pegawai, index) => (
+                  <View key={index} style={styles.pegawaiItem}>
+                    <View style={styles.pegawaiInfo}>
+                      <Text style={styles.pegawaiName}>{pegawai.nama}</Text>
+                      {pegawai.jamAbsen && (
+                        <Text style={styles.jamAbsen}>({pegawai.jamAbsen})</Text>
+                      )}
+                    </View>
+                    <View style={[
+                      styles.statusBadge, 
+                      { backgroundColor: getStatusColor(pegawai.status) + '20' }
+                    ]}>
+                      <Text style={[
+                        styles.statusBadgeText, 
+                        { color: getStatusColor(pegawai.status) }
+                      ]}>
+                        {getStatusLabel(pegawai.status)}
+                      </Text>
+                    </View>
+                  </View>
+                ))
+              ) : (
+                <Text style={styles.noPegawaiText}>Belum ada pegawai yang ditugaskan</Text>
+              )}
+            </View>
+          </>
+        )}
+        
+        {/* Tampilkan info ringkas untuk dinas yang selesai atau belum dimulai */}
+        {dinasStatusInfo.status !== 'Sedang Berlangsung' && (
+          <View style={styles.dinasInfoSection}>
+            <Text style={styles.dinasInfoText}>
+              {dinasStatusInfo.status === 'Selesai' 
+                ? `Dinas telah selesai. Total ${totalPegawai} pegawai ditugaskan.`
+                : `Dinas belum dimulai. ${totalPegawai} pegawai akan ditugaskan.`
+              }
+            </Text>
+          </View>
+        )}
+      </View>
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -73,373 +306,520 @@ export default function KelolaDinasScreen() {
       <AppHeader 
         title="Kelola Dinas"
         showBack={true}
+        showAddButton={true}
+        onAddPress={() => router.push('/kelola-dinas/tambah-dinas' as any)}
         fallbackRoute="/admin/dashboard-admin"
       />
 
-      <ScrollView 
-        style={styles.contentContainer}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-      >
-
-        {/* Combined Stats and Menu Card */}
-        <View style={styles.combinedCard}>
-          {/* Stats Header */}
-          <View style={styles.statsHeader}>
-            <Text style={styles.sectionTitle}>Ringkasan Dinas</Text>
-            <View style={styles.dateTimeContainer}>
-              <Text style={styles.statsDate}>{getCurrentDate()}</Text>
-              <Text style={styles.timeText}>
-                {new Date().toLocaleTimeString('id-ID', { 
-                  hour: '2-digit', 
-                  minute: '2-digit' 
-                })} WIB
-              </Text>
+      <View style={styles.contentWrapper}>
+        {/* Fixed Search and Date */}
+        <View style={styles.fixedControls}>
+          {/* Search Container */}
+          <View style={styles.searchContainer}>
+            <View style={styles.searchInputWrapper}>
+              <Ionicons name="search-outline" size={20} color="#666" style={styles.searchIcon} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Cari nama kegiatan atau nomor SPT..."
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                placeholderTextColor="#999"
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity 
+                  onPress={() => setSearchQuery('')}
+                  style={styles.clearBtn}
+                >
+                  <Ionicons name="close-circle" size={20} color="#999" />
+                </TouchableOpacity>
+              )}
             </View>
           </View>
 
-          {/* Stats Content */}
-          <View style={styles.chartContainer}>
-            {/* Simple Donut Chart */}
-            <View style={styles.donutChart}>
-              <View style={styles.donutOuter}>
-                <View style={styles.donutInner}>
-                  <Text style={styles.donutNumber}>{totalDinas}</Text>
-                  <Text style={styles.donutLabel}>Total Dinas</Text>
-                </View>
-              </View>
-              {/* Chart Legend */}
-              <View style={styles.chartLegend}>
-                <View style={styles.legendItem}>
-                  <View style={[styles.legendDot, { backgroundColor: '#4CAF50' }]} />
-                  <Text style={styles.legendText}>Aktif ({stats.dinasAktif})</Text>
-                </View>
-                <View style={styles.legendItem}>
-                  <View style={[styles.legendDot, { backgroundColor: '#9C27B0' }]} />
-                  <Text style={styles.legendText}>Selesai ({stats.selesaiDinas})</Text>
-                </View>
+          {/* Summary dengan Filter Status */}
+          <View style={styles.summaryCard}>
+            <View style={styles.summaryRow}>
+              <View style={styles.filterHeader}>
+                <Ionicons name="funnel-outline" size={16} color="#004643" />
+                <Text style={styles.filterLabel}>Filter</Text>
               </View>
             </View>
             
-            {/* Stats Cards */}
-            <View style={styles.statsCards}>
-              <View style={styles.statMiniCard}>
-                <View style={styles.statMiniHeader}>
-                  <Ionicons name="people" size={16} color="#2196F3" />
-                  <Text style={styles.statMiniNumber}>{stats.pegawaiDinas}</Text>
-                </View>
-                <Text style={styles.statMiniLabel}>Pegawai Dinas</Text>
-                <View style={styles.statMiniBar}>
-                  <View style={[styles.statMiniBarFill, { width: stats.pegawaiDinas > 0 ? '100%' : '0%', backgroundColor: '#2196F3' }]} />
-                </View>
-              </View>
-              
-              <View style={styles.statMiniCard}>
-                <View style={styles.statMiniHeader}>
-                  <Ionicons name="time" size={16} color="#FF9800" />
-                  <Text style={styles.statMiniNumber}>{stats.belumAbsen}</Text>
-                </View>
-                <Text style={styles.statMiniLabel}>Belum Absen</Text>
-                <View style={styles.statMiniBar}>
-                  <View style={[styles.statMiniBarFill, { width: `${belumAbsenPercentage}%`, backgroundColor: '#FF9800' }]} />
-                </View>
-              </View>
-            </View>
-          </View>
-          
-          {/* Progress Summary */}
-          <View style={styles.progressSummary}>
-            <View style={styles.progressHeader}>
-              <Text style={styles.progressTitle}>Progress Absensi Hari Ini</Text>
-              <Text style={styles.progressPercentage}>{absenPercentage}%</Text>
-            </View>
-            <View style={styles.progressBarContainer}>
-              <View style={styles.progressBarBg}>
-                <View style={[styles.progressBarFill, { width: `${absenPercentage}%` }]} />
-              </View>
-            </View>
-            <Text style={styles.progressSubtext}>
-              {stats.pegawaiDinas - stats.belumAbsen} dari {stats.pegawaiDinas} pegawai sudah absen
-            </Text>
-          </View>
-
-          {/* Menu Section - Inside Same Card */}
-          <View style={styles.menuDivider} />
-          <Text style={styles.menuSectionTitle}>Menu Kelola Dinas</Text>
-          <View style={styles.mainMenuRow}>
-            {[
-              { id: 1, name: 'Data Dinas Aktif', icon: 'today-outline', color: '#E8F5E9', iconColor: '#2E7D32', route: '/kelola-dinas/dinas-aktif' },
-              { id: 2, name: 'Riwayat Dinas', icon: 'document-text-outline', color: '#E3F2FD', iconColor: '#1976D2', route: '/kelola-dinas/riwayat-dinas' },
-              { id: 3, name: 'Validasi Absen', icon: 'checkmark-circle-outline', color: '#FFF3E0', iconColor: '#F57C00', route: '/kelola-dinas/validasi-absen' },
-            ].map((item) => (
-              <TouchableOpacity 
-                key={item.id} 
-                style={styles.mainMenuItem}
-                onPress={() => router.push(item.route as any)}
-              >
-                <View style={[styles.menuIconCircle, { backgroundColor: item.color }]}>
-                  <Ionicons name={item.icon as any} size={22} color={item.iconColor} />
-                </View>
-                <Text style={styles.menuLabel}>{item.name}</Text>
-              </TouchableOpacity>
-            ))}
+            {/* Filter Status Dinas - Horizontal Scroll */}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.filterScrollContent}
+              style={styles.filterScrollContainer}
+            >
+              {[
+                { key: 'semua', label: 'Semua' },
+                { key: 'berlangsung', label: 'Berlangsung' },
+                { key: 'selesai', label: 'Selesai' },
+                { key: 'belum_dimulai', label: 'Belum Dimulai' }
+              ].map((filter) => (
+                <TouchableOpacity
+                  key={filter.key}
+                  style={[
+                    styles.filterChip,
+                    selectedFilter === filter.key && styles.filterChipActive,
+                  ]}
+                  onPress={() => setSelectedFilter(filter.key)}
+                >
+                  <Text
+                    style={[
+                      styles.filterChipText,
+                      selectedFilter === filter.key && styles.filterChipTextActive,
+                    ]}
+                  >
+                    {filter.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
           </View>
         </View>
 
-        {/* Recent Activity */}
-        <View style={styles.recentSection}>
-          <Text style={styles.sectionTitle}>Aktivitas Terbaru</Text>
-          <View style={styles.emptyState}>
-            <Ionicons name="briefcase-outline" size={60} color="#ccc" />
-            <Text style={styles.emptyText}>Belum ada aktivitas dinas hari ini</Text>
-          </View>
+        {/* Scrollable List */}
+        <FlatList
+          style={styles.flatList}
+          data={currentData}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={renderDinasCard}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          refreshing={loading}
+          onRefresh={fetchDinasAktif}
+          ListEmptyComponent={() => (
+            loading ? (
+              <SkeletonLoader type="card" count={3} message="Memuat data dinas..." />
+            ) : (
+              <View style={styles.emptyState}>
+                <Ionicons name="briefcase-outline" size={60} color="#ccc" />
+                <Text style={styles.emptyText}>Tidak ada data dinas</Text>
+              </View>
+            )
+          )}
+          ListFooterComponent={() => {
+            if (totalPages <= 1) return null;
+            return (
+              <View style={styles.paginationContainer}>
+                <TouchableOpacity 
+                  style={[styles.pageBtn, currentPage === 1 && styles.pageBtnDisabled]}
+                  onPress={() => setCurrentPage(currentPage - 1)}
+                  disabled={currentPage === 1}
+                >
+                  <Ionicons name="chevron-back" size={16} color={currentPage === 1 ? '#ccc' : '#004643'} />
+                </TouchableOpacity>
+                
+                <View style={styles.pageNumbers}>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                    <TouchableOpacity
+                      key={page}
+                      style={[styles.pageNumber, currentPage === page && styles.pageNumberActive]}
+                      onPress={() => setCurrentPage(page)}
+                    >
+                      <Text style={[styles.pageNumberText, currentPage === page && styles.pageNumberTextActive]}>
+                        {page}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                
+                <TouchableOpacity 
+                  style={[styles.pageBtn, currentPage === totalPages && styles.pageBtnDisabled]}
+                  onPress={() => setCurrentPage(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                >
+                  <Ionicons name="chevron-forward" size={16} color={currentPage === totalPages ? '#ccc' : '#004643'} />
+                </TouchableOpacity>
+              </View>
+            );
+          }}
+        />
+      </View>
+      
+      {/* Menu Modal */}
+      <Modal
+        visible={showMenuModal}
+        transparent={true}
+        animationType="none"
+        statusBarTranslucent={true}
+        onRequestClose={() => closeModal()}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity 
+            style={styles.modalBackdrop} 
+            activeOpacity={1}
+            onPress={() => closeModal()}
+          />
+          <Animated.View style={[styles.bottomSheetModal, {
+            transform: [{ translateY }]
+          }]}>
+            <View {...panResponder.panHandlers} style={styles.handleContainer}>
+              <View style={styles.handleBar} />
+            </View>
+            
+            <View style={styles.bottomSheetHeader}>
+              <View style={styles.actionCard}>
+                <View style={styles.bottomSheetActions}>
+                  <TouchableOpacity
+                    style={styles.bottomSheetItem}
+                    onPress={() => handleMenuAction('detail')}
+                  >
+                    <Ionicons name="eye-outline" size={20} color="#2196F3" />
+                    <Text style={styles.bottomSheetItemText}>Detail Dinas</Text>
+                  </TouchableOpacity>
+                  
+
+                </View>
+              </View>
+            </View>
+          </Animated.View>
         </View>
-        </ScrollView>
+      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    backgroundColor: '#F8FAFB' 
-  },
-  contentContainer: {
+  container: { flex: 1, backgroundColor: '#fff' },
+  contentWrapper: {
     flex: 1,
-    paddingTop: 15,
+    backgroundColor: "#F8FAFB",
+  },
+  fixedControls: {
+    paddingTop: 8,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F0F0F0",
+    backgroundColor: "#FAFBFC",
+  },
+  flatList: {
+    flex: 1,
   },
 
-  // Combined Card Style
-  combinedCard: {
+  searchContainer: {
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    backgroundColor: "#F8FAFB"
+  },
+  searchInputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 20,
-    marginHorizontal: 20,
-    marginTop: 10,
-    marginBottom: 20,
+    borderRadius: 12,
+    paddingHorizontal: 15,
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
-    shadowRadius: 4
+    shadowRadius: 2
   },
-  
-  // Stats Section
-  statsSection: {
-    paddingHorizontal: 20,
-    marginBottom: 20,
-    marginTop: Platform.OS === 'android' ? 5 : 10
+  searchIcon: {
+    marginRight: 10
   },
-  statsHeader: {
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#333',
+    paddingVertical: 12
+  },
+  clearBtn: {
+    padding: 4
+  },
+  listContent: {
+    paddingHorizontal: 5,
+    paddingTop: 10,
+    paddingBottom: 20
+  },
+
+  statusSummary: { marginBottom: 12 },
+  statusText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8
+  },
+  progressBar: {
+    height: 6,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 3
+  },
+  progressFill: {
+    height: 6,
+    backgroundColor: '#4CAF50',
+    borderRadius: 3
+  },
+  pegawaiList: { marginBottom: 12 },
+  pegawaiItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0'
+  },
+  pegawaiInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1
+  },
+  pegawaiName: {
+    fontSize: 13,
+    color: '#333',
+    fontWeight: '500'
+  },
+  jamAbsen: {
+    fontSize: 11,
+    color: '#666',
+    marginLeft: 6
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12
+  },
+  statusBadgeText: {
+    fontSize: 10,
+    fontWeight: 'bold'
+  },
+  noPegawaiText: {
+    fontSize: 14,
+    color: '#999',
+    fontStyle: 'italic',
+    textAlign: 'center',
+    paddingVertical: 10
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 40,
+    paddingTop: 100
+  },
+  emptyText: {
+    fontSize: 14,
+    color: '#999',
+    marginTop: 10
+  },
+  paginationContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 20,
+    marginTop: 10
+  },
+  pageBtn: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: '#F5F5F5'
+  },
+  pageBtnDisabled: {
+    backgroundColor: '#F0F0F0'
+  },
+  pageNumbers: {
+    flexDirection: 'row',
+    marginHorizontal: 15
+  },
+  pageNumber: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginHorizontal: 2,
+    borderRadius: 8,
+    backgroundColor: '#F5F5F5'
+  },
+  pageNumberActive: {
+    backgroundColor: '#004643'
+  },
+  pageNumberText: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '500'
+  },
+  pageNumberTextActive: {
+    color: '#fff',
+    fontWeight: 'bold'
+  },
+
+  filterHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6
+  },
+  filterLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#004643'
+  },
+  filterScrollContainer: {
+    marginHorizontal: -4
+  },
+  filterScrollContent: {
+    paddingHorizontal: 4,
+    paddingRight: 20
+  },
+  filterChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginRight: 8,
+    borderRadius: 20,
+    backgroundColor: '#F8F9FA',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    minWidth: 80,
+    alignItems: 'center'
+  },
+  filterChipActive: {
+    backgroundColor: '#004643',
+    borderColor: '#004643'
+  },
+  filterChipText: {
+    fontSize: 12,
+    color: '#666',
+    fontWeight: '500'
+  },
+  filterChipTextActive: {
+    color: '#fff',
+    fontWeight: '600'
+  },
+  summaryCard: {
+    backgroundColor: '#fff',
+    marginHorizontal: 15,
+    marginBottom: 8,
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  summaryRow: {
+    alignItems: 'flex-start'
+  },
+
+  dinasCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 15,
+    marginBottom: 12,
+    marginHorizontal: 15,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 15
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333'
-  },
-  dateTimeContainer: {
-    alignItems: 'flex-end'
-  },
-  statsDate: {
-    fontSize: 12,
-    color: '#666',
-    fontWeight: '500',
-    marginBottom: 2
-  },
-  timeText: {
-    fontSize: 14,
-    color: '#004643',
-    fontWeight: 'bold'
-  },
-  
-  // Menu Divider
-  menuDivider: {
-    height: 1,
-    backgroundColor: '#F0F0F0',
-    marginVertical: 20
-  },
-  menuSectionTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 15
-  },
-  
-  // Menu Section - Inside Combined Card
-  mainMenuRow: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    paddingHorizontal: Platform.OS === 'ios' ? 5 : 0,
-  },
-  mainMenuItem: { 
-    width: Platform.OS === 'ios' ? '30%' : '31%', 
-    alignItems: 'center' 
-  },
-  menuIconCircle: { 
-    width: Platform.OS === 'ios' ? 52 : 56, 
-    height: Platform.OS === 'ios' ? 52 : 56, 
-    borderRadius: 16, 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    marginBottom: 8 
-  },
-  menuLabel: { 
-    fontSize: 11, 
-    color: '#444', 
-    fontWeight: '500', 
-    textAlign: 'center' 
-  },
-  chartContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20
-  },
-  donutChart: {
-    alignItems: 'center',
-    marginRight: 20
-  },
-  donutOuter: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#F0F0F0',
-    justifyContent: 'center',
-    alignItems: 'center',
     marginBottom: 12
   },
-  donutInner: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#fff',
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-  donutNumber: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333'
-  },
-  donutLabel: {
-    fontSize: 10,
-    color: '#666'
-  },
-  chartLegend: {
-    gap: 6
-  },
-  legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6
-  },
-  legendDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4
-  },
-  legendText: {
-    fontSize: 11,
-    color: '#666'
-  },
-  statsCards: {
-    flex: 1,
-    gap: 12
-  },
-  statMiniCard: {
-    backgroundColor: '#F8F9FA',
-    borderRadius: 12,
-    padding: 12
-  },
-  statMiniHeader: {
+  cardTitle: { flex: 1, marginRight: 10 },
+  cardHeaderRight: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginBottom: 6
   },
-  statMiniNumber: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333'
+  moreBtn: { 
+    padding: 8, 
   },
-  statMiniLabel: {
-    fontSize: 11,
-    color: '#666',
-    marginBottom: 6
+  dinasStatusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
   },
-  statMiniBar: {
-    height: 4,
-    backgroundColor: '#E0E0E0',
-    borderRadius: 2,
-    overflow: 'hidden'
+  dinasStatusText: {
+    fontSize: 10,
+    fontWeight: 'bold'
   },
-  statMiniBarFill: {
-    height: '100%',
-    borderRadius: 2
-  },
-  progressSummary: {
-    borderTopWidth: 1,
-    borderTopColor: '#F0F0F0',
-    paddingTop: 16
-  },
-  progressHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12
-  },
-  progressTitle: {
+  kegiatanName: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#333'
-  },
-  progressPercentage: {
-    fontSize: 18,
     fontWeight: 'bold',
-    color: '#004643'
+    color: '#333',
+    marginBottom: 2
   },
-  progressBarContainer: {
-    marginBottom: 8
-  },
-  progressBarBg: {
-    height: 8,
-    backgroundColor: '#F0F0F0',
-    borderRadius: 4,
-    overflow: 'hidden'
-  },
-  progressBarFill: {
-    height: '100%',
-    backgroundColor: '#004643',
-    borderRadius: 4
-  },
-  progressSubtext: {
+  sptNumber: {
     fontSize: 11,
+    color: '#666'
+  },
+  cardInfo: { marginBottom: 12 },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6
+  },
+  infoText: {
+    fontSize: 12,
     color: '#666',
-    textAlign: 'center'
+    marginLeft: 6
   },
-
-
-
-  // Recent Activity
-  recentSection: { 
-    paddingHorizontal: 20, 
-    marginBottom: 30,
-    marginTop: Platform.OS === 'android' ? 10 : 0
+  dinasInfoSection: {
+    backgroundColor: '#F8F9FA',
+    padding: 10,
+    borderRadius: 8,
+    marginTop: 8
   },
-  emptyState: { 
-    alignItems: 'center', 
-    paddingVertical: Platform.OS === 'android' ? 30 : 40 
-  },
-  emptyText: { 
-    fontSize: Platform.OS === 'android' ? 13 : 14, 
-    color: '#999', 
-    marginTop: 10,
+  dinasInfoText: {
+    fontSize: 12,
+    color: '#666',
     textAlign: 'center',
-    lineHeight: Platform.OS === 'android' ? 16 : 18
-  }
+    fontStyle: 'italic'
+  },
+  
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    paddingTop: Platform.OS === 'android' ? 0 : 50,
+  },
+  modalBackdrop: {
+    flex: 1,
+  },
+  bottomSheetModal: {
+    backgroundColor: '#F8F9FA',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 20,
+    paddingTop: 8,
+  },
+  handleContainer: {
+    paddingVertical: 12,
+    alignItems: 'center',
+    width: '100%',
+  },
+  handleBar: {
+    width: 40,
+    height: 4,
+    backgroundColor: '#DDD',
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginTop: 8,
+    marginBottom: 16,
+  },
+  bottomSheetHeader: {
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+  },
+  actionCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  bottomSheetActions: {
+    backgroundColor: 'transparent',
+  },
+  bottomSheetItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 18,
+    backgroundColor: 'transparent',
+    gap: 15,
+  },
+  actionDivider: {
+    height: 0.5,
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    marginLeft: 55,
+  },
+  bottomSheetItemText: {
+    fontSize: 16,
+    color: '#333',
+    fontWeight: '500',
+  },
 });

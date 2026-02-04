@@ -3,40 +3,9 @@ const { getConnection } = require('../config/database');
 
 const getAdminData = async (req, res) => {
   try {
-    const { user_id } = req.query;
     const db = await getConnection();
 
-    // Get admin info
-    let adminQuery = 'SELECT id_user, email, role FROM users WHERE role = "admin"';
-    let params = [];
-    
-    if (user_id) {
-      adminQuery += ' AND id_user = ?';
-      params.push(user_id);
-    } else {
-      adminQuery += ' LIMIT 1';
-    }
-
-    const [adminRows] = await db.execute(adminQuery, params);
-    const admin = adminRows[0];
-
-    if (!admin) {
-      return res.json({ success: false, message: 'Admin tidak ditemukan' });
-    }
-
-    // Get today's attendance stats (only pegawai)
-    const [statsRows] = await db.execute(`
-      SELECT 
-        COUNT(CASE WHEN pr.status = 'Hadir' THEN 1 END) as hadir,
-        COUNT(CASE WHEN pr.status = 'Tidak Hadir' THEN 1 END) as tidak_hadir
-      FROM presensi pr
-      LEFT JOIN users u ON pr.id_user = u.id_user
-      WHERE u.role = 'pegawai' 
-      AND DATE(pr.tanggal) = CURDATE()
-    `);
-    const stats = statsRows[0];
-
-    // Get total pegawai count from database
+    // Get total pegawai count
     const [totalRows] = await db.execute(`
       SELECT COUNT(*) as total_pegawai
       FROM users u
@@ -44,7 +13,21 @@ const getAdminData = async (req, res) => {
     `);
     const totalPegawai = totalRows[0].total_pegawai;
 
-    // Get recent activities (only pegawai)
+    // Get today's attendance stats
+    const [statsRows] = await db.execute(`
+      SELECT 
+        COUNT(CASE WHEN pr.status IN ('Hadir', 'Terlambat') THEN 1 END) as hadir
+      FROM presensi pr
+      LEFT JOIN users u ON pr.id_user = u.id_user
+      WHERE u.role = 'pegawai' 
+      AND DATE(pr.tanggal) = CURDATE()
+    `);
+    const hadir = parseInt(statsRows[0].hadir || 0);
+    const tidak_hadir = totalPegawai - hadir;
+
+    console.log('Dashboard Stats:', { totalPegawai, hadir, tidak_hadir });
+
+    // Get recent activities
     const [recentRows] = await db.execute(`
       SELECT 
         p.nama_lengkap,
@@ -59,32 +42,18 @@ const getAdminData = async (req, res) => {
       LIMIT 5
     `);
 
-    // Extract name from email for admin display
-    let adminName = 'Administrator';
-    if (admin && admin.email) {
-      const emailParts = admin.email.split('@');
-      if (emailParts.length > 1) {
-        const domain = emailParts[1];
-        if (domain.includes('itb.ac.id')) {
-          adminName = 'Administrator ITB';
-        } else {
-          adminName = 'Administrator ' + domain.split('.')[0].toUpperCase();
-        }
-      }
-    }
-
     res.json({
       success: true,
       user: {
-        id_user: parseInt(admin.id_user),
-        nama_lengkap: adminName,
-        email: admin.email,
-        role: admin.role
+        id_user: 1,
+        nama_lengkap: 'Administrator',
+        email: 'admin@itb.ac.id',
+        role: 'admin'
       },
       stats: {
-        hadir: parseInt(stats.hadir || 0),
-        tidak_hadir: parseInt(stats.tidak_hadir || 0),
-        total_pegawai: parseInt(totalPegawai || 0)
+        hadir: hadir,
+        tidak_hadir: tidak_hadir,
+        total_pegawai: parseInt(totalPegawai)
       },
       recent: recentRows || []
     });

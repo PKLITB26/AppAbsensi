@@ -12,6 +12,7 @@ interface PegawaiAbsen {
   nama_lengkap: string;
   nip: string;
   foto_profil?: string;
+  today_status?: string;
   summary: {
     'Hadir': number;
     'Tidak Hadir': number;
@@ -21,7 +22,6 @@ interface PegawaiAbsen {
     'Cuti': number;
     'Pulang Cepat': number;
     'Dinas Luar/ Perjalanan Dinas': number;
-    'Mangkir/ Alpha': number;
   };
 }
 
@@ -34,7 +34,7 @@ const statusConfig = {
   'Cuti': { color: '#9C27B0', icon: 'calendar' },
   'Pulang Cepat': { color: '#795548', icon: 'exit' },
   'Dinas Luar/ Perjalanan Dinas': { color: '#607D8B', icon: 'airplane' },
-  'Mangkir/ Alpha': { color: '#424242', icon: 'ban' }
+  'Belum Absen': { color: '#FF9800', icon: 'time-outline' },
 };
 
 import { API_CONFIG, getApiUrl } from '../../constants/config';
@@ -45,13 +45,38 @@ export default function LaporanDetailAbsenScreen() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDateFilter, setSelectedDateFilter] = useState('hari_ini');
-  const [showDateRangePicker, setShowDateRangePicker] = useState(false);
+  const [showStartDatePicker, setShowStartDatePicker] = useState(false);
+  const [showEndDatePicker, setShowEndDatePicker] = useState(false);
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
-  const [dateSelectionStep, setDateSelectionStep] = useState<'start' | 'end'>('start');
+  const [jamKerja, setJamKerja] = useState({ jam_masuk: '08:30', jam_pulang: '17:00' });
 
   useEffect(() => {
+    fetchJamKerja();
     fetchData();
+    
+    // Auto-refresh every 60 seconds to update dynamic status
+    const interval = setInterval(() => {
+      fetchData();
+    }, 60000);
+    
+    return () => clearInterval(interval);
   }, [selectedDateFilter, searchQuery, dateRange]);
+
+  const fetchJamKerja = async () => {
+    try {
+      const response = await fetch(getApiUrl(API_CONFIG.ENDPOINTS.JAM_KERJA));
+      const result = await response.json();
+      if (result.success && result.data && result.data.length > 0) {
+        const jamKerjaData = result.data[0]; // Ambil data pertama
+        setJamKerja({
+          jam_masuk: (jamKerjaData.batas_absen || jamKerjaData.jam_masuk || '08:30').substring(0, 5),
+          jam_pulang: (jamKerjaData.jam_pulang || '17:00').substring(0, 5)
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching jam kerja:', error);
+    }
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -72,6 +97,7 @@ export default function LaporanDetailAbsenScreen() {
         const sortedData = result.data.sort((a: PegawaiAbsen, b: PegawaiAbsen) => 
           a.nama_lengkap.localeCompare(b.nama_lengkap)
         );
+        console.log('API Response:', result.data[0]); // Debug log
         setData(sortedData);
       } else {
         console.error('Error:', result.message);
@@ -85,44 +111,11 @@ export default function LaporanDetailAbsenScreen() {
     }
   };
 
-      <Modal visible={showDateRangePicker} transparent animationType="none" statusBarTranslucent={true}>
-        <View style={styles.modalOverlay}>
-          <TouchableOpacity 
-            style={styles.modalBackdrop} 
-            activeOpacity={1}
-            onPress={() => setShowDateRangePicker(false)}
-          />
-          <View style={styles.calendarModal}>
-            <View style={styles.calendarHeader}>
-              <Text style={styles.calendarTitle}>
-                {dateSelectionStep === 'start' ? 'Pilih Tanggal Mulai' : 'Pilih Tanggal Selesai'}
-              </Text>
-              <TouchableOpacity onPress={() => setShowDateRangePicker(false)}>
-                <Ionicons name="close" size={24} color="#666" />
-              </TouchableOpacity>
-            </View>
-            <CustomCalendar
-              events={[]}
-              onDatePress={(date) => {
-                const dateString = date.toISOString().split('T')[0];
-                if (dateSelectionStep === 'start') {
-                  setDateRange({...dateRange, start: dateString});
-                  setDateSelectionStep('end');
-                } else {
-                  setDateRange({...dateRange, end: dateString});
-                  setSelectedDateFilter('pilih_tanggal');
-                  setShowDateRangePicker(false);
-                  setDateSelectionStep('start');
-                }
-              }}
-            />
-          </View>
-        </View>
-      </Modal>
-
   const renderStatusBadge = (status: string, count: number) => {
     if (count === 0) return null;
     const config = statusConfig[status as keyof typeof statusConfig];
+    if (!config) return null;
+    
     return (
       <View key={status} style={[styles.statusBadge, { backgroundColor: config.color + '15' }]}>
         <Text style={[styles.statusText, { color: config.color }]}>
@@ -130,6 +123,110 @@ export default function LaporanDetailAbsenScreen() {
         </Text>
       </View>
     );
+  };
+
+  const renderAbsentStatus = (item: PegawaiAbsen) => {
+    // Calculate total working days based on filter period
+    let expectedWorkingDays = 1;
+    const today = new Date();
+    
+    // Calculate expected working days for each filter
+    if (selectedDateFilter === 'minggu_ini') {
+      // Count weekdays in current week
+      const startOfWeek = new Date(today);
+      startOfWeek.setDate(today.getDate() - today.getDay() + 1); // Monday
+      expectedWorkingDays = 0;
+      for (let i = 0; i < 5; i++) { // Mon-Fri
+        const checkDate = new Date(startOfWeek);
+        checkDate.setDate(startOfWeek.getDate() + i);
+        if (checkDate <= today) expectedWorkingDays++;
+      }
+    } else if (selectedDateFilter === 'bulan_ini') {
+      // Count weekdays in current month up to today
+      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+      expectedWorkingDays = 0;
+      for (let d = new Date(startOfMonth); d <= today; d.setDate(d.getDate() + 1)) {
+        const dayOfWeek = d.getDay();
+        if (dayOfWeek !== 0 && dayOfWeek !== 6) expectedWorkingDays++; // Not weekend
+      }
+    } else if (selectedDateFilter === 'pilih_tanggal' && dateRange.start && dateRange.end) {
+      // Count weekdays in selected range
+      const start = new Date(dateRange.start);
+      const end = new Date(dateRange.end);
+      expectedWorkingDays = 0;
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        const dayOfWeek = d.getDay();
+        if (dayOfWeek !== 0 && dayOfWeek !== 6) expectedWorkingDays++; // Not weekend
+      }
+    }
+    
+    // Calculate actual attendance
+    const totalAttendance = item.summary['Hadir'] + 
+                           item.summary['Terlambat'] + 
+                           item.summary['Izin'] + 
+                           item.summary['Sakit'] + 
+                           item.summary['Cuti'] + 
+                           item.summary['Pulang Cepat'] + 
+                           item.summary['Dinas Luar/ Perjalanan Dinas'];
+    
+    const absentDays = expectedWorkingDays - totalAttendance;
+    
+    // For today filter, check against jam kerja setting
+    if (selectedDateFilter === 'hari_ini' && absentDays > 0) {
+      const now = new Date();
+      const [jamMasukHour, jamMasukMinute] = jamKerja.jam_masuk.split(':').map(Number);
+      const [jamPulangHour, jamPulangMinute] = jamKerja.jam_pulang.split(':').map(Number);
+      
+      const batasAbsen = new Date();
+      batasAbsen.setHours(jamMasukHour, jamMasukMinute, 0, 0);
+      
+      const jamPulang = new Date();
+      jamPulang.setHours(jamPulangHour, jamPulangMinute, 0, 0);
+      
+      // If current time is before batas absen, show "Belum Absen"
+      if (now < batasAbsen) {
+        return (
+          <View key="belum-absen" style={[styles.statusBadge, { backgroundColor: statusConfig['Belum Absen'].color + '15' }]}>
+            <Text style={[styles.statusText, { color: statusConfig['Belum Absen'].color }]}>
+              Belum Absen ({absentDays})
+            </Text>
+          </View>
+        );
+      }
+      // If current time is after batas absen but before jam pulang, show "Tidak Hadir"
+      else if (now >= batasAbsen && now < jamPulang) {
+        return (
+          <View key="tidak-hadir" style={[styles.statusBadge, { backgroundColor: statusConfig['Tidak Hadir'].color + '15' }]}>
+            <Text style={[styles.statusText, { color: statusConfig['Tidak Hadir'].color }]}>
+              Tidak Hadir ({absentDays})
+            </Text>
+          </View>
+        );
+      }
+      // If after jam pulang, definitely "Tidak Hadir"
+      else {
+        return (
+          <View key="tidak-hadir" style={[styles.statusBadge, { backgroundColor: statusConfig['Tidak Hadir'].color + '15' }]}>
+            <Text style={[styles.statusText, { color: statusConfig['Tidak Hadir'].color }]}>
+              Tidak Hadir ({absentDays})
+            </Text>
+          </View>
+        );
+      }
+    }
+    
+    // For all other periods, show "Tidak Hadir" if there are absent days
+    if (absentDays > 0) {
+      return (
+        <View key="tidak-hadir" style={[styles.statusBadge, { backgroundColor: statusConfig['Tidak Hadir'].color + '15' }]}>
+          <Text style={[styles.statusText, { color: statusConfig['Tidak Hadir'].color }]}>
+            Tidak Hadir ({absentDays})
+          </Text>
+        </View>
+      );
+    }
+    
+    return null;
   };
 
   const renderItem = ({ item }: { item: PegawaiAbsen }) => (
@@ -167,9 +264,11 @@ export default function LaporanDetailAbsenScreen() {
       </View>
       
       <View style={styles.statusContainer}>
-        {Object.entries(item.summary).map(([status, count]) => 
-          renderStatusBadge(status, count)
-        )}
+        {renderAbsentStatus(item)}
+        {Object.entries(item.summary)
+          .filter(([status, count]) => count > 0 && status !== 'Tidak Hadir') // Exclude 'Tidak Hadir' to avoid duplication
+          .map(([status, count]) => renderStatusBadge(status, count))
+        }
       </View>
     </TouchableOpacity>
   );
@@ -233,11 +332,10 @@ export default function LaporanDetailAbsenScreen() {
                   ]}
                   onPress={() => {
                     if (filter.key === 'pilih_tanggal') {
-                      setDateSelectionStep('start');
-                      setShowDateRangePicker(true);
+                      setShowStartDatePicker(true);
                     } else {
                       setSelectedDateFilter(filter.key);
-                      setDateRange({ start: '', end: '' }); // Reset date range when switching to other filters
+                      setDateRange({ start: '', end: '' });
                     }
                   }}
                 >
@@ -277,34 +375,46 @@ export default function LaporanDetailAbsenScreen() {
         </View>
       )}
       
-      <Modal visible={showDateRangePicker} transparent animationType="none" statusBarTranslucent={true}>
+      <Modal 
+        visible={showStartDatePicker || showEndDatePicker} 
+        transparent 
+        animationType="none" 
+        statusBarTranslucent={true}
+      >
         <View style={styles.modalOverlay}>
           <TouchableOpacity 
             style={styles.modalBackdrop} 
             activeOpacity={1}
-            onPress={() => setShowDateRangePicker(false)}
+            onPress={() => {
+              setShowStartDatePicker(false);
+              setShowEndDatePicker(false);
+            }}
           />
           <View style={styles.calendarModal}>
             <View style={styles.calendarHeader}>
               <Text style={styles.calendarTitle}>
-                {dateSelectionStep === 'start' ? 'Pilih Tanggal Mulai' : 'Pilih Tanggal Selesai'}
+                {showStartDatePicker ? 'Pilih Tanggal Mulai' : 'Pilih Tanggal Selesai'}
               </Text>
-              <TouchableOpacity onPress={() => setShowDateRangePicker(false)}>
+              <TouchableOpacity onPress={() => {
+                setShowStartDatePicker(false);
+                setShowEndDatePicker(false);
+              }}>
                 <Ionicons name="close" size={24} color="#666" />
               </TouchableOpacity>
             </View>
             <CustomCalendar
-              events={[]}
+              showWeekends={false}
+              weekendDays={[]}
               onDatePress={(date) => {
                 const dateString = date.toISOString().split('T')[0];
-                if (dateSelectionStep === 'start') {
+                if (showStartDatePicker) {
                   setDateRange({...dateRange, start: dateString});
-                  setDateSelectionStep('end');
+                  setShowStartDatePicker(false);
+                  setShowEndDatePicker(true);
                 } else {
                   setDateRange({...dateRange, end: dateString});
                   setSelectedDateFilter('pilih_tanggal');
-                  setShowDateRangePicker(false);
-                  setDateSelectionStep('start');
+                  setShowEndDatePicker(false);
                 }
               }}
             />
@@ -514,78 +624,5 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: '#004643'
-  },
-  dateRangeModal: {
-    backgroundColor: '#fff',
-    borderRadius: 15,
-    width: '90%',
-    maxWidth: 400,
-    padding: 20
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#004643'
-  },
-  dateInputs: {
-    marginBottom: 20
-  },
-  dateInputGroup: {
-    marginBottom: 15
-  },
-  dateLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 8
-  },
-  dateInput: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#F8F9FA',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    borderWidth: 1,
-    borderColor: '#E0E0E0'
-  },
-  dateInputText: {
-    fontSize: 14,
-    color: '#333'
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    gap: 10
-  },
-  cancelBtn: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 8,
-    backgroundColor: '#F5F5F5',
-    alignItems: 'center'
-  },
-  cancelBtnText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#666'
-  },
-  confirmBtn: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 8,
-    backgroundColor: '#004643',
-    alignItems: 'center'
-  },
-  confirmBtnText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#fff'
   },
 });

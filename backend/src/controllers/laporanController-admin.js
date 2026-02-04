@@ -1,5 +1,70 @@
 const { getConnection } = require('../config/database');
 
+// Function to get dynamic attendance status based on current time
+const getDynamicAttendanceStatus = async (userId, targetDate = null) => {
+  const db = await getConnection();
+  const today = targetDate || new Date().toISOString().split('T')[0];
+  const now = new Date();
+  const currentTime = now.toTimeString().slice(0, 8);
+  
+  // Get day name in Indonesian
+  const dayNames = {
+    'Sunday': 'Minggu',
+    'Monday': 'Senin', 
+    'Tuesday': 'Selasa',
+    'Wednesday': 'Rabu',
+    'Thursday': 'Kamis',
+    'Friday': 'Jumat',
+    'Saturday': 'Sabtu'
+  };
+  const dayName = dayNames[now.toLocaleDateString('en-US', { weekday: 'long' })];
+  
+  // Get work schedule for today
+  const [scheduleRows] = await db.execute(
+    'SELECT jam_masuk, batas_absen, jam_pulang, is_kerja FROM jam_kerja_hari WHERE hari = ?',
+    [dayName]
+  );
+  
+  if (!scheduleRows.length || !scheduleRows[0].is_kerja) {
+    return { status: 'Libur', isWorkDay: false };
+  }
+  
+  const { jam_masuk, batas_absen, jam_pulang } = scheduleRows[0];
+  
+  // Check if already attended today
+  const [attendanceRows] = await db.execute(
+    'SELECT jam_masuk, status FROM presensi WHERE id_user = ? AND DATE(tanggal) = ?',
+    [userId, today]
+  );
+  
+  if (attendanceRows.length > 0) {
+    // Already attended - return existing status
+    return { 
+      status: attendanceRows[0].status, 
+      isWorkDay: true,
+      hasAttended: true,
+      attendanceTime: attendanceRows[0].jam_masuk
+    };
+  }
+  
+  // Not attended yet - determine dynamic status
+  if (currentTime <= batas_absen) {
+    return { 
+      status: 'Belum Absen', 
+      isWorkDay: true, 
+      hasAttended: false,
+      timeRemaining: batas_absen
+    };
+  } else {
+    return { 
+      status: 'Tidak Hadir', 
+      isWorkDay: true, 
+      hasAttended: false,
+      overdueBy: currentTime
+    };
+  }
+};
+
 const getLaporan = async (req, res) => {
   try {
     const { type } = req.query;
@@ -53,59 +118,74 @@ const getLaporan = async (req, res) => {
       });
 
     } else if (type === 'absen') {
-      // Get all pegawai with absen summary
-      const [results] = await db.execute(`
+      // Get all pegawai with dynamic absen summary
+      const [pegawaiResults] = await db.execute(`
         SELECT 
           p.id_pegawai as id_pegawai,
           p.nama_lengkap as nama_lengkap,
           p.nip,
           p.foto_profil,
-          (
-            SELECT COUNT(*) FROM presensi pr WHERE pr.id_user = p.id_user AND pr.status = 'Hadir'
-          ) + (
-            SELECT COUNT(*) FROM absen_dinas ad WHERE ad.id_user = p.id_user AND ad.status = 'hadir'
-          ) as hadir,
-          (
-            SELECT COUNT(*) FROM presensi pr WHERE pr.id_user = p.id_user AND pr.status = 'Tidak Hadir'
-          ) + (
-            SELECT COUNT(*) FROM absen_dinas ad WHERE ad.id_user = p.id_user AND ad.status = 'tidak_hadir'
-          ) as tidak_hadir,
-          (
-            SELECT COUNT(*) FROM presensi pr WHERE pr.id_user = p.id_user AND pr.status = 'Terlambat'
-          ) + (
-            SELECT COUNT(*) FROM absen_dinas ad WHERE ad.id_user = p.id_user AND ad.status = 'terlambat'
-          ) as terlambat,
-          COUNT(CASE WHEN pr.status = 'Izin' THEN 1 END) as izin,
-          COUNT(CASE WHEN pr.status = 'Sakit' THEN 1 END) as sakit,
-          COUNT(CASE WHEN pr.status = 'Cuti' THEN 1 END) as cuti,
-          COUNT(CASE WHEN pr.status = 'Pulang Cepat' THEN 1 END) as pulang_cepat,
-          COUNT(CASE WHEN pr.status = 'Dinas Luar/ Perjalanan Dinas' THEN 1 END) as dinas_luar,
-          COUNT(CASE WHEN pr.status = 'Mangkir/ Alpha' THEN 1 END) as mangkir
+          p.id_user
         FROM pegawai p
         LEFT JOIN users u ON p.id_user = u.id_user
-        LEFT JOIN presensi pr ON p.id_user = pr.id_user
         WHERE u.role = 'pegawai' AND p.id_user IS NOT NULL
-        GROUP BY p.id_pegawai, p.nama_lengkap, p.nip, p.foto_profil
         ORDER BY p.nama_lengkap
       `);
 
-      const data = results.map(row => ({
-        id_pegawai: parseInt(row.id_pegawai),
-        nama_lengkap: row.nama_lengkap,
-        nip: row.nip,
-        foto_profil: row.foto_profil,
-        summary: {
-          'Hadir': parseInt(row.hadir || 0),
-          'Tidak Hadir': parseInt(row.tidak_hadir || 0),
-          'Terlambat': parseInt(row.terlambat || 0),
-          'Izin': parseInt(row.izin || 0),
-          'Sakit': parseInt(row.sakit || 0),
-          'Cuti': parseInt(row.cuti || 0),
-          'Pulang Cepat': parseInt(row.pulang_cepat || 0),
-          'Dinas Luar/ Perjalanan Dinas': parseInt(row.dinas_luar || 0),
-          'Mangkir/ Alpha': parseInt(row.mangkir || 0)
+      const data = [];
+      
+      for (const pegawai of pegawaiResults) {
+        // Get attendance summary with dynamic status for today
+        const [summaryRows] = await db.execute(`
+          SELECT 
+            COUNT(CASE WHEN pr.status = 'Hadir' THEN 1 END) as hadir,
+            COUNT(CASE WHEN pr.status = 'Tidak Hadir' THEN 1 END) as tidak_hadir,
+            COUNT(CASE WHEN pr.status = 'Terlambat' THEN 1 END) as terlambat,
+            COUNT(CASE WHEN pr.status = 'Izin' THEN 1 END) as izin,
+            COUNT(CASE WHEN pr.status = 'Sakit' THEN 1 END) as sakit,
+            COUNT(CASE WHEN pr.status = 'Cuti' THEN 1 END) as cuti,
+            COUNT(CASE WHEN pr.status = 'Pulang Cepat' THEN 1 END) as pulang_cepat,
+            COUNT(CASE WHEN pr.status = 'Dinas Luar/ Perjalanan Dinas' THEN 1 END) as dinas_luar,
+            COUNT(CASE WHEN pr.status = 'Mangkir/ Alpha' THEN 1 END) as mangkir
+          FROM presensi pr
+          WHERE pr.id_user = ?
+        `, [pegawai.id_user]);
+        
+        const summary = summaryRows[0];
+        
+        // Get dynamic status for today
+        const todayStatus = await getDynamicAttendanceStatus(pegawai.id_user);
+        
+        // Adjust counts based on today's dynamic status
+        let adjustedSummary = {
+          'Hadir': parseInt(summary.hadir || 0),
+          'Tidak Hadir': parseInt(summary.tidak_hadir || 0),
+          'Terlambat': parseInt(summary.terlambat || 0),
+          'Izin': parseInt(summary.izin || 0),
+          'Sakit': parseInt(summary.sakit || 0),
+          'Cuti': parseInt(summary.cuti || 0),
+          'Pulang Cepat': parseInt(summary.pulang_cepat || 0),
+          'Dinas Luar/ Perjalanan Dinas': parseInt(summary.dinas_luar || 0),
+          'Mangkir/ Alpha': parseInt(summary.mangkir || 0)
+        };
+        
+        // Add today's dynamic status if it's a work day and not attended yet
+        if (todayStatus.isWorkDay && !todayStatus.hasAttended) {
+          if (todayStatus.status === 'Tidak Hadir') {
+            adjustedSummary['Tidak Hadir'] += 1;
+          }
+          // 'Belum Absen' is shown in real-time but not counted in summary
         }
-      }));
+        
+        data.push({
+          id_pegawai: parseInt(pegawai.id_pegawai),
+          nama_lengkap: pegawai.nama_lengkap,
+          nip: pegawai.nip,
+          foto_profil: pegawai.foto_profil,
+          summary: adjustedSummary,
+          today_status: todayStatus.status // Add current status for real-time display
+        });
+      }
 
       res.json({
         success: true,
@@ -560,5 +640,6 @@ module.exports = {
   getDetailAbsenPegawai, 
   getDetailLaporan, 
   getDetailAbsen, 
-  exportPDF 
+  exportPDF,
+  getDynamicAttendanceStatus
 };

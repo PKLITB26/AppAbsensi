@@ -7,9 +7,9 @@ const dbConfig = {
   database: 'hadirin_db',
   charset: 'utf8',
   connectionLimit: 10,
-  acquireTimeout: 60000,
-  timeout: 60000,
-  reconnect: true
+  queueLimit: 0,
+  idleTimeout: 60000,
+  acquireTimeout: 60000
 };
 
 let pool;

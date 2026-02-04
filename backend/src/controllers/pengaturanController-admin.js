@@ -227,6 +227,7 @@ const getJamKerja = async (req, res) => {
 };
 
 const saveJamKerja = async (req, res) => {
+  let connection;
   try {
     const { jam_kerja } = req.body;
 
@@ -238,7 +239,8 @@ const saveJamKerja = async (req, res) => {
     }
 
     const db = await getConnection();
-    await db.beginTransaction();
+    connection = await db.getConnection();
+    await connection.beginTransaction();
 
     try {
       for (const item of jam_kerja) {
@@ -248,7 +250,7 @@ const saveJamKerja = async (req, res) => {
           throw new Error(`Data tidak lengkap untuk hari ${hari}`);
         }
 
-        await db.execute(`
+        await connection.execute(`
           INSERT INTO jam_kerja_hari (hari, jam_masuk, batas_absen, jam_pulang, is_kerja) 
           VALUES (?, ?, ?, ?, ?)
           ON DUPLICATE KEY UPDATE 
@@ -259,7 +261,7 @@ const saveJamKerja = async (req, res) => {
         `, [hari, jam_masuk, batas_absen, jam_pulang, is_kerja ? 1 : 0]);
       }
 
-      await db.commit();
+      await connection.commit();
 
       res.json({
         success: true,
@@ -267,7 +269,7 @@ const saveJamKerja = async (req, res) => {
       });
 
     } catch (error) {
-      await db.rollback();
+      await connection.rollback();
       throw error;
     }
 
@@ -277,6 +279,10 @@ const saveJamKerja = async (req, res) => {
       success: false,
       message: error.message
     });
+  } finally {
+    if (connection) {
+      connection.release();
+    }
   }
 };
 

@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, 
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { AppHeader } from '../../../components';
+import { AppHeader, SkeletonLoader } from '../../../components';
 
 interface AbsenDetail {
   tanggal: string;
@@ -232,11 +232,20 @@ export default function DetailAbsenPegawai() {
         }
         // Hari ini
         else if (itemDate.getTime() === today.getTime()) {
-          // Cek apakah sudah lewat jam pulang (17:00)
+          // Cek apakah sudah lewat batas absen
+          const [batasJam, batasMenit] = [8, 30];
+          const [pulangJam, pulangMenit] = [17, 0];
+          
+          const batasAbsen = new Date();
+          batasAbsen.setHours(batasJam, batasMenit, 0, 0);
+          
           const jamPulang = new Date();
-          jamPulang.setHours(17, 0, 0, 0);
+          jamPulang.setHours(pulangJam, pulangMenit, 0, 0);
           
           if (currentTime > jamPulang) {
+            status = 'Tidak Hadir';
+            keterangan = 'Tidak hadir';
+          } else if (currentTime > batasAbsen) {
             status = 'Tidak Hadir';
             keterangan = 'Tidak hadir';
           } else {
@@ -293,11 +302,20 @@ export default function DetailAbsenPegawai() {
       }
       // Hari ini
       else if (itemDate.getTime() === today.getTime()) {
-        // Cek apakah sudah lewat jam pulang (17:00)
+        // Cek apakah sudah lewat batas absen
+        const [batasJam, batasMenit] = [8, 30];
+        const [pulangJam, pulangMenit] = [17, 0];
+        
+        const batasAbsen = new Date();
+        batasAbsen.setHours(batasJam, batasMenit, 0, 0);
+        
         const jamPulang = new Date();
-        jamPulang.setHours(17, 0, 0, 0);
+        jamPulang.setHours(pulangJam, pulangMenit, 0, 0);
         
         if (currentTime > jamPulang) {
+          status = 'Tidak Hadir';
+          keterangan = 'Tidak hadir';
+        } else if (currentTime > batasAbsen) {
           status = 'Tidak Hadir';
           keterangan = 'Tidak hadir';
         } else {
@@ -370,10 +388,19 @@ export default function DetailAbsenPegawai() {
       
       // Hari ini - cek jam kerja
       if (itemDate.getTime() === today.getTime()) {
+        const [batasJam, batasMenit] = [8, 30];
+        const [pulangJam, pulangMenit] = [17, 0];
+        
+        const batasAbsen = new Date();
+        batasAbsen.setHours(batasJam, batasMenit, 0, 0);
+        
         const jamPulang = new Date();
-        jamPulang.setHours(17, 0, 0, 0);
+        jamPulang.setHours(pulangJam, pulangMenit, 0, 0);
         
         if (currentTime > jamPulang) {
+          detailStatus = 'Tidak Hadir';
+          detailKeterangan = 'Tidak hadir';
+        } else if (currentTime > batasAbsen) {
           detailStatus = 'Tidak Hadir';
           detailKeterangan = 'Tidak hadir';
         } else {
@@ -788,10 +815,7 @@ export default function DetailAbsenPegawai() {
           fallbackRoute="/laporan/laporan-detail-absen"
         />
         
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#004643" />
-          <Text style={styles.loadingText}>Memuat data...</Text>
-        </View>
+        <SkeletonLoader type="list" count={5} message="Memuat data absensi..." />
       </View>
     );
   }

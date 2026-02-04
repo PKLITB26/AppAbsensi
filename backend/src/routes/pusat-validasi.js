@@ -1,0 +1,15 @@
+const express = require('express');
+const router = express.Router();
+const pusatValidasiController = require('../controllers/pusatValidasiController');
+
+// Get data untuk setiap tab
+router.get('/luar-lokasi', pusatValidasiController.getLuarLokasi);
+router.get('/absen-dinas', pusatValidasiController.getAbsenDinas);
+router.get('/pengajuan', pusatValidasiController.getPengajuan);
+router.get('/statistik', pusatValidasiController.getStatistik);
+
+// Actions
+router.post('/setujui', pusatValidasiController.setujui);
+router.post('/tolak', pusatValidasiController.tolak);
+
+module.exports = router;

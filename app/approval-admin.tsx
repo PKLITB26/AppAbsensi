@@ -4,7 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { getApiUrl, API_CONFIG } from '../constants/config';
-import { AppHeader } from '../components';
+import { AppHeader, SkeletonLoader } from '../components';
 
 interface PengajuanData {
   id_pengajuan: number;
@@ -247,8 +247,7 @@ export default function ApprovalAdminScreen() {
         
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#004643" />
-          <Text style={styles.loadingText}>Memuat data pengajuan...</Text>
+          <SkeletonLoader type="stats" message="Memuat data pengajuan..." />
         </View>
       ) : (
         <View style={styles.contentContainer}>
@@ -279,14 +278,15 @@ export default function ApprovalAdminScreen() {
             {/* Status Filter */}
             <View style={styles.filterCard}>
               <View style={styles.filterHeader}>
-                <Ionicons name="funnel-outline" size={20} color="#004643" />
-                <Text style={styles.filterTitle}>Filter Status</Text>
+                <Ionicons name="funnel-outline" size={16} color="#004643" />
+                <Text style={styles.filterTitle}>Filter</Text>
               </View>
               
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                style={styles.filterChips}
+                contentContainerStyle={styles.filterScrollContent}
+                style={styles.filterScrollContainer}
               >
                 {[
                   { key: 'pending', label: 'Menunggu' },
@@ -454,37 +454,44 @@ const styles = StyleSheet.create({
   filterHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 6,
     marginBottom: 12
   },
   filterTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
-    color: '#333',
-    marginLeft: 8
+    color: '#004643'
   },
-  filterChips: {
-    marginBottom: 10,
+  filterScrollContainer: {
+    marginHorizontal: -4
+  },
+  filterScrollContent: {
+    paddingHorizontal: 4,
+    paddingRight: 20
   },
   filterChip: {
     paddingHorizontal: 16,
     paddingVertical: 8,
     marginRight: 8,
     borderRadius: 20,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#F8F9FA',
     borderWidth: 1,
     borderColor: '#E0E0E0',
+    minWidth: 80,
+    alignItems: 'center'
   },
   filterChipActive: {
     backgroundColor: '#004643',
-    borderColor: '#004643',
+    borderColor: '#004643'
   },
   filterChipText: {
     fontSize: 12,
     color: '#666',
-    fontWeight: '500',
+    fontWeight: '500'
   },
   filterChipTextActive: {
     color: '#fff',
+    fontWeight: '600'
   },
   
   listContent: {

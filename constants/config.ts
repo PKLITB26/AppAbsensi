@@ -1,7 +1,7 @@
 // Konfigurasi API untuk HadirinApp - Node.js Backend
 
 const isDevelopment = __DEV__ || process.env.NODE_ENV === 'development';
-const BASE_URL = __DEV__ ? 'http://10.251.109.92:3000' : 'http://10.251.109.92:3000';
+const BASE_URL = __DEV__ ? 'http://10.251.109.48:3000' : 'http://10.251.109.48:3000';
 
 const debugLog = (message: string, data?: any) => {
   if (isDevelopment) {
@@ -48,6 +48,15 @@ export const API_CONFIG = {
     CREATE_DINAS: '/admin/kelola-dinas/api/create-dinas',
     RIWAYAT_DINAS: '/admin/kelola-dinas/api/riwayat-dinas',
     VALIDASI_ABSEN: '/admin/kelola-dinas/api/validasi-absen',
+    
+    // Pusat Validasi
+    PUSAT_VALIDASI: '/admin/pusat-validasi/api',
+    PUSAT_VALIDASI_LUAR_LOKASI: '/admin/pusat-validasi/api/luar-lokasi',
+    PUSAT_VALIDASI_ABSEN_DINAS: '/admin/pusat-validasi/api/absen-dinas',
+    PUSAT_VALIDASI_PENGAJUAN: '/admin/pusat-validasi/api/pengajuan',
+    PUSAT_VALIDASI_STATISTIK: '/admin/pusat-validasi/api/statistik',
+    PUSAT_VALIDASI_SETUJUI: '/admin/pusat-validasi/api/setujui',
+    PUSAT_VALIDASI_TOLAK: '/admin/pusat-validasi/api/tolak',
     
     // Pegawai
     PEGAWAI_DASHBOARD: '/pegawai/api/dashboard',
@@ -434,6 +443,71 @@ export const PengaturanAPI = {
     try {
       const response = await fetchWithRetry(`${getApiUrl(API_CONFIG.ENDPOINTS.LOKASI_KANTOR)}/${id}`, {
         method: 'DELETE',
+      });
+      return response.json();
+    } catch (error) {
+      return { success: false, message: 'Tidak dapat terhubung ke server' };
+    }
+  },
+};
+
+// Pusat Validasi API
+export const PusatValidasiAPI = {
+  getLuarLokasi: async () => {
+    try {
+      const response = await fetchWithRetry(getApiUrl(API_CONFIG.ENDPOINTS.PUSAT_VALIDASI_LUAR_LOKASI));
+      return response.json();
+    } catch (error) {
+      return { success: false, message: 'Tidak dapat terhubung ke server', data: [] };
+    }
+  },
+  
+  getAbsenDinas: async () => {
+    try {
+      const response = await fetchWithRetry(getApiUrl(API_CONFIG.ENDPOINTS.PUSAT_VALIDASI_ABSEN_DINAS));
+      return response.json();
+    } catch (error) {
+      return { success: false, message: 'Tidak dapat terhubung ke server', data: [] };
+    }
+  },
+  
+  getPengajuan: async () => {
+    try {
+      const response = await fetchWithRetry(getApiUrl(API_CONFIG.ENDPOINTS.PUSAT_VALIDASI_PENGAJUAN));
+      return response.json();
+    } catch (error) {
+      return { success: false, message: 'Tidak dapat terhubung ke server', data: [] };
+    }
+  },
+  
+  getStatistik: async () => {
+    try {
+      const response = await fetchWithRetry(getApiUrl(API_CONFIG.ENDPOINTS.PUSAT_VALIDASI_STATISTIK));
+      return response.json();
+    } catch (error) {
+      return { success: false, message: 'Tidak dapat terhubung ke server', data: {} };
+    }
+  },
+  
+  setujui: async (type: string, id: number, catatan?: string) => {
+    try {
+      const response = await fetchWithRetry(getApiUrl(API_CONFIG.ENDPOINTS.PUSAT_VALIDASI_SETUJUI), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type, id, catatan }),
+      });
+      return response.json();
+    } catch (error) {
+      return { success: false, message: 'Tidak dapat terhubung ke server' };
+    }
+  },
+  
+  tolak: async (type: string, id: number, catatan: string) => {
+    try {
+      const response = await fetchWithRetry(getApiUrl(API_CONFIG.ENDPOINTS.PUSAT_VALIDASI_TOLAK), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type, id, catatan }),
       });
       return response.json();
     } catch (error) {

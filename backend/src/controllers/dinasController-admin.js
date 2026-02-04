@@ -91,6 +91,7 @@ const getDinasAktifAdmin = async (req, res) => {
 };
 
 const createDinasAdmin = async (req, res) => {
+  let connection;
   try {
     const { nama_kegiatan, nomor_spt, tanggal_mulai, tanggal_selesai, pegawai_ids, alamat_lengkap, latitude, longitude, radius_absen, jam_mulai, jam_selesai, jenis_dinas, deskripsi } = req.body;
 
@@ -113,13 +114,14 @@ const createDinasAdmin = async (req, res) => {
     }
 
     const db = await getConnection();
+    connection = await db.getConnection();
 
     // Get valid admin user ID for created_by
-    const [adminRows] = await db.execute('SELECT id_user FROM users WHERE role = "admin" ORDER BY id_user LIMIT 1');
+    const [adminRows] = await connection.execute('SELECT id_user FROM users WHERE role = "admin" ORDER BY id_user LIMIT 1');
     let adminUser = adminRows[0];
 
     if (!adminUser) {
-      const [userRows] = await db.execute('SELECT id_user FROM users ORDER BY id_user LIMIT 1');
+      const [userRows] = await connection.execute('SELECT id_user FROM users ORDER BY id_user LIMIT 1');
       adminUser = userRows[0];
       if (!adminUser) {
         return res.status(400).json({
@@ -131,7 +133,7 @@ const createDinasAdmin = async (req, res) => {
 
     // Validate pegawai_ids
     const placeholders = pegawai_ids.map(() => '?').join(',');
-    const [validUsers] = await db.execute(`SELECT id_user FROM users WHERE id_user IN (${placeholders})`, pegawai_ids);
+    const [validUsers] = await connection.execute(`SELECT id_user FROM users WHERE id_user IN (${placeholders})`, pegawai_ids);
 
     if (validUsers.length === 0) {
       return res.status(400).json({
@@ -140,11 +142,11 @@ const createDinasAdmin = async (req, res) => {
       });
     }
 
-    await db.beginTransaction();
+    await connection.beginTransaction();
 
     try {
       // Insert dinas data
-      const [result] = await db.execute(`
+      const [result] = await connection.execute(`
         INSERT INTO dinas (
           nama_kegiatan, nomor_spt, jenis_dinas, tanggal_mulai, tanggal_selesai,
           jam_mulai, jam_selesai, alamat_lengkap, latitude, longitude, radius_absen,
@@ -170,13 +172,13 @@ const createDinasAdmin = async (req, res) => {
 
       // Insert pegawai dinas relationships
       for (const user of validUsers) {
-        await db.execute(`
+        await connection.execute(`
           INSERT INTO dinas_pegawai (id_dinas, id_user, status_konfirmasi, tanggal_konfirmasi)
           VALUES (?, ?, 'konfirmasi', NOW())
         `, [dinas_id, user.id_user]);
       }
 
-      await db.commit();
+      await connection.commit();
 
       res.status(201).json({
         success: true,
@@ -189,7 +191,7 @@ const createDinasAdmin = async (req, res) => {
       });
 
     } catch (error) {
-      await db.rollback();
+      await connection.rollback();
       throw error;
     }
 
@@ -199,6 +201,10 @@ const createDinasAdmin = async (req, res) => {
       success: false,
       message: error.message
     });
+  } finally {
+    if (connection) {
+      connection.release();
+    }
   }
 };
 
@@ -233,13 +239,13 @@ const getValidasiAbsenAdmin = async (req, res) => {
   try {
     const db = await getConnection();
 
+    // Remove the status_validasi filter since the column doesn't exist
     const [rows] = await db.execute(`
       SELECT ad.*, p.nama_lengkap, p.nip, d.nama_kegiatan
       FROM absen_dinas ad
       JOIN users u ON ad.id_user = u.id_user
       JOIN pegawai p ON u.id_user = p.id_user
       JOIN dinas d ON ad.id_dinas = d.id_dinas
-      WHERE ad.status_validasi = 'pending'
       ORDER BY ad.tanggal_absen DESC
     `);
 

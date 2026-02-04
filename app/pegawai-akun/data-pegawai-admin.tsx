@@ -20,7 +20,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as NavigationBar from 'expo-navigation-bar';
 import { API_CONFIG, getApiUrl, PegawaiAkunAPI } from "../../constants/config";
-import { AppHeader } from "../../components";
+import { AppHeader, SkeletonLoader } from "../../components";
 
 interface PegawaiData {
   id_pegawai?: number;
@@ -223,15 +223,13 @@ export default function DataPegawaiAdminScreen() {
       <AppHeader 
         title="Data Pegawai"
         showBack={true}
-        showStats={true}
-        statsText={`${filteredPegawai.length} Pegawai`}
+        showAddButton={true}
+        onAddPress={() => router.push("/pegawai-akun/add-data-pegawai" as any)}
         fallbackRoute="/admin/dashboard-admin"
       />
 
       {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#004643" />
-        </View>
+        <SkeletonLoader type="list" count={5} message="Memuat data pegawai..." />
       ) : (
         <View style={styles.contentWrapper}>
           {/* Fixed Search and Sort */}
@@ -257,7 +255,6 @@ export default function DataPegawaiAdminScreen() {
                 )}
               </View>
             </View>
-
 
           </View>
 
@@ -383,12 +380,7 @@ export default function DataPegawaiAdminScreen() {
         </View>
       )}
 
-      <TouchableOpacity
-        style={styles.floatingAddBtn}
-        onPress={() => router.push("/pegawai-akun/add-data-pegawai" as any)}
-      >
-        <Ionicons name="add" size={28} color="#fff" />
-      </TouchableOpacity>
+
 
       {/* Action Modal - Bottom Sheet Style */}
       <Modal
@@ -414,55 +406,52 @@ export default function DataPegawaiAdminScreen() {
             
             {/* Header */}
             <View style={styles.bottomSheetHeader}>
-              <Text style={styles.bottomSheetTitle}>Pilih Aksi</Text>
-            </View>
-            
-            {/* Actions */}
-            <View style={styles.bottomSheetActions}>
-              <TouchableOpacity
-                style={styles.bottomSheetItem}
-                onPress={() => {
-                  setShowActionModal(false);
-                  router.push(
-                    `/pegawai-akun/detail/${selectedPegawai?.id_pegawai || selectedPegawai?.id_user}` as any
-                  );
-                }}
-              >
-                <View style={[styles.actionIconContainer, { backgroundColor: '#E3F2FD' }]}>
-                  <Ionicons name="eye-outline" size={20} color="#2196F3" />
+              <View style={styles.actionCard}>
+                <View style={styles.bottomSheetActions}>
+                  <TouchableOpacity
+                    style={styles.bottomSheetItem}
+                    onPress={() => {
+                      setShowActionModal(false);
+                      router.push(
+                        `/pegawai-akun/detail/${selectedPegawai?.id_pegawai || selectedPegawai?.id_user}` as any
+                      );
+                    }}
+                  >
+                    <Ionicons name="eye-outline" size={20} color="#2196F3" />
+                    <Text style={styles.bottomSheetItemText}>Lihat Detail</Text>
+                  </TouchableOpacity>
+                  
+                  <View style={styles.actionDivider} />
+                  
+                  <TouchableOpacity
+                    style={styles.bottomSheetItem}
+                    onPress={() => {
+                      setShowActionModal(false);
+                      router.push(
+                        `/pegawai-akun/detail/edit/${selectedPegawai?.id_pegawai || selectedPegawai?.id_user}` as any
+                      );
+                    }}
+                  >
+                    <Ionicons name="create-outline" size={20} color="#FF9800" />
+                    <Text style={styles.bottomSheetItemText}>Edit Data</Text>
+                  </TouchableOpacity>
+                  
+                  <View style={styles.actionDivider} />
+                  
+                  <TouchableOpacity
+                    style={styles.bottomSheetItem}
+                    onPress={() => {
+                      closeModal();
+                      setTimeout(() => {
+                        openDeleteModal();
+                      }, 300);
+                    }}
+                  >
+                    <Ionicons name="trash-outline" size={20} color="#F44336" />
+                    <Text style={[styles.bottomSheetItemText, { color: '#F44336' }]}>Hapus Data</Text>
+                  </TouchableOpacity>
                 </View>
-                <Text style={styles.bottomSheetItemText}>Lihat Detail</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={styles.bottomSheetItem}
-                onPress={() => {
-                  setShowActionModal(false);
-                  router.push(
-                    `/pegawai-akun/detail/edit/${selectedPegawai?.id_pegawai || selectedPegawai?.id_user}` as any
-                  );
-                }}
-              >
-                <View style={[styles.actionIconContainer, { backgroundColor: '#FFF3E0' }]}>
-                  <Ionicons name="create-outline" size={20} color="#FF9800" />
-                </View>
-                <Text style={styles.bottomSheetItemText}>Edit Data</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={styles.bottomSheetItem}
-                onPress={() => {
-                  closeModal();
-                  setTimeout(() => {
-                    openDeleteModal();
-                  }, 300);
-                }}
-              >
-                <View style={[styles.actionIconContainer, { backgroundColor: '#FFEBEE' }]}>
-                  <Ionicons name="trash-outline" size={20} color="#F44336" />
-                </View>
-                <Text style={styles.bottomSheetItemText}>Hapus Data</Text>
-              </TouchableOpacity>
+              </View>
             </View>
           </Animated.View>
         </View>
@@ -537,14 +526,14 @@ const styles = StyleSheet.create({
 
   contentWrapper: {
     flex: 1,
-    backgroundColor: "#F8FAFB",
+    backgroundColor: "#ffffffff",
   },
   fixedControls: {
     paddingTop: 8,
     paddingBottom: 8,
     borderBottomWidth: 1,
     borderBottomColor: "#F0F0F0",
-    backgroundColor: "#FAFBFC",
+    backgroundColor: "#ffffffff",
   },
   flatList: {
     flex: 1,
@@ -552,12 +541,12 @@ const styles = StyleSheet.create({
   searchContainer: {
     paddingHorizontal: 15,
     paddingVertical: 8,
-    backgroundColor: "#F8FAFB"
+    backgroundColor: "#ffffff"
   },
   searchInputWrapper: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
+    backgroundColor: "#f4f3f3ff",
     borderRadius: 12,
     paddingHorizontal: 15,
     elevation: 2,
@@ -645,8 +634,6 @@ const styles = StyleSheet.create({
   pegawaiActions: { alignItems: "flex-end", justifyContent: "center" },
   moreBtn: { 
     padding: 8, 
-    borderRadius: 8, 
-    backgroundColor: "#F5F5F5"
   },
   statusBadge: {
     paddingHorizontal: 8,
@@ -674,10 +661,16 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   bottomSheetModal: {
-    backgroundColor: '#fff',
+    backgroundColor: '#F8F9FA',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingBottom: Platform.OS === 'ios' ? 34 : 20,
+    paddingTop: 8,
+  },
+  handleContainer: {
+    paddingVertical: 12,
+    alignItems: 'center',
+    width: '100%',
   },
   handleBar: {
     width: 40,
@@ -688,32 +681,30 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 16,
   },
-  handleContainer: {
-    paddingVertical: 12,
-    alignItems: 'center',
-    width: '100%',
-  },
   bottomSheetHeader: {
     paddingHorizontal: 20,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    paddingBottom: 16,
   },
-  bottomSheetTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    textAlign: 'center',
+  actionCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    overflow: 'hidden',
   },
   bottomSheetActions: {
-    paddingTop: 8,
+    backgroundColor: 'transparent',
   },
   bottomSheetItem: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 12,
-    gap: 16,
+    paddingVertical: 18,
+    backgroundColor: 'transparent',
+    gap: 15,
+  },
+  actionDivider: {
+    height: 1,
+    backgroundColor: '#F0F0F0',
+    marginHorizontal: 20,
   },
   actionIconContainer: {
     width: 40,
@@ -727,22 +718,7 @@ const styles = StyleSheet.create({
     color: '#333',
     fontWeight: '500',
   },
-  floatingAddBtn: {
-    position: "absolute",
-    bottom: 30,
-    right: 20,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: "#004643",
-    justifyContent: "center",
-    alignItems: "center",
-    elevation: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-  },
+
 
   paginationContainer: {
     flexDirection: "row",

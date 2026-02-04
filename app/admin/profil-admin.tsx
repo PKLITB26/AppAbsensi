@@ -15,6 +15,7 @@ import {
   View
 } from "react-native";
 import { API_CONFIG, getApiUrl } from "../../constants/config";
+import { SkeletonLoader } from "../../components";
 
 interface AdminProfile {
   id_user: number;
@@ -173,9 +174,7 @@ export default function ProfilAdminScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <Text>Memuat profil...</Text>
-        </View>
+        <SkeletonLoader type="form" count={3} message="Memuat profil admin..." />
       </SafeAreaView>
     );
   }

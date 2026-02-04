@@ -9,6 +9,8 @@ interface AppHeaderProps {
   onBackPress?: () => void;
   showStats?: boolean;
   statsText?: string;
+  showAddButton?: boolean;
+  onAddPress?: () => void;
   rightComponent?: React.ReactNode;
   fallbackRoute?: string;
 }
@@ -19,6 +21,8 @@ export default function AppHeader({
   onBackPress,
   showStats = false,
   statsText,
+  showAddButton = false,
+  onAddPress,
   rightComponent,
   fallbackRoute
 }: AppHeaderProps) {
@@ -54,6 +58,12 @@ export default function AppHeader({
           </View>
         )}
         
+        {showAddButton && (
+          <TouchableOpacity style={styles.addButton} onPress={onAddPress}>
+            <Ionicons name="add" size={24} color="#004643" />
+          </TouchableOpacity>
+        )}
+        
         {rightComponent}
       </View>
     </View>
@@ -82,8 +92,6 @@ const styles = StyleSheet.create({
   backBtn: {
     padding: 10,
     marginRight: 15,
-    borderRadius: 10,
-    backgroundColor: "#F5F5F5",
   },
   headerTitle: {
     fontSize: 20,
@@ -100,5 +108,11 @@ const styles = StyleSheet.create({
     fontSize: 12, 
     fontWeight: "bold", 
     color: "#004643" 
+  },
+  addButton: {
+    padding: 8,
+  },
+  addButtonText: {
+    display: 'none',
   },
 });

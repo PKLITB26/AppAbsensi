@@ -4,7 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { PengaturanAPI } from '../../constants/config';
-import { AppHeader } from '../../components';
+import { AppHeader, SkeletonLoader } from '../../components';
 
 export default function LokasiKantorScreen() {
   const router = useRouter();
@@ -126,10 +126,15 @@ export default function LokasiKantorScreen() {
       <AppHeader 
         title="Lokasi Kantor"
         showBack={true}
+        showAddButton={true}
+        onAddPress={() => router.push('/pengaturan/tambah-lokasi')}
       />
 
       <View style={styles.contentContainer}>
-        <ScrollView style={styles.content}>
+        {loading ? (
+          <SkeletonLoader type="list" count={4} message="Memuat lokasi kantor..." />
+        ) : (
+          <ScrollView style={styles.content}>
         <View style={styles.infoCard}>
           <Ionicons name="information-circle" size={20} color="#004643" />
           <Text style={styles.infoText}>
@@ -221,15 +226,11 @@ export default function LokasiKantorScreen() {
             </View>
           )}
         </View>
-        </ScrollView>
+          </ScrollView>
+        )}
       </View>
       
-      <TouchableOpacity 
-        style={styles.floatingAddBtn}
-        onPress={() => router.push('/pengaturan/tambah-lokasi')}
-      >
-        <Ionicons name="add" size={28} color="#fff" />
-      </TouchableOpacity>
+
 
       <Modal
         visible={showEditModal}
@@ -342,22 +343,7 @@ const styles = StyleSheet.create({
   contentContainer: {
     flex: 1
   },
-  floatingAddBtn: {
-    position: 'absolute',
-    bottom: 30,
-    right: 20,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#004643',
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8
-  },
+
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',

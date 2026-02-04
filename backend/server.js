@@ -16,6 +16,7 @@ const pengajuanRoutes = require('./src/routes/pengajuan');
 const dinasRoutes = require('./src/routes/dinas-admin');
 const profileRoutes = require('./src/routes/profile');
 const akunRoutes = require('./src/routes/akun-admin');
+const pusatValidasiRoutes = require('./src/routes/pusat-validasi');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -42,6 +43,7 @@ app.use('/admin/persetujuan/api', approvalRoutes);
 app.use('/pegawai/pengajuan/api', pengajuanRoutes);
 app.use('/admin/kelola-dinas/api', dinasRoutes);
 app.use('/pegawai/profil/api', profileRoutes);
+app.use('/admin/pusat-validasi/api', pusatValidasiRoutes);
 
 // Health check
 app.get('/', (req, res) => {

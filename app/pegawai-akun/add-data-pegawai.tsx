@@ -440,24 +440,23 @@ export default function AddDataPegawaiForm() {
                 </View>
 
                 <View style={styles.inputGroup}>
-                  <View style={styles.labelWithButton}>
-                    <Text style={styles.inputLabel}>Tanggal Lahir</Text>
-                    <TouchableOpacity onPress={showCalendarModal} style={styles.calendarButtonTop}>
-                      <Ionicons name="calendar" size={18} color="#004643" />
-                      <Text style={styles.calendarButtonText}>Pilih Tanggal</Text>
+                  <Text style={styles.inputLabel}>Tanggal Lahir</Text>
+                  <View style={styles.dateInputContainer}>
+                    <TextInput
+                      style={styles.textInput}
+                      placeholder="DD/MM/YYYY"
+                      value={formData.tanggal_lahir}
+                      onChangeText={(text) => {
+                        const formatted = formatTanggal(text);
+                        setFormData({...formData, tanggal_lahir: formatted});
+                      }}
+                      keyboardType="numeric"
+                      maxLength={10}
+                    />
+                    <TouchableOpacity onPress={showCalendarModal} style={styles.calendarButton}>
+                      <Ionicons name="calendar" size={20} color="#004643" />
                     </TouchableOpacity>
                   </View>
-                  <TextInput
-                    style={styles.textInput}
-                    placeholder="DD/MM/YYYY"
-                    value={formData.tanggal_lahir}
-                    onChangeText={(text) => {
-                      const formatted = formatTanggal(text);
-                      setFormData({...formData, tanggal_lahir: formatted});
-                    }}
-                    keyboardType="numeric"
-                    maxLength={10}
-                  />
                 </View>
 
                 <View style={styles.inputGroup}>
@@ -594,7 +593,10 @@ export default function AddDataPegawaiForm() {
             disabled={loading}
           >
             {loading ? (
-              <ActivityIndicator color="#fff" />
+              <>
+                <Ionicons name="hourglass-outline" size={20} color="#fff" />
+                <Text style={styles.submitText}>Menyimpan...</Text>
+              </>
             ) : (
               <>
                 <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
@@ -813,27 +815,16 @@ const styles = StyleSheet.create({
   genderTextActive: {
     color: '#fff'
   },
-  labelWithButton: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8
+  dateInputContainer: {
+    position: 'relative'
   },
-  calendarButtonTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-    backgroundColor: '#E6F0EF',
-    borderWidth: 1,
-    borderColor: '#004643'
-  },
-  calendarButtonText: {
-    fontSize: 12,
-    color: '#004643',
-    fontWeight: '600',
-    marginLeft: 4
+  calendarButton: {
+    position: 'absolute',
+    right: 12,
+    top: 12,
+    padding: 4,
+    borderRadius: 4,
+    backgroundColor: '#F0F8F0'
   },
   submitBtn: {
     backgroundColor: '#004643',
@@ -846,7 +837,7 @@ const styles = StyleSheet.create({
     minHeight: 50
   },
   submitBtnDisabled: {
-    backgroundColor: '#ccc'
+    backgroundColor: '#999'
   },
   submitText: {
     color: '#fff',

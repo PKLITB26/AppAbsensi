@@ -29,11 +29,11 @@ export default function NavbarLayout() {
         }}
       />
       <Tabs.Screen
-        name="tracking-admin"
+        name="pusat-validasi"
         options={{
-          title: 'Lacak',
+          title: 'Validasi',
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "location" : "location-outline"} size={24} color={color} />
+            <Ionicons name={focused ? "checkmark-circle" : "checkmark-circle-outline"} size={24} color={color} />
           ),
         }}
       />

@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { PengaturanAPI } from '../../constants/config';
-import { AppHeader } from '../../components';
+import { AppHeader, SkeletonLoader } from '../../components';
 
 interface HariLibur {
   id: number;
@@ -98,7 +98,13 @@ export default function KalenderLiburScreen() {
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     const dateStr = `${year}-${month}-${day}`;
-    return hariLibur.some(h => h.tanggal === dateStr);
+    
+    return hariLibur.some(h => {
+      // Konversi tanggal dari server (ISO format) ke format YYYY-MM-DD
+      const serverDate = new Date(h.tanggal);
+      const serverDateStr = `${serverDate.getFullYear()}-${String(serverDate.getMonth() + 1).padStart(2, '0')}-${String(serverDate.getDate()).padStart(2, '0')}`;
+      return serverDateStr === dateStr;
+    });
   };
 
   const getHolidayInfo = (date: Date | null) => {
@@ -108,7 +114,13 @@ export default function KalenderLiburScreen() {
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     const dateStr = `${year}-${month}-${day}`;
-    return hariLibur.find(h => h.tanggal === dateStr);
+    
+    return hariLibur.find(h => {
+      // Konversi tanggal dari server (ISO format) ke format YYYY-MM-DD
+      const serverDate = new Date(h.tanggal);
+      const serverDateStr = `${serverDate.getFullYear()}-${String(serverDate.getMonth() + 1).padStart(2, '0')}-${String(serverDate.getDate()).padStart(2, '0')}`;
+      return serverDateStr === dateStr;
+    });
   };
 
   const handleDatePress = (date: Date | null) => {
@@ -154,9 +166,21 @@ export default function KalenderLiburScreen() {
       });
 
       if (response.success) {
-        Alert.alert('Sukses', 'Hari libur berhasil ditambahkan');
+        // Update state lokal langsung untuk refresh UI
+        const newHoliday: HariLibur = {
+          id: response.data?.id || Date.now(), // fallback ID jika tidak ada dari response
+          tanggal: formattedDate,
+          nama_libur: formData.namaLibur.trim(),
+          jenis: formData.jenis
+        };
+        
+        setHariLibur(prev => [...prev, newHoliday]);
         setShowModal(false);
-        fetchHariLibur();
+        
+        Alert.alert('Sukses', 'Hari libur berhasil ditambahkan');
+        
+        // Fetch ulang untuk memastikan sinkronisasi dengan server
+        await fetchHariLibur();
       } else {
         Alert.alert('Error', response.message || 'Gagal menyimpan hari libur');
       }
@@ -171,8 +195,13 @@ export default function KalenderLiburScreen() {
     try {
       const response = await PengaturanAPI.deleteHariLibur(id);
       if (response.success) {
+        // Update state lokal langsung untuk refresh UI
+        setHariLibur(prev => prev.filter(h => h.id !== id));
+        
         Alert.alert('Sukses', 'Hari libur berhasil dihapus');
-        fetchHariLibur();
+        
+        // Fetch ulang untuk memastikan sinkronisasi dengan server
+        await fetchHariLibur();
       } else {
         Alert.alert('Error', response.message || 'Gagal menghapus hari libur');
       }
@@ -200,106 +229,112 @@ export default function KalenderLiburScreen() {
       />
 
       <ScrollView style={styles.content}>
-        <View style={styles.infoCard}>
-          <Ionicons name="information-circle" size={20} color="#004643" />
-          <Text style={styles.infoText}>
-            Hari libur ditentukan dari pengaturan jam kerja. Klik tanggal untuk menambah hari libur khusus
-          </Text>
-        </View>
+        {loading ? (
+          <SkeletonLoader type="card" count={3} message="Memuat kalender libur..." />
+        ) : (
+          <>
+            <View style={styles.infoCard}>
+              <Ionicons name="information-circle" size={20} color="#004643" />
+              <Text style={styles.infoText}>
+                Hari libur ditentukan dari pengaturan jam kerja. Klik tanggal untuk menambah hari libur khusus
+              </Text>
+            </View>
 
-        <View style={styles.calendarCard}>
-          <View style={styles.calendarHeader}>
-            <TouchableOpacity onPress={() => changeMonth(-1)} style={styles.monthBtn}>
-              <Ionicons name="chevron-back" size={24} color="#004643" />
-            </TouchableOpacity>
-            <Text style={styles.monthText}>{monthName}</Text>
-            <TouchableOpacity onPress={() => changeMonth(1)} style={styles.monthBtn}>
-              <Ionicons name="chevron-forward" size={24} color="#004643" />
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.weekDays}>
-            {['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'].map((day, i) => (
-              <Text key={i} style={styles.weekDayText}>{day}</Text>
-            ))}
-          </View>
-
-          <View style={styles.daysGrid}>
-            {days.map((date, index) => {
-              const isWE = isWeekend(date);
-              const isHol = isHoliday(date);
-              const isToday = date && date.toDateString() === new Date().toDateString();
-              
-              return (
-                <TouchableOpacity
-                  key={index}
-                  style={[
-                    styles.dayCell,
-                    !date && styles.emptyCell,
-                    (isWE || isHol) && styles.holidayCell,
-                    isToday && styles.todayCell
-                  ]}
-                  onPress={() => handleDatePress(date)}
-                  disabled={!date}
-                >
-                  {date && (
-                    <Text style={[
-                      styles.dayText,
-                      (isWE || isHol) && styles.holidayText,
-                      isToday && styles.todayText
-                    ]}>
-                      {date.getDate()}
-                    </Text>
-                  )}
-                  {isHol && <View style={styles.holidayDot} />}
+            <View style={styles.calendarCard}>
+              <View style={styles.calendarHeader}>
+                <TouchableOpacity onPress={() => changeMonth(-1)} style={styles.monthBtn}>
+                  <Ionicons name="chevron-back" size={24} color="#004643" />
                 </TouchableOpacity>
-              );
-            })}
-          </View>
-        </View>
-
-        <View style={styles.legendCard}>
-          <Text style={styles.legendTitle}>Keterangan:</Text>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendBox, { backgroundColor: '#FFEBEE' }]} />
-            <Text style={styles.legendText}>Hari Libur (dari pengaturan jam kerja)</Text>
-          </View>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendBox, { backgroundColor: '#FFCDD2' }]} />
-            <Text style={styles.legendText}>Hari Libur Khusus</Text>
-          </View>
-        </View>
-
-        <View style={styles.listCard}>
-          <Text style={styles.listTitle}>Daftar Hari Libur</Text>
-          {hariLibur.length > 0 ? (
-            hariLibur.map((item) => (
-              <View key={item.id} style={styles.listItem}>
-                <View style={styles.listItemLeft}>
-                  <Ionicons name="calendar" size={16} color="#004643" />
-                  <View style={styles.listItemInfo}>
-                    <Text style={styles.listItemName}>{item.nama_libur}</Text>
-                    <Text style={styles.listItemDate}>
-                      {new Date(item.tanggal).toLocaleDateString('id-ID', { 
-                        day: 'numeric', 
-                        month: 'long', 
-                        year: 'numeric' 
-                      })}
-                    </Text>
-                  </View>
-                </View>
-                <TouchableOpacity onPress={() => handleDeleteHoliday(item.id)}>
-                  <Ionicons name="trash-outline" size={20} color="#F44336" />
+                <Text style={styles.monthText}>{monthName}</Text>
+                <TouchableOpacity onPress={() => changeMonth(1)} style={styles.monthBtn}>
+                  <Ionicons name="chevron-forward" size={24} color="#004643" />
                 </TouchableOpacity>
               </View>
-            ))
-          ) : (
-            <Text style={styles.emptyText}>Belum ada hari libur yang ditambahkan</Text>
-          )}
-        </View>
+
+              <View style={styles.weekDays}>
+                {['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'].map((day, i) => (
+                  <Text key={i} style={styles.weekDayText}>{day}</Text>
+                ))}
+              </View>
+
+              <View style={styles.daysGrid}>
+                {days.map((date, index) => {
+                  const isWE = isWeekend(date);
+                  const isHol = isHoliday(date);
+                  const isToday = date && date.toDateString() === new Date().toDateString();
+                  
+                  return (
+                    <TouchableOpacity
+                      key={index}
+                      style={[
+                        styles.dayCell,
+                        !date && styles.emptyCell,
+                        (isWE || isHol) && styles.holidayCell,
+                        isToday && styles.todayCell
+                      ]}
+                      onPress={() => handleDatePress(date)}
+                      disabled={!date}
+                    >
+                      {date && (
+                        <Text style={[
+                          styles.dayText,
+                          (isWE || isHol) && styles.holidayText,
+                          isToday && styles.todayText
+                        ]}>
+                          {date.getDate()}
+                        </Text>
+                      )}
+                      {isHol && <View style={styles.holidayDot} />}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+
+            <View style={styles.legendCard}>
+              <Text style={styles.legendTitle}>Keterangan:</Text>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendBox, { backgroundColor: '#FFEBEE' }]} />
+                <Text style={styles.legendText}>Hari Libur (dari pengaturan jam kerja)</Text>
+              </View>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendBox, { backgroundColor: '#FFCDD2' }]} />
+                <Text style={styles.legendText}>Hari Libur Khusus</Text>
+              </View>
+            </View>
+
+            <View style={styles.listCard}>
+              <Text style={styles.listTitle}>Daftar Hari Libur</Text>
+              {hariLibur.length > 0 ? (
+                hariLibur.map((item) => (
+                  <View key={item.id} style={styles.listItem}>
+                    <View style={styles.listItemLeft}>
+                      <Ionicons name="calendar" size={16} color="#004643" />
+                      <View style={styles.listItemInfo}>
+                        <Text style={styles.listItemName}>{item.nama_libur}</Text>
+                        <Text style={styles.listItemDate}>
+                          {new Date(item.tanggal).toLocaleDateString('id-ID', { 
+                            day: 'numeric', 
+                            month: 'long', 
+                            year: 'numeric' 
+                          })}
+                        </Text>
+                      </View>
+                    </View>
+                    <TouchableOpacity onPress={() => handleDeleteHoliday(item.id)}>
+                      <Ionicons name="trash-outline" size={20} color="#F44336" />
+                    </TouchableOpacity>
+                  </View>
+                ))
+              ) : (
+                <Text style={styles.emptyText}>Belum ada hari libur yang ditambahkan</Text>
+              )}
+            </View>
+          </>
+        )}
       </ScrollView>
 
-      <Modal visible={showModal} transparent>
+      <Modal visible={showModal} transparent statusBarTranslucent={true}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
@@ -440,9 +475,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent'
   },
   holidayCell: {
-    backgroundColor: '#FFF0F0',
+    backgroundColor: '#FFEBEE',
     borderWidth: 1,
-    borderColor: '#FFD6D6'
+    borderColor: '#E53E3E'
   },
   todayCell: {
     backgroundColor: '#004643',

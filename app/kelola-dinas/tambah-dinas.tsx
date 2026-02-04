@@ -1134,7 +1134,10 @@ export default function TambahDinasScreen() {
           disabled={loading}
         >
           {loading ? (
-            <ActivityIndicator color="#fff" />
+            <>
+              <Ionicons name="hourglass-outline" size={20} color="#fff" />
+              <Text style={styles.submitText}>Menyimpan...</Text>
+            </>
           ) : (
             <>
               <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
@@ -1476,7 +1479,7 @@ const styles = StyleSheet.create({
     minHeight: 50
   },
   submitBtnDisabled: {
-    backgroundColor: '#ccc'
+    backgroundColor: '#999'
   },
   submitText: {
     color: '#fff',

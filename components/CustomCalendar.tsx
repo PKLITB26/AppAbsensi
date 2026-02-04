@@ -285,7 +285,7 @@ const styles = StyleSheet.create({
   calendarCard: {
     backgroundColor: '#fff',
     borderRadius: 12,
-    padding: 16,
+    padding: 20,
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -304,7 +304,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5F5F5'
   },
   monthText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: '#004643'
   },
@@ -326,7 +326,7 @@ const styles = StyleSheet.create({
   weekDayText: {
     flex: 1,
     textAlign: 'center',
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '600',
     color: '#666'
   },
@@ -336,11 +336,11 @@ const styles = StyleSheet.create({
   },
   dayCell: {
     width: '14.28%',
-    height: 32,
+    height: 40,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 6,
-    marginBottom: 4
+    borderRadius: 20,
+    marginBottom: 6
   },
   emptyCell: {
     backgroundColor: 'transparent'
@@ -348,10 +348,12 @@ const styles = StyleSheet.create({
   weekendCell: {
     backgroundColor: '#FFF0F0',
     borderWidth: 1,
-    borderColor: '#FFD6D6'
+    borderColor: '#FFD6D6',
+    borderRadius: 20
   },
   todayCell: {
     backgroundColor: '#004643',
+    borderRadius: 20,
     elevation: 2,
     shadowColor: '#004643',
     shadowOffset: { width: 0, height: 2 },
@@ -359,7 +361,7 @@ const styles = StyleSheet.create({
     shadowRadius: 3
   },
   dayText: {
-    fontSize: 13,
+    fontSize: 15,
     color: '#333',
     fontWeight: '500'
   },
@@ -389,7 +391,8 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     width: '90%',
     maxWidth: 400,
-    maxHeight: '70%'
+    maxHeight: '70%',
+    marginTop: -50
   },
   pickerHeader: {
     flexDirection: 'row',
