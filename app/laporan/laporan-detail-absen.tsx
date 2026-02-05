@@ -434,21 +434,18 @@ const styles = StyleSheet.create({
   content: { flex: 1 },
   searchContainer: {
     paddingHorizontal: 20,
-    paddingVertical: 8,
-    backgroundColor: '#F8FAFB'
+    paddingVertical: 15,
+    backgroundColor: '#fff'
   },
   searchInputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: '#F8F9FA',
     borderRadius: 12,
     paddingHorizontal: 15,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    gap: 10
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    gap: 12
   },
   searchInput: {
     flex: 1,

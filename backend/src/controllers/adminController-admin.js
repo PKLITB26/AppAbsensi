@@ -3,6 +3,13 @@ const { getConnection } = require('../config/database');
 
 const getAdminData = async (req, res) => {
   try {
+    const { action, user_id } = req.body;
+    
+    // Handle update action
+    if (action === 'update') {
+      return await updateAdminProfile(req, res);
+    }
+
     const db = await getConnection();
 
     // Get total pegawai count
@@ -68,34 +75,71 @@ const updateAdminProfile = async (req, res) => {
   try {
     const { user_id, email, password_lama, password_baru } = req.body;
     
-    if (!email) {
-      return res.json({ success: false, message: 'Email harus diisi' });
+    console.log('=== UPDATE PROFILE DEBUG ===');
+    console.log('Request data:', { user_id, email, has_old_pass: !!password_lama, has_new_pass: !!password_baru });
+    
+    // Validate user_id
+    const userId = parseInt(user_id);
+    if (!user_id || isNaN(userId) || userId <= 0) {
+      return res.json({ success: false, message: 'ID pengguna tidak valid' });
     }
-
+    
     const db = await getConnection();
 
-    // Update email
-    await db.execute('UPDATE users SET email = ? WHERE id_user = ?', [email, user_id]);
+    // Update email if provided
+    if (email && email.trim()) {
+      await db.execute('UPDATE users SET email = ? WHERE id_user = ?', [email.trim(), userId]);
+      console.log('Email updated successfully');
+    }
 
-    // Update password if provided
-    if (password_lama && password_baru) {
-      const [userRows] = await db.execute('SELECT password FROM users WHERE id_user = ?', [user_id]);
+    // Update password if both old and new passwords are provided
+    if (password_lama && password_lama.trim() && password_baru && password_baru.trim()) {
+      console.log('Processing password update...');
+      
+      // Get current password hash
+      const [userRows] = await db.execute('SELECT password FROM users WHERE id_user = ?', [userId]);
       const user = userRows[0];
-
-      if (!user || !(await bcrypt.compare(password_lama, user.password))) {
+      
+      if (!user) {
+        console.log('User not found');
+        return res.json({ success: false, message: 'User tidak ditemukan' });
+      }
+      
+      console.log('Current password hash:', user.password.substring(0, 20) + '...');
+      
+      // Verify old password
+      const isOldPasswordValid = await bcrypt.compare(password_lama.trim(), user.password);
+      console.log('Old password valid:', isOldPasswordValid);
+      
+      if (!isOldPasswordValid) {
         return res.json({ success: false, message: 'Password lama salah' });
       }
 
-      const hashedPassword = await bcrypt.hash(password_baru, 10);
-      await db.execute('UPDATE users SET password = ? WHERE id_user = ?', [hashedPassword, user_id]);
+      if (password_baru.trim().length < 6) {
+        return res.json({ success: false, message: 'Password minimal 6 karakter' });
+      }
+
+      // Hash new password
+      const hashedPassword = await bcrypt.hash(password_baru.trim(), 10);
+      console.log('New password hash:', hashedPassword.substring(0, 20) + '...');
+      
+      // Update password
+      const [updateResult] = await db.execute('UPDATE users SET password = ? WHERE id_user = ?', [hashedPassword, userId]);
+      console.log('Password update result:', updateResult);
+      
+      // Verify update
+      const [verifyRows] = await db.execute('SELECT password FROM users WHERE id_user = ?', [userId]);
+      console.log('Password updated in DB:', verifyRows[0].password.substring(0, 20) + '...');
     }
 
+    console.log('=== UPDATE COMPLETE ===');
     res.json({ success: true, message: 'Profil berhasil diupdate' });
 
   } catch (error) {
     console.error('Update admin profile error:', error);
-    res.json({ success: false, message: 'Database error: ' + error.message });
+    res.json({ success: false, message: 'Kesalahan database: ' + error.message });
   }
 };
+
 
 module.exports = { getAdminData, updateAdminProfile };

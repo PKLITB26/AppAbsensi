@@ -1,46 +1,6 @@
 const db = require('../config/database');
 
 const pusatValidasiController = {
-  // Get absen luar lokasi yang menunggu validasi
-  getLuarLokasi: async (req, res) => {
-    try {
-      const query = `
-        SELECT 
-          p.id_presensi,
-          p.id_user,
-          p.tanggal,
-          p.jam_masuk,
-          p.lat_absen,
-          p.long_absen,
-          p.foto_selfie,
-          p.alasan_luar_lokasi,
-          p.status_validasi,
-          pg.nama_lengkap,
-          pg.nip,
-          pg.jabatan,
-          pg.divisi
-        FROM presensi p
-        JOIN users u ON p.id_user = u.id_user
-        JOIN pegawai pg ON u.id_user = pg.id_user
-        WHERE p.alasan_luar_lokasi IS NOT NULL 
-        AND p.status_validasi = 'menunggu'
-        ORDER BY p.tanggal DESC, p.jam_masuk DESC
-      `;
-      
-      const [results] = await db.execute(query);
-      
-      res.json({
-        success: true,
-        data: results
-      });
-    } catch (error) {
-      console.error('Error getting luar lokasi:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Gagal mengambil data absen luar lokasi'
-      });
-    }
-  },
 
   // Get absen dinas yang menunggu validasi
   getAbsenDinas: async (req, res) => {
@@ -133,14 +93,6 @@ const pusatValidasiController = {
   // Get statistik untuk counter tabs
   getStatistik: async (req, res) => {
     try {
-      // Count luar lokasi
-      const [luarLokasiCount] = await db.execute(`
-        SELECT COUNT(*) as count 
-        FROM presensi 
-        WHERE alasan_luar_lokasi IS NOT NULL 
-        AND status_validasi = 'menunggu'
-      `);
-
       // Count absen dinas
       const [absenDinasCount] = await db.execute(`
         SELECT COUNT(*) as count 
@@ -156,10 +108,10 @@ const pusatValidasiController = {
       `);
 
       const stats = {
-        luar_lokasi: luarLokasiCount[0].count,
+        luar_lokasi: 0,
         absen_dinas: absenDinasCount[0].count,
         pengajuan: pengajuanCount[0].count,
-        total: luarLokasiCount[0].count + absenDinasCount[0].count + pengajuanCount[0].count
+        total: absenDinasCount[0].count + pengajuanCount[0].count
       };
 
       res.json({
@@ -185,18 +137,6 @@ const pusatValidasiController = {
       let params = [];
 
       switch (type) {
-        case 'luar_lokasi':
-          query = `
-            UPDATE presensi 
-            SET status_validasi = 'disetujui',
-                divalidasi_oleh = ?,
-                catatan_validasi = ?,
-                waktu_validasi = NOW()
-            WHERE id_presensi = ?
-          `;
-          params = [adminId, catatan || null, id];
-          break;
-
         case 'absen_dinas':
           query = `
             UPDATE absen_dinas 
@@ -260,18 +200,6 @@ const pusatValidasiController = {
       let params = [];
 
       switch (type) {
-        case 'luar_lokasi':
-          query = `
-            UPDATE presensi 
-            SET status_validasi = 'ditolak',
-                divalidasi_oleh = ?,
-                catatan_validasi = ?,
-                waktu_validasi = NOW()
-            WHERE id_presensi = ?
-          `;
-          params = [adminId, catatan, id];
-          break;
-
         case 'absen_dinas':
           query = `
             UPDATE absen_dinas 

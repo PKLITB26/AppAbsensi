@@ -234,7 +234,7 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         
         {/* HEADER PROFIL */}
         <View style={styles.profileHeader}>
@@ -508,7 +508,8 @@ function MenuLink({ icon, title }: any) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFB' },
-  profileHeader: { backgroundColor: '#fff', alignItems: 'center', paddingVertical: 30, borderBottomLeftRadius: 30, borderBottomRightRadius: 30, elevation: 2 },
+  scrollContent: { paddingTop: Platform.OS === 'ios' ? 0 : 20 },
+  profileHeader: { backgroundColor: '#fff', alignItems: 'center', paddingTop: Platform.OS === 'ios' ? 20 : 40, paddingBottom: 30, borderBottomLeftRadius: 30, borderBottomRightRadius: 30, elevation: 2 },
   imageWrapper: { position: 'relative', marginBottom: 15 },
   profileImage: { width: 100, height: 100, borderRadius: 50, borderWidth: 3, borderColor: '#004643' },
   editIcon: { position: 'absolute', bottom: 0, right: 0, backgroundColor: '#004643', padding: 8, borderRadius: 20, borderWidth: 2, borderColor: '#fff' },

@@ -12,6 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { AppHeader } from "../../../components";
 import { API_CONFIG, getApiUrl } from "../../../constants/config";
 
@@ -134,7 +135,10 @@ export default function DetailPegawai() {
       <View style={styles.contentContainer}>
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           {/* Profile Section */}
-          <View style={styles.profileSection}>
+          <LinearGradient
+            colors={['#004643', '#2E7D32']}
+            style={styles.profileSection}
+          >
             <View style={styles.profileCard}>
               <View style={styles.photoContainer}>
                 {pegawai.foto_profil ? (
@@ -162,7 +166,7 @@ export default function DetailPegawai() {
                 </Text>
               </View>
             </View>
-          </View>
+          </LinearGradient>
 
           {/* Info Cards */}
           <View style={styles.infoSection}>
@@ -344,14 +348,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   profileSection: {
-    backgroundColor: "#fff",
     marginTop: 10,
     marginHorizontal: 20,
     marginBottom: 20,
     paddingVertical: 10,
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#E0E0E0",
   },
   profileCard: {
     flexDirection: "row",
@@ -370,12 +371,12 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: "#E6F0EF",
+    backgroundColor: "rgba(255,255,255,0.2)",
     justifyContent: "center",
     alignItems: "center",
   },
   avatarText: {
-    color: "#004643",
+    color: "#fff",
     fontWeight: "bold",
     fontSize: 20,
   },
@@ -385,16 +386,16 @@ const styles = StyleSheet.create({
   nama: {
     fontSize: 16,
     fontWeight: "bold",
-    color: "#333",
+    color: "#fff",
     marginBottom: 2,
   },
   pegawaiEmail: {
-    color: "#888",
+    color: "#E8F5E8",
     fontSize: 12,
     marginBottom: 2,
   },
   pegawaiNip: {
-    color: "#666",
+    color: "#E8F5E8",
     fontSize: 12,
   },
   infoSection: {

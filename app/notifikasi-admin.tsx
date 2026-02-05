@@ -124,7 +124,7 @@ export default function NotifikasiAdmin() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFB' },
+  container: { flex: 1, backgroundColor: '#fff' },
   header: {
     position: 'absolute',
     top: 0,

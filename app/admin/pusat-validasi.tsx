@@ -1,28 +1,16 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   View, Text, StyleSheet, TouchableOpacity, FlatList, 
-  Alert, ActivityIndicator, Modal, Image, ScrollView, TextInput, Platform, RefreshControl 
+  Alert, ActivityIndicator, Modal, Image, ScrollView, TextInput, Platform, RefreshControl, Animated, PanResponder 
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
+import * as NavigationBar from 'expo-navigation-bar';
+import { AppHeader } from "../../components";
 import { PusatValidasiAPI } from '../../constants/config';
 
-interface LuarLokasiItem {
-  id_presensi: number;
-  id_user: number;
-  tanggal: string;
-  jam_masuk: string;
-  lat_absen: number;
-  long_absen: number;
-  foto_selfie: string;
-  alasan_luar_lokasi: string;
-  nama_lengkap: string;
-  nip: string;
-  jabatan: string;
-  divisi: string;
-}
+
 
 interface AbsenDinasItem {
   id: number;
@@ -69,12 +57,41 @@ interface Statistics {
 
 export default function PusatValidasiScreen() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState('luar_lokasi');
+  const [activeTab, setActiveTab] = useState('absen_dinas');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   
+  // State untuk last update time
+  const [lastUpdateTime, setLastUpdateTime] = useState<Date>(new Date());
+  
+  // Get current date
+  const getCurrentDate = () => {
+    const today = new Date();
+    return today.toLocaleDateString('id-ID', {
+      weekday: 'long',
+      day: 'numeric', 
+      month: 'long',
+      year: 'numeric'
+    });
+  };
+  
+  // Format last update time
+  const getLastUpdateText = () => {
+    const now = new Date();
+    const diffMs = now.getTime() - lastUpdateTime.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    
+    if (diffMins < 1) return 'Baru saja';
+    if (diffMins < 60) return `${diffMins}m lalu`;
+    
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours}j lalu`;
+    
+    const diffDays = Math.floor(diffHours / 24);
+    return `${diffDays}h lalu`;
+  };
+  
   // Data states
-  const [luarLokasiData, setLuarLokasiData] = useState<LuarLokasiItem[]>([]);
   const [absenDinasData, setAbsenDinasData] = useState<AbsenDinasItem[]>([]);
   const [pengajuanData, setPengajuanData] = useState<PengajuanItem[]>([]);
   const [statistics, setStatistics] = useState<Statistics>({
@@ -87,14 +104,27 @@ export default function PusatValidasiScreen() {
   // Modal states
   const [showActionModal, setShowActionModal] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
+  const [showFilterModal, setShowFilterModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [selectedType, setSelectedType] = useState('');
   const [rejectReason, setRejectReason] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
+  
+  // Filter states
+  const [filterPeriod, setFilterPeriod] = useState('semua');
+  const [filterStatus, setFilterStatus] = useState('semua');
+  const [filterJenis, setFilterJenis] = useState('semua');
+  
+  // Bottom sheet animation
+  const translateY = useRef(new Animated.Value(300)).current;
 
   useFocusEffect(
     useCallback(() => {
       fetchAllData();
+      // Set navigation bar translucent
+      if (Platform.OS === 'android') {
+        NavigationBar.setBackgroundColorAsync('transparent');
+      }
     }, [])
   );
 
@@ -102,11 +132,12 @@ export default function PusatValidasiScreen() {
     setLoading(true);
     try {
       await Promise.all([
-        fetchLuarLokasi(),
         fetchAbsenDinas(),
         fetchPengajuan(),
         fetchStatistics()
       ]);
+      // Update last update time setelah fetch berhasil
+      setLastUpdateTime(new Date());
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -114,16 +145,7 @@ export default function PusatValidasiScreen() {
     }
   };
 
-  const fetchLuarLokasi = async () => {
-    try {
-      const result = await PusatValidasiAPI.getLuarLokasi();
-      if (result.success) {
-        setLuarLokasiData(result.data);
-      }
-    } catch (error) {
-      console.error('Error fetching luar lokasi:', error);
-    }
-  };
+
 
   const fetchAbsenDinas = async () => {
     try {
@@ -167,8 +189,7 @@ export default function PusatValidasiScreen() {
   const handleApprove = async (type: string, item: any) => {
     setActionLoading(true);
     try {
-      const id = type === 'luar_lokasi' ? item.id_presensi : 
-                 type === 'absen_dinas' ? item.id : item.id_pengajuan;
+      const id = type === 'absen_dinas' ? item.id : item.id_pengajuan;
       
       const result = await PusatValidasiAPI.setujui(type, id);
       
@@ -194,8 +215,7 @@ export default function PusatValidasiScreen() {
 
     setActionLoading(true);
     try {
-      const id = selectedType === 'luar_lokasi' ? selectedItem.id_presensi : 
-                 selectedType === 'absen_dinas' ? selectedItem.id : selectedItem.id_pengajuan;
+      const id = selectedType === 'absen_dinas' ? selectedItem.id : selectedItem.id_pengajuan;
       
       const result = await PusatValidasiAPI.tolak(selectedType, id, rejectReason);
       
@@ -220,11 +240,57 @@ export default function PusatValidasiScreen() {
     setShowActionModal(true);
   };
 
+  const openFilterModal = () => {
+    setShowFilterModal(true);
+    if (Platform.OS === 'android') {
+      NavigationBar.setVisibilityAsync('hidden');
+    }
+    Animated.timing(translateY, {
+      toValue: 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const closeFilterModal = () => {
+    Animated.timing(translateY, {
+      toValue: 300,
+      duration: 200,
+      useNativeDriver: true,
+    }).start(() => {
+      setShowFilterModal(false);
+      if (Platform.OS === 'android') {
+        NavigationBar.setVisibilityAsync('visible');
+      }
+    });
+  };
+
+  const panResponder = PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponder: (_, gestureState) => {
+      return gestureState.dy > 5;
+    },
+    onPanResponderMove: (_, gestureState) => {
+      if (gestureState.dy > 0) {
+        translateY.setValue(gestureState.dy);
+      }
+    },
+    onPanResponderRelease: (_, gestureState) => {
+      if (gestureState.dy > 100) {
+        closeFilterModal();
+      } else {
+        Animated.spring(translateY, {
+          toValue: 0,
+          useNativeDriver: true,
+        }).start();
+      }
+    },
+  });
+
   const openRejectModal = () => {
     setShowActionModal(false);
     setShowRejectModal(true);
   };
-
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('id-ID', {
@@ -242,9 +308,9 @@ export default function PusatValidasiScreen() {
       'pulang_cepat_terencana': 'Pulang Cepat',
       'pulang_cepat_mendadak': 'Pulang Cepat',
       'koreksi_presensi': 'Koreksi Presensi',
-      'lembur_weekday': 'Lembur',
-      'lembur_weekend': 'Lembur Weekend',
-      'lembur_holiday': 'Lembur Libur',
+      'lembur_hari_kerja': 'Lembur Hari Kerja',
+      'lembur_akhir_pekan': 'Lembur Akhir Pekan',
+      'lembur_hari_libur': 'Lembur Hari Libur',
       'dinas_lokal': 'Dinas Lokal',
       'dinas_luar_kota': 'Dinas Luar Kota',
       'dinas_luar_negeri': 'Dinas Luar Negeri'
@@ -252,55 +318,7 @@ export default function PusatValidasiScreen() {
     return jenisMap[jenis] || jenis;
   };
 
-  const renderLuarLokasiItem = ({ item }: { item: LuarLokasiItem }) => (
-    <View style={styles.itemCard}>
-      <View style={styles.cardAccent} />
-      <View style={styles.itemHeader}>
-        <View style={styles.userInfo}>
-          <Text style={styles.userName}>{item.nama_lengkap}</Text>
-          <Text style={styles.userDetail}>NIP: {item.nip} • {item.jabatan}</Text>
-        </View>
-        <Text style={styles.timeText}>{item.jam_masuk}</Text>
-      </View>
-      
-      <View style={styles.itemContent}>
-        <View style={styles.infoRow}>
-          <Ionicons name="warning-outline" size={16} color="#FF6B6B" />
-          <Text style={styles.infoText}>Absen di luar ketentuan yang berlaku</Text>
-        </View>
-        <View style={styles.reasonBox}>
-          <Ionicons name="quote" size={16} color="#004643" style={styles.reasonIcon} />
-          <Text style={styles.reasonText}>{item.alasan_luar_lokasi}</Text>
-        </View>
-        <View style={styles.actionRow}>
-          <TouchableOpacity style={styles.photoBtn}>
-            <Ionicons name="camera-outline" size={16} color="#004643" />
-            <Text style={styles.photoBtnText}>Foto</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.locationBtn}>
-            <Ionicons name="map-outline" size={16} color="#004643" />
-            <Text style={styles.locationBtnText}>Lokasi</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-      
-      <View style={styles.actionButtons}>
-        <TouchableOpacity 
-          style={styles.approveBtn}
-          onPress={() => handleApprove('luar_lokasi', item)}
-          disabled={actionLoading}
-        >
-          <Text style={styles.approveBtnText}>✓ Setuju</Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={styles.rejectBtn}
-          onPress={() => openActionModal('luar_lokasi', item)}
-        >
-          <Text style={styles.rejectBtnText}>✗ Tolak</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
+
 
   const renderAbsenDinasItem = ({ item }: { item: AbsenDinasItem }) => (
     <View style={styles.itemCard}>
@@ -418,7 +436,6 @@ export default function PusatValidasiScreen() {
 
   const getCurrentData = () => {
     switch (activeTab) {
-      case 'luar_lokasi': return luarLokasiData;
       case 'absen_dinas': return absenDinasData;
       case 'pengajuan': return pengajuanData;
       default: return [];
@@ -450,12 +467,10 @@ export default function PusatValidasiScreen() {
       <FlatList
         data={data}
         keyExtractor={(item: any) => {
-          if (activeTab === 'luar_lokasi') return item.id_presensi.toString();
           if (activeTab === 'absen_dinas') return item.id.toString();
           return item.id_pengajuan.toString();
         }}
         renderItem={({ item }) => {
-          if (activeTab === 'luar_lokasi') return renderLuarLokasiItem({ item });
           if (activeTab === 'absen_dinas') return renderAbsenDinasItem({ item });
           return renderPengajuanItem({ item });
         }}
@@ -469,51 +484,74 @@ export default function PusatValidasiScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar style="light" translucent={true} backgroundColor="transparent" />
+      <StatusBar style="dark" translucent={true} backgroundColor="transparent" />
       
-      <ScrollView 
-        showsVerticalScrollIndicator={false} 
-        contentContainerStyle={styles.scrollContent}
-        bounces={false}
-        overScrollMode="never"
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-      >
-        {/* Background Gradient */}
-        <LinearGradient
-          colors={['#004643', '#2E7D32']}
-          style={styles.gradientBackground}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-        />
-        
-        {/* Header Section */}
-        <View style={styles.headerSection}>
-          <View style={styles.headerInfo}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-              <Ionicons name="shield-checkmark-outline" size={24} color="#fff" style={{ marginRight: 8 }} />
-              <Text style={styles.headerTitle}>Pusat Validasi</Text>
+      {/* HEADER */}
+      <AppHeader 
+        title="Pusat Validasi"
+        showBack={false}
+      />
+
+      <View style={styles.contentWrapper}>
+        {/* Statistics Header */}
+        <View style={styles.statsSection}>
+          <View style={styles.statsHeader}>
+            <Text style={styles.statsTitle}>Ringkasan Validasi</Text>
+            <View style={styles.statusBadge}>
+              <View style={styles.statusDot} />
+              <Text style={styles.statusText}>Real-time</Text>
             </View>
-            <Text style={styles.headerSubtitle}>Kelola persetujuan dan validasi data</Text>
+          </View>
+          
+          <View style={styles.chartContainer}>
+            {/* Progress Ring Chart */}
+            <View style={styles.progressRing}>
+              <View style={styles.progressRingInner}>
+                <Text style={styles.totalNumber}>{statistics.total}</Text>
+                <Text style={styles.totalLabel}>Total</Text>
+              </View>
+            </View>
+            
+            {/* Legend */}
+            <View style={styles.legendContainer}>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, { backgroundColor: '#FF9800' }]} />
+                <Text style={styles.legendText}>Pending ({statistics.total})</Text>
+              </View>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, { backgroundColor: '#4CAF50' }]} />
+                <Text style={styles.legendText}>Approved (12)</Text>
+              </View>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, { backgroundColor: '#F44336' }]} />
+                <Text style={styles.legendText}>Rejected (3)</Text>
+              </View>
+            </View>
           </View>
         </View>
 
-        {/* Tab Navigation - Flat Design */}
-        <View style={styles.tabSection}>
-          <View style={styles.tabContainer}>
-            <TouchableOpacity
-              style={[styles.tab, activeTab === 'luar_lokasi' && styles.activeTab]}
-              onPress={() => setActiveTab('luar_lokasi')}
+        {/* Fixed Controls - Tab Navigation */}
+        <View style={styles.fixedControls}>
+          {/* Search Bar */}
+          <View style={styles.searchContainer}>
+            <View style={styles.searchInputWrapper}>
+              <Ionicons name="search-outline" size={20} color="#666" style={styles.searchIcon} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Cari pegawai atau NIP..."
+                placeholderTextColor="#999"
+              />
+            </View>
+            <TouchableOpacity 
+              style={styles.filterBtn}
+              onPress={openFilterModal}
             >
-              <Text style={[styles.tabText, activeTab === 'luar_lokasi' && styles.activeTabText]}>
-                Luar Lokasi
-              </Text>
-              {statistics.luar_lokasi > 0 && (
-                <View style={styles.badge}>
-                  <Text style={styles.badgeText}>{statistics.luar_lokasi}</Text>
-                </View>
-              )}
+              <Ionicons name="options-outline" size={20} color="#004643" />
             </TouchableOpacity>
-
+          </View>
+          
+          {/* Tab Navigation */}
+          <View style={styles.tabContainer}>
             <TouchableOpacity
               style={[styles.tab, activeTab === 'absen_dinas' && styles.activeTab]}
               onPress={() => setActiveTab('absen_dinas')}
@@ -548,7 +586,154 @@ export default function PusatValidasiScreen() {
         <View style={styles.content}>
           {renderCurrentTab()}
         </View>
-      </ScrollView>
+      </View>
+
+      {/* Filter Modal - Bottom Sheet */}
+      <Modal
+        visible={showFilterModal}
+        transparent={true}
+        animationType="none"
+        statusBarTranslucent={true}
+        onRequestClose={closeFilterModal}
+      >
+        <View style={styles.filterModalOverlay}>
+          <TouchableOpacity 
+            style={styles.filterModalBackdrop} 
+            activeOpacity={1}
+            onPress={closeFilterModal}
+          />
+          <Animated.View style={[styles.filterBottomSheetModal, {
+            transform: [{ translateY }]
+          }]}>
+            {/* Handle Bar with Pan Gesture */}
+            <View {...panResponder.panHandlers} style={styles.filterHandleContainer}>
+              <View style={styles.filterHandleBar} />
+            </View>
+            
+            {/* Header */}
+            <View style={styles.filterBottomSheetHeader}>
+              <View style={styles.filterLeft}>
+                <Ionicons name="funnel-outline" size={20} color="#004643" />
+                <Text style={styles.filterModalTitle}>Filter</Text>
+              </View>
+              <View style={styles.filterRight}>
+                <TouchableOpacity 
+                  style={styles.filterResetBtn}
+                  onPress={() => {
+                    setFilterPeriod('semua');
+                    setFilterStatus('semua');
+                    setFilterJenis('semua');
+                  }}
+                >
+                  <Ionicons name="refresh-outline" size={16} color="#666" />
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={styles.filterApplyBtn}
+                  onPress={() => {
+                    // Apply filter logic here
+                    closeFilterModal();
+                  }}
+                >
+                  <Ionicons name="checkmark-outline" size={16} color="#fff" />
+                </TouchableOpacity>
+              </View>
+            </View>
+            
+            <ScrollView showsVerticalScrollIndicator={false} style={styles.filterScrollContent}>
+              {/* Periode */}
+              <View style={styles.filterSection}>
+                <Text style={styles.filterSectionTitle}>Periode</Text>
+                <View style={styles.filterChipsContainer}>
+                  {['hari_ini', '3_hari', 'minggu_ini', 'bulan_ini'].map((period) => (
+                    <TouchableOpacity
+                      key={period}
+                      style={[styles.filterChipLarge, filterPeriod === period && styles.filterChipActive]}
+                      onPress={() => setFilterPeriod(period)}
+                    >
+                      <Text style={[styles.filterChipTextLarge, filterPeriod === period && styles.filterChipTextActive]}>
+                        {period === 'hari_ini' ? 'Hari ini' :
+                         period === '3_hari' ? '3 Hari' :
+                         period === 'minggu_ini' ? 'Minggu ini' : 'Bulan ini'}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+              
+              {/* Status Validasi */}
+              <View style={styles.filterSection}>
+                <Text style={styles.filterSectionTitle}>Status Validasi</Text>
+                <View style={styles.filterChipsContainer}>
+                  {['semua', 'menunggu', 'disetujui', 'ditolak'].map((status) => (
+                    <TouchableOpacity
+                      key={status}
+                      style={[styles.filterChipLarge, filterStatus === status && styles.filterChipActive]}
+                      onPress={() => setFilterStatus(status)}
+                    >
+                      <Text style={[styles.filterChipTextLarge, filterStatus === status && styles.filterChipTextActive]}>
+                        {status === 'semua' ? 'Semua' :
+                         status === 'menunggu' ? 'Menunggu' :
+                         status === 'disetujui' ? 'Disetujui' : 'Ditolak'}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+              
+              {/* Conditional Sections based on activeTab */}
+              {activeTab === 'absen_dinas' && (
+                <View style={styles.filterSection}>
+                  <Text style={styles.filterSectionTitle}>Jenis Dinas</Text>
+                  <View style={styles.filterChipsContainer}>
+                    {['semua', 'lokal', 'luar_kota', 'luar_negeri'].map((jenis) => (
+                      <TouchableOpacity
+                        key={jenis}
+                        style={[styles.filterChipLarge, filterJenis === jenis && styles.filterChipActive]}
+                        onPress={() => setFilterJenis(jenis)}
+                      >
+                        <Text style={[styles.filterChipTextLarge, filterJenis === jenis && styles.filterChipTextActive]}>
+                          {jenis === 'semua' ? 'Semua' :
+                           jenis === 'lokal' ? 'Lokal' :
+                           jenis === 'luar_kota' ? 'Luar Kota' : 'Luar Negeri'}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+              )}
+              
+              {activeTab === 'pengajuan' && (
+                <View style={styles.filterSection}>
+                  <Text style={styles.filterSectionTitle}>Jenis Pengajuan</Text>
+                  <View style={styles.filterChipsContainer}>
+                    {['semua', 'cuti_sakit', 'cuti_tahunan', 'izin_pribadi', 'pulang_cepat', 'koreksi_presensi', 'lembur_hari_kerja', 'lembur_akhir_pekan', 'lembur_hari_libur', 'dinas_lokal', 'dinas_luar_kota', 'dinas_luar_negeri'].map((jenis) => (
+                      <TouchableOpacity
+                        key={jenis}
+                        style={[styles.filterChipLarge, filterJenis === jenis && styles.filterChipActive]}
+                        onPress={() => setFilterJenis(jenis)}
+                      >
+                        <Text style={[styles.filterChipTextLarge, filterJenis === jenis && styles.filterChipTextActive]}>
+                          {jenis === 'semua' ? 'Semua' :
+                           jenis === 'cuti_sakit' ? 'Cuti Sakit' :
+                           jenis === 'cuti_tahunan' ? 'Cuti Tahunan' :
+                           jenis === 'izin_pribadi' ? 'Izin Pribadi' :
+                           jenis === 'pulang_cepat' ? 'Pulang Cepat' :
+                           jenis === 'koreksi_presensi' ? 'Koreksi Presensi' :
+                           jenis === 'lembur_hari_kerja' ? 'Lembur Hari Kerja' :
+                           jenis === 'lembur_akhir_pekan' ? 'Lembur Akhir Pekan' :
+                           jenis === 'lembur_hari_libur' ? 'Lembur Hari Libur' :
+                           jenis === 'dinas_lokal' ? 'Dinas Lokal' :
+                           jenis === 'dinas_luar_kota' ? 'Dinas Luar Kota' : 'Dinas Luar Negeri'}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+              )}
+            </ScrollView>
+          </Animated.View>
+        </View>
+      </Modal>
 
       {/* Action Modal */}
       <Modal
@@ -646,71 +831,189 @@ export default function PusatValidasiScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFB' },
-  gradientBackground: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 320,
-    zIndex: -1,
+  container: { 
+    flex: 1, 
+    backgroundColor: '#fff',
   },
-  scrollContent: { paddingBottom: 30 },
-  headerSection: { 
-    paddingHorizontal: 20, 
-    paddingTop: Platform.OS === 'ios' ? 60 : 40, 
-    marginBottom: 20 
+
+  contentWrapper: {
+    flex: 1,
+    backgroundColor: '#fff',
   },
-  headerInfo: { flex: 1 },
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#fff',
-  },
-  headerSubtitle: {
-    fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.8)',
-    textAlign: 'center',
-    marginTop: 4,
+  fixedControls: {
+    paddingTop: 8,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+    backgroundColor: '#fff',
   },
   
-  tabSection: { 
-    marginTop: 20, 
-    marginHorizontal: 20,
+  // Statistics Section
+  statsSection: {
+    backgroundColor: '#fff',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  statsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  statsTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  },
+  statsSubtitle: {
+    fontSize: 12,
+    color: '#666',
+  },
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E8F5E8',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(76, 175, 80, 0.3)',
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#4CAF50',
+    marginRight: 6,
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#2E7D32',
+  },
+  chartContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  progressRing: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 8,
+    borderColor: '#F0F0F0',
+    borderTopColor: '#FF9800',
+    borderRightColor: '#4CAF50',
+    justifyContent: 'center',
+    alignItems: 'center',
+    transform: [{ rotate: '-90deg' }],
+  },
+  progressRingInner: {
+    transform: [{ rotate: '90deg' }],
+    alignItems: 'center',
+  },
+  totalNumber: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#333',
+  },
+  totalLabel: {
+    fontSize: 10,
+    color: '#666',
+    fontWeight: '500',
+  },
+  legendContainer: {
+    flex: 1,
+    marginLeft: 24,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  legendDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 8,
+  },
+  legendText: {
+    fontSize: 13,
+    color: '#666',
+    fontWeight: '500',
+  },
+  
+  // Search and Filter Section
+  searchContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    gap: 12,
+    alignItems: 'center',
+    backgroundColor: '#fff',
+  },
+  searchInputWrapper: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f4f3f3ff',
+    borderRadius: 12,
+    paddingHorizontal: 15,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  searchIcon: {
+    marginRight: 10,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+    color: '#333',
+    paddingVertical: 12,
+  },
+  filterBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: '#E8F5E8',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 70, 67, 0.2)',
   },
   tabContainer: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    borderRadius: 25,
+    backgroundColor: '#F8F9FA',
+    borderRadius: 8,
     padding: 4,
-    backdropFilter: 'blur(10px)',
+    marginHorizontal: 20,
   },
   tab: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
+    paddingVertical: 10,
     paddingHorizontal: 8,
-    borderRadius: 20,
+    borderRadius: 6,
     marginHorizontal: 2,
   },
   activeTab: {
-    backgroundColor: '#fff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    backgroundColor: '#004643',
   },
   tabText: {
     fontSize: 12,
     fontWeight: '500',
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: '#666',
     textAlign: 'center',
   },
   activeTabText: {
-    color: '#004643',
+    color: '#fff',
     fontWeight: '600',
   },
   badge: {
@@ -734,8 +1037,8 @@ const styles = StyleSheet.create({
   },
   
   content: { 
-    marginTop: 20,
     flex: 1,
+    backgroundColor: '#F8FAFB',
   },
   listContent: { 
     padding: 20,
@@ -1132,5 +1435,112 @@ const styles = StyleSheet.create({
     color: '#666',
     fontSize: 14,
     fontWeight: '500',
+  },
+  
+  // Filter Modal Styles - Bottom Sheet
+  filterModalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    paddingTop: Platform.OS === 'android' ? 0 : 50,
+  },
+  filterModalBackdrop: {
+    flex: 1,
+  },
+  filterBottomSheetModal: {
+    backgroundColor: '#F8F9FA',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 20,
+    paddingTop: 8,
+  },
+  filterHandleContainer: {
+    paddingVertical: 12,
+    alignItems: 'center',
+    width: '100%',
+  },
+  filterHandleBar: {
+    width: 40,
+    height: 4,
+    backgroundColor: '#DDD',
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginTop: 8,
+    marginBottom: 16,
+  },
+  filterBottomSheetHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+  },
+  filterLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  filterRight: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  filterModalTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  },
+  filterScrollContent: {
+    maxHeight: 400,
+  },
+  filterSection: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  filterSectionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 10,
+  },
+  filterChipsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  filterChipLarge: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: '#F8F9FA',
+    borderWidth: 1,
+    borderColor: '#E9ECEF',
+  },
+  filterChipActive: {
+    backgroundColor: '#004643',
+    borderColor: '#004643',
+  },
+  filterChipTextLarge: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '500',
+  },
+  filterChipTextActive: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+
+  filterResetBtn: {
+    padding: 8,
+    borderRadius: 6,
+    backgroundColor: '#F8F9FA',
+    borderWidth: 1,
+    borderColor: '#E9ECEF',
+  },
+  filterApplyBtn: {
+    padding: 8,
+    borderRadius: 6,
+    backgroundColor: '#004643',
   },
 });

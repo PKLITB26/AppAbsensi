@@ -81,7 +81,7 @@ export default function KelolaDinasScreen() {
     switch (action) {
       case 'detail':
         // Navigate to detail dinas
-        console.log('Detail dinas:', selectedDinas?.id);
+        router.push(`/kelola-dinas/detail-dinas/${selectedDinas?.id}` as any);
         break;
     }
   };
@@ -188,7 +188,6 @@ export default function KelolaDinasScreen() {
 
   const renderDinasCard = ({ item }: { item: DinasAktif }) => {
     const pegawaiArray = item.pegawai || [];
-    const hadirCount = pegawaiArray.filter(p => p.status === 'hadir').length;
     const totalPegawai = pegawaiArray.length;
     const dinasStatusInfo = getDinasStatus(item.tanggal_mulai, item.tanggal_selesai);
 
@@ -234,66 +233,11 @@ export default function KelolaDinasScreen() {
               {new Date(item.tanggal_selesai).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
             </Text>
           </View>
-        </View>
-
-        {/* Hanya tampilkan status absen jika dinas sedang berlangsung */}
-        {dinasStatusInfo.status === 'Sedang Berlangsung' && (
-          <>
-            <View style={styles.statusSummary}>
-              <Text style={styles.statusText}>
-                Status Absen: {hadirCount}/{totalPegawai} Hadir
-              </Text>
-              <View style={styles.progressBar}>
-                <View 
-                  style={[
-                    styles.progressFill, 
-                    { width: totalPegawai > 0 ? `${(hadirCount / totalPegawai) * 100}%` : '0%' }
-                  ]} 
-                />
-              </View>
-            </View>
-
-            <View style={styles.pegawaiList}>
-              {pegawaiArray.length > 0 ? (
-                pegawaiArray.map((pegawai, index) => (
-                  <View key={index} style={styles.pegawaiItem}>
-                    <View style={styles.pegawaiInfo}>
-                      <Text style={styles.pegawaiName}>{pegawai.nama}</Text>
-                      {pegawai.jamAbsen && (
-                        <Text style={styles.jamAbsen}>({pegawai.jamAbsen})</Text>
-                      )}
-                    </View>
-                    <View style={[
-                      styles.statusBadge, 
-                      { backgroundColor: getStatusColor(pegawai.status) + '20' }
-                    ]}>
-                      <Text style={[
-                        styles.statusBadgeText, 
-                        { color: getStatusColor(pegawai.status) }
-                      ]}>
-                        {getStatusLabel(pegawai.status)}
-                      </Text>
-                    </View>
-                  </View>
-                ))
-              ) : (
-                <Text style={styles.noPegawaiText}>Belum ada pegawai yang ditugaskan</Text>
-              )}
-            </View>
-          </>
-        )}
-        
-        {/* Tampilkan info ringkas untuk dinas yang selesai atau belum dimulai */}
-        {dinasStatusInfo.status !== 'Sedang Berlangsung' && (
-          <View style={styles.dinasInfoSection}>
-            <Text style={styles.dinasInfoText}>
-              {dinasStatusInfo.status === 'Selesai' 
-                ? `Dinas telah selesai. Total ${totalPegawai} pegawai ditugaskan.`
-                : `Dinas belum dimulai. ${totalPegawai} pegawai akan ditugaskan.`
-              }
-            </Text>
+          <View style={styles.infoRow}>
+            <Ionicons name="people-outline" size={14} color="#666" />
+            <Text style={styles.infoText}>{totalPegawai} orang bertugas</Text>
           </View>
-        )}
+        </View>
       </View>
     );
   };
@@ -317,7 +261,7 @@ export default function KelolaDinasScreen() {
           {/* Search Container */}
           <View style={styles.searchContainer}>
             <View style={styles.searchInputWrapper}>
-              <Ionicons name="search-outline" size={20} color="#666" style={styles.searchIcon} />
+              <Ionicons name="search-outline" size={20} color="#666" />
               <TextInput
                 style={styles.searchInput}
                 placeholder="Cari nama kegiatan atau nomor SPT..."
@@ -326,10 +270,7 @@ export default function KelolaDinasScreen() {
                 placeholderTextColor="#999"
               />
               {searchQuery.length > 0 && (
-                <TouchableOpacity 
-                  onPress={() => setSearchQuery('')}
-                  style={styles.clearBtn}
-                >
+                <TouchableOpacity onPress={() => setSearchQuery('')}>
                   <Ionicons name="close-circle" size={20} color="#999" />
                 </TouchableOpacity>
               )}
@@ -392,7 +333,7 @@ export default function KelolaDinasScreen() {
           onRefresh={fetchDinasAktif}
           ListEmptyComponent={() => (
             loading ? (
-              <SkeletonLoader type="card" count={3} message="Memuat data dinas..." />
+              <SkeletonLoader type="list" count={3} message="Memuat data dinas..." />
             ) : (
               <View style={styles.emptyState}>
                 <Ionicons name="briefcase-outline" size={60} color="#ccc" />
@@ -486,47 +427,39 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
   contentWrapper: {
     flex: 1,
-    backgroundColor: "#F8FAFB",
+    backgroundColor: "#fff",
   },
   fixedControls: {
     paddingTop: 8,
     paddingBottom: 8,
     borderBottomWidth: 1,
     borderBottomColor: "#F0F0F0",
-    backgroundColor: "#FAFBFC",
+    backgroundColor: "#fff",
   },
   flatList: {
     flex: 1,
   },
 
   searchContainer: {
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    backgroundColor: "#F8FAFB"
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    backgroundColor: '#fff'
   },
   searchInputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: '#F8F9FA',
     borderRadius: 12,
     paddingHorizontal: 15,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2
-  },
-  searchIcon: {
-    marginRight: 10
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    gap: 12
   },
   searchInput: {
     flex: 1,
     fontSize: 16,
     color: '#333',
     paddingVertical: 12
-  },
-  clearBtn: {
-    padding: 4
   },
   listContent: {
     paddingHorizontal: 5,

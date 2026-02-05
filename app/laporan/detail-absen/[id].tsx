@@ -933,7 +933,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: '#004643',
-    textAlign: 'center',
+    textAlign: 'left',
   },
   listContainer: {
     paddingHorizontal: 20,

@@ -397,7 +397,7 @@ export default function ApprovalAdminScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFB' },
+  container: { flex: 1, backgroundColor: '#fff' },
   contentContainer: {
     flex: 1,
   },
@@ -406,7 +406,7 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
     borderBottomWidth: 1,
     borderBottomColor: '#F0F0F0',
-    backgroundColor: '#FAFBFC',
+    backgroundColor: '#fff',
   },
   flatList: {
     flex: 1,
@@ -415,12 +415,12 @@ const styles = StyleSheet.create({
   searchContainer: {
     paddingHorizontal: 15,
     paddingVertical: 8,
-    backgroundColor: '#F8FAFB'
+    backgroundColor: '#fff'
   },
   searchInputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: '#f4f3f3ff',
     borderRadius: 12,
     paddingHorizontal: 15,
     elevation: 2,

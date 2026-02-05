@@ -10,7 +10,7 @@ const presensiRoutes = require('./src/routes/presensi');
 const dashboardRoutes = require('./src/routes/dashboard');
 const laporanRoutes = require('./src/routes/laporan-admin');
 const pengaturanRoutes = require('./src/routes/pengaturan-admin');
-const trackingRoutes = require('./src/routes/tracking-admin');
+
 const approvalRoutes = require('./src/routes/approval-admin');
 const pengajuanRoutes = require('./src/routes/pengajuan');
 const dinasRoutes = require('./src/routes/dinas-admin');
@@ -38,7 +38,7 @@ app.use('/pegawai/presensi/api', presensiRoutes);
 app.use('/pegawai/api', dashboardRoutes);
 app.use('/admin/laporan/api', laporanRoutes);
 app.use('/admin/pengaturan/api', pengaturanRoutes);
-app.use('/admin/presensi/api', trackingRoutes);
+
 app.use('/admin/persetujuan/api', approvalRoutes);
 app.use('/pegawai/pengajuan/api', pengajuanRoutes);
 app.use('/admin/kelola-dinas/api', dinasRoutes);
@@ -90,7 +90,7 @@ const startServer = async () => {
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`\n✅ Server running successfully!`);
       console.log(`🌐 Local: http://localhost:${PORT}`);
-      console.log(`📱 Mobile: http://${process.env.HOST || '10.251.109.92'}:${PORT}`);
+      console.log(`📱 Mobile: http://${process.env.HOST || '10.251.109.186'}:${PORT}`);
       console.log(`\n📄 Available endpoints:`);
       console.log(`   POST /auth/api/login`);
       console.log(`   GET  /auth/api/profile`);

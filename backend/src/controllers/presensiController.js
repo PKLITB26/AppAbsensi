@@ -140,7 +140,7 @@ const submitPresensi = async (req, res) => {
 
       await db.execute(`
         INSERT INTO presensi (
-          id_user, tanggal, jam_masuk, lat_absen, long_absen, foto_selfie, 
+          id_user, tanggal, jam_masuk, lintang_masuk, bujur_masuk, foto_masuk, 
           alasan_luar_lokasi, lokasi_absen, tipe_absen, status
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `, [
@@ -152,7 +152,7 @@ const submitPresensi = async (req, res) => {
       // Update existing record
       const [result] = await db.execute(`
         UPDATE presensi SET 
-          jam_pulang = ?, lat_pulang = ?, long_pulang = ?, foto_pulang = ?, lokasi_pulang = ? 
+          jam_pulang = ?, lintang_pulang = ?, bujur_pulang = ?, foto_pulang = ?, lokasi_pulang = ? 
         WHERE id_user = ? AND DATE(tanggal) = ?
       `, [
         jam_sekarang, latitude, longitude, foto || null, nama_lokasi, 

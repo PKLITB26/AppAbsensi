@@ -91,11 +91,11 @@ export default function PengaturanScreen() {
 const styles = StyleSheet.create({
   container: { 
     flex: 1, 
-    backgroundColor: '#F8FAFB' 
+    backgroundColor: '#fff' 
   },
   contentContainer: {
     flex: 1,
-    backgroundColor: '#F8FAFB'
+    backgroundColor: '#fff'
   },
   scrollView: {
     flex: 1

@@ -3,7 +3,6 @@ const router = express.Router();
 const pusatValidasiController = require('../controllers/pusatValidasiController');
 
 // Get data untuk setiap tab
-router.get('/luar-lokasi', pusatValidasiController.getLuarLokasi);
 router.get('/absen-dinas', pusatValidasiController.getAbsenDinas);
 router.get('/pengajuan', pusatValidasiController.getPengajuan);
 router.get('/statistik', pusatValidasiController.getStatistik);

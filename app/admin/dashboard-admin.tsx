@@ -321,7 +321,7 @@ export default function AdminDashboard() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFB' },
+  container: { flex: 1, backgroundColor: '#fff' },
   gradientBackground: {
     position: 'absolute',
     top: 0,

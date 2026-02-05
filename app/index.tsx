@@ -129,7 +129,7 @@ export default function LoginScreen() {
       if (result.success) {
         // Simpan data user yang sebenarnya dari database
         const userData = {
-          id_user: result.data.id_user,
+          id_user: result.data.id, // Backend login response menggunakan 'id'
           email: result.data.email,
           role: result.data.role,
           nama_lengkap: result.data.nama_lengkap || result.data.nama || 'User',

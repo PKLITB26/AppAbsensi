@@ -14,6 +14,7 @@ import {
   TouchableOpacity,
   View
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { API_CONFIG, getApiUrl } from "../../constants/config";
 import { SkeletonLoader } from "../../components";
 
@@ -27,17 +28,7 @@ export default function ProfilAdminScreen() {
   const router = useRouter();
   const [profile, setProfile] = useState<AdminProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [editModal, setEditModal] = useState(false);
   const [logoutModal, setLogoutModal] = useState(false);
-  const [showPasswordLama, setShowPasswordLama] = useState(false);
-  const [showPasswordBaru, setShowPasswordBaru] = useState(false);
-  const [showKonfirmasiPassword, setShowKonfirmasiPassword] = useState(false);
-  const [editData, setEditData] = useState({
-    email: "",
-    passwordLama: "",
-    passwordBaru: "",
-    konfirmasiPassword: "",
-  });
 
   useEffect(() => {
     fetchProfile();
@@ -65,12 +56,6 @@ export default function ProfilAdminScreen() {
       };
       
       setProfile(fallbackProfile);
-      setEditData({
-        email: fallbackProfile.email || "",
-        passwordLama: "",
-        passwordBaru: "",
-        konfirmasiPassword: "",
-      });
       
       // Coba ambil dari server (opsional)
       try {
@@ -90,12 +75,6 @@ export default function ProfilAdminScreen() {
         if (result.success && result.user) {
           console.log("User data from server:", result.user);
           setProfile(result.user);
-          setEditData({
-            email: result.user.email || "",
-            passwordLama: "",
-            passwordBaru: "",
-            konfirmasiPassword: "",
-          });
         }
       } catch (serverError) {
         console.log("Server error (using fallback):", serverError);
@@ -106,56 +85,6 @@ export default function ProfilAdminScreen() {
       Alert.alert("Error", "Gagal memuat profil admin");
     } finally {
       setLoading(false);
-    }
-  };
-
-  const updateProfile = async () => {
-    if (!editData.email) {
-      Alert.alert("Error", "Email harus diisi");
-      return;
-    }
-
-    // Jika ubah password
-    if (editData.passwordBaru) {
-      if (!editData.passwordLama) {
-        Alert.alert("Error", "Password lama harus diisi untuk ubah password");
-        return;
-      }
-      if (editData.passwordBaru !== editData.konfirmasiPassword) {
-        Alert.alert("Error", "Password baru dan konfirmasi tidak cocok");
-        return;
-      }
-      if (editData.passwordBaru.length < 6) {
-        Alert.alert("Error", "Password minimal 6 karakter");
-        return;
-      }
-    }
-
-    try {
-      const response = await fetch(getApiUrl(API_CONFIG.ENDPOINTS.ADMIN), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "update",
-          user_id: profile?.id_user,
-          email: editData.email,
-          password_lama: editData.passwordLama || null,
-          password_baru: editData.passwordBaru || null,
-        }),
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        Alert.alert("Sukses", "Profil berhasil diupdate");
-        setEditModal(false);
-        fetchProfile();
-      } else {
-        Alert.alert("Error", result.message || "Gagal update profil");
-      }
-    } catch (error) {
-      console.error("Update Error:", error);
-      Alert.alert("Error", "Gagal update profil");
     }
   };
 
@@ -182,198 +111,82 @@ export default function ProfilAdminScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
-        {/* HEADER PROFIL */}
-        <View style={styles.profileHeader}>
-          <View style={styles.imageWrapper}>
-            <View style={styles.profileImagePlaceholder}>
-              <Ionicons name="shield-checkmark" size={50} color="#fff" />
+        {/* HEADER PROFIL - DANA Style */}
+        <LinearGradient
+          colors={['#004643', '#2E7D32']}
+          style={styles.profileHeader}
+        >
+          <View style={styles.profileContainer}>
+            <View style={styles.profileImageWrapper}>
+              <View style={styles.profileAvatar}>
+                <Ionicons name="person" size={32} color="#fff" />
+              </View>
             </View>
-            <View style={styles.statusDot} />
-          </View>
-          <Text style={styles.userName}>Administrator</Text>
-          <Text style={styles.userRole}>
-            {profile?.role?.toUpperCase() || "ADMIN"}
-          </Text>
-          <View style={styles.badge}>
-            <Ionicons name="key" size={12} color="#004643" style={{ marginRight: 4 }} />
-            <Text style={styles.badgeText}>ID: {profile?.id_user}</Text>
-          </View>
-        </View>
-
-        {/* INFO AKUN */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionTitleContainer}>
-              <Ionicons name="person-circle-outline" size={18} color="#004643" />
-              <Text style={styles.sectionTitle}>Informasi Akun</Text>
+            <View style={styles.profileInfo}>
+              <Text style={styles.profileName}>Administrator</Text>
+              <Text style={styles.profileId}>ID: ADM{String(profile?.id_user).padStart(3, '0')}</Text>
             </View>
-            <TouchableOpacity
-              style={styles.editBtn}
-              onPress={() => setEditModal(true)}
-              activeOpacity={0.7}
+            <TouchableOpacity 
+              style={styles.logoutIconBtn}
+              onPress={() => setLogoutModal(true)}
             >
-              <Ionicons name="create-outline" size={16} color="#004643" />
-              <Text style={styles.editBtnText}>Edit</Text>
+              <Ionicons name="log-out-outline" size={22} color="#fff" />
             </TouchableOpacity>
           </View>
-          <View style={styles.infoCard}>
-            <InfoItem
-              icon="mail-outline"
-              label="Email"
-              value={profile?.email || "-"}
-            />
-            <InfoItem
-              icon="shield-checkmark-outline"
-              label="Role"
-              value={profile?.role || "admin"}
-            />
-            <InfoItem icon="key-outline" label="Password" value="••••••••" />
+        </LinearGradient>
+
+        {/* MENU PENGATURAN */}
+        <View style={styles.menuSection}>
+          <View style={styles.menuGroup}>
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => router.push('/pengaturan-profile-admin/pengaturan-keamanan' as any)}
+            >
+              <View style={styles.menuLeft}>
+                <View style={styles.menuIconContainer}>
+                  <Ionicons name="shield-checkmark" size={20} color="#004643" />
+                </View>
+                <Text style={styles.menuText}>Pengaturan Keamanan</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#C7C7CC" />
+            </TouchableOpacity>
+            
+            <View style={styles.menuDivider} />
+            
+            <TouchableOpacity style={styles.menuItem}>
+              <View style={styles.menuLeft}>
+                <View style={styles.menuIconContainer}>
+                  <Ionicons name="notifications" size={20} color="#004643" />
+                </View>
+                <Text style={styles.menuText}>Pengaturan Notifikasi</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#C7C7CC" />
+            </TouchableOpacity>
+            
+            <View style={styles.menuDivider} />
+            
+            <TouchableOpacity style={styles.menuItem}>
+              <View style={styles.menuLeft}>
+                <View style={styles.menuIconContainer}>
+                  <Ionicons name="information-circle" size={20} color="#004643" />
+                </View>
+                <Text style={styles.menuText}>Info Umum</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#C7C7CC" />
+            </TouchableOpacity>
           </View>
         </View>
-
-        {/* PENGATURAN & LAINNYA */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionTitleContainer}>
-              <Ionicons name="settings-outline" size={18} color="#004643" />
-              <Text style={styles.sectionTitle}>Pengaturan Aplikasi</Text>
-            </View>
-          </View>
-          <View style={styles.infoCard}>
-            <MenuLink
-              icon="notifications-outline"
-              title="Pengaturan Notifikasi"
-            />
-            <MenuLink icon="help-circle-outline" title="Pusat Bantuan" />
-          </View>
-        </View>
-
-        {/* TOMBOL LOGOUT */}
-        <TouchableOpacity
-          style={styles.logoutBtn}
-          onPress={() => setLogoutModal(true)}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="log-out-outline" size={20} color="#FF4D4D" />
-          <Text style={styles.logoutText}>Keluar Akun</Text>
-        </TouchableOpacity>
       </ScrollView>
 
-      {/* Modal Edit */}
-      <Modal visible={editModal} transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Edit Profil Admin</Text>
-
-            <Text style={styles.inputLabel}>Email *</Text>
-            <TextInput
-              style={styles.input}
-              value={editData.email}
-              onChangeText={(text) => setEditData({ ...editData, email: text })}
-              placeholder="Masukkan email"
-              keyboardType="email-address"
-            />
-
-            <View style={styles.divider} />
-            <Text style={styles.sectionLabel}>Ubah Password (Opsional)</Text>
-
-            <Text style={styles.inputLabel}>Password Lama</Text>
-            <View style={styles.passwordContainer}>
-              <TextInput
-                style={styles.passwordInput}
-                value={editData.passwordLama}
-                onChangeText={(text) =>
-                  setEditData({ ...editData, passwordLama: text })
-                }
-                placeholder="Kosongkan jika tidak ubah password"
-                secureTextEntry={!showPasswordLama}
-              />
-              <TouchableOpacity 
-                style={styles.eyeButton}
-                onPress={() => setShowPasswordLama(!showPasswordLama)}
-              >
-                <Ionicons 
-                  name={showPasswordLama ? "eye-off-outline" : "eye-outline"} 
-                  size={20} 
-                  color="#666" 
-                />
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.inputLabel}>Password Baru</Text>
-            <View style={styles.passwordContainer}>
-              <TextInput
-                style={styles.passwordInput}
-                value={editData.passwordBaru}
-                onChangeText={(text) =>
-                  setEditData({ ...editData, passwordBaru: text })
-                }
-                placeholder="Minimal 6 karakter"
-                secureTextEntry={!showPasswordBaru}
-              />
-              <TouchableOpacity 
-                style={styles.eyeButton}
-                onPress={() => setShowPasswordBaru(!showPasswordBaru)}
-              >
-                <Ionicons 
-                  name={showPasswordBaru ? "eye-off-outline" : "eye-outline"} 
-                  size={20} 
-                  color="#666" 
-                />
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.inputLabel}>Konfirmasi Password Baru</Text>
-            <View style={styles.passwordContainer}>
-              <TextInput
-                style={styles.passwordInput}
-                value={editData.konfirmasiPassword}
-                onChangeText={(text) =>
-                  setEditData({ ...editData, konfirmasiPassword: text })
-                }
-                placeholder="Ulangi password baru"
-                secureTextEntry={!showKonfirmasiPassword}
-              />
-              <TouchableOpacity 
-                style={styles.eyeButton}
-                onPress={() => setShowKonfirmasiPassword(!showKonfirmasiPassword)}
-              >
-                <Ionicons 
-                  name={showKonfirmasiPassword ? "eye-off-outline" : "eye-outline"} 
-                  size={20} 
-                  color="#666" 
-                />
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.modalBtn, styles.cancelBtn]}
-                onPress={() => setEditModal(false)}
-              >
-                <Text style={styles.cancelBtnText}>Batal</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalBtn, styles.saveBtn]}
-                onPress={updateProfile}
-              >
-                <Text style={styles.saveBtnText}>Simpan</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
       {/* Modal Konfirmasi Logout */}
-      <Modal visible={logoutModal} transparent animationType="fade">
+      <Modal 
+        visible={logoutModal} 
+        transparent 
+        statusBarTranslucent={true}
+        animationType="none"
+      >
         <TouchableOpacity 
-          style={{
-            flex: 1,
-            backgroundColor: "rgba(0,0,0,0.5)",
-            justifyContent: "center",
-            alignItems: "center",
-            paddingTop: Platform.OS === 'ios' ? 50 : 30,
-          }}
+          style={styles.logoutModalOverlay}
           activeOpacity={1}
           onPress={() => setLogoutModal(false)}
         >
@@ -408,117 +221,182 @@ export default function ProfilAdminScreen() {
   );
 }
 
-function InfoItem({ icon, label, value }: any) {
-  return (
-    <View style={styles.infoItem}>
-      <Ionicons name={icon} size={20} color="#004643" style={styles.infoIcon} />
-      <View>
-        <Text style={styles.infoLabel}>{label}</Text>
-        <Text style={styles.infoValue}>{value}</Text>
-      </View>
-    </View>
-  );
-}
 
-function MenuLink({ icon, title }: any) {
-  return (
-    <TouchableOpacity 
-      style={styles.menuLink}
-      activeOpacity={0.6}
-    >
-      <View style={styles.menuLinkLeft}>
-        <Ionicons name={icon} size={20} color="#555" />
-        <Text style={styles.menuLinkText}>{title}</Text>
-      </View>
-      <Ionicons name="chevron-forward" size={18} color="#CCC" />
-    </TouchableOpacity>
-  );
-}
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F8FAFB" },
+  container: { flex: 1, backgroundColor: "#F5F5F5" },
   profileHeader: {
-    backgroundColor: "#fff",
-    alignItems: "center",
-    paddingVertical: 35,
-    paddingTop: 50,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
+    paddingTop: Platform.OS === 'ios' ? 70 : 60,
+    paddingBottom: 30,
+    paddingHorizontal: 20,
+  },
+  statsContainer: {
+    marginTop: -15,
+    marginHorizontal: 20,
+    marginBottom: 25,
+    backgroundColor: '#fff',
+    borderRadius: 24,
+    padding: 24,
     elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  statItem: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+  },
+  statIconCircle: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+    elevation: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
-  statusDot: {
-    position: 'absolute',
-    bottom: 2,
-    right: 2,
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: '#4CAF50',
-    borderWidth: 2,
-    borderColor: '#fff',
+  statValueContainer: {
+    alignItems: 'center',
+    marginBottom: 4,
   },
-  sectionTitleContainer: {
+  trendContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    marginTop: 2,
   },
-  imageWrapper: { position: "relative", marginBottom: 15 },
-  profileImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    borderWidth: 3,
-    borderColor: "#004643",
+  trendText: {
+    fontSize: 10,
+    fontWeight: '600',
+    marginLeft: 2,
   },
-  profileImagePlaceholder: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: "#004643",
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 3,
-    borderColor: "#E6F0EF",
+  progressBar: {
+    width: '100%',
+    height: 3,
+    backgroundColor: 'rgba(0,0,0,0.1)',
+    borderRadius: 1.5,
+    marginTop: 6,
+    overflow: 'hidden',
   },
-  editIcon: {
-    position: "absolute",
-    bottom: 0,
-    right: 0,
-    backgroundColor: "#004643",
-    padding: 8,
-    borderRadius: 20,
-    borderWidth: 2,
-    borderColor: "#fff",
+  progressFill: {
+    height: '100%',
+    borderRadius: 1.5,
   },
-  userName: { 
-    fontSize: 24, 
-    fontWeight: "700", 
-    color: "#333",
-    letterSpacing: 0.5,
+  statNumber: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1a1a1a',
     marginTop: 8,
+    textAlign: 'center',
   },
-  userRole: { 
-    fontSize: 14, 
-    color: "#777", 
+  statLabel: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
+    fontWeight: '500',
     marginTop: 4,
-    fontWeight: "500",
     letterSpacing: 0.2,
   },
-  badge: {
-    backgroundColor: "#E6F0EF",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    marginTop: 12,
+  profileContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  badgeText: { color: "#004643", fontSize: 12, fontWeight: "bold" },
-  section: { marginTop: 25, paddingHorizontal: 20 },
+  profileImageWrapper: {
+    marginRight: 16,
+  },
+  profileAvatar: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.3)',
+  },
+  profileInfo: {
+    flex: 1,
+  },
+  logoutIconBtn: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#FF4D4D',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 12,
+    elevation: 3,
+    shadowColor: '#FF4D4D',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+  },
+  profileName: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 4,
+  },
+  profileId: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.8)',
+    fontWeight: '500',
+  },
+  section: { marginTop: 20, paddingHorizontal: 20 },
+  menuSection: { marginTop: -15, paddingHorizontal: 20 },
+  menuGroup: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    overflow: 'hidden',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 18,
+    paddingHorizontal: 20,
+    backgroundColor: '#fff',
+  },
+  menuLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  menuIconContainer: {
+    width: 28,
+    height: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  menuText: {
+    fontSize: 16,
+    color: '#1a1a1a',
+    fontWeight: '600',
+    letterSpacing: 0.2,
+  },
+  menuDivider: {
+    height: 1,
+    backgroundColor: '#f0f0f0',
+    marginLeft: 0,
+  },
+
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -575,18 +453,27 @@ const styles = StyleSheet.create({
   },
   menuLinkLeft: { flexDirection: "row", alignItems: "center" },
   menuLinkText: { marginLeft: 15, fontSize: 14, color: "#333" },
-  logoutBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
+  logoutSection: {
     marginTop: 30,
     marginBottom: 30,
     marginHorizontal: 20,
   },
-
+  logoutBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#FF4D4D",
+    paddingVertical: 16,
+    borderRadius: 12,
+    elevation: 3,
+    shadowColor: '#FF4D4D',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+  },
   logoutText: {
     marginLeft: 10,
-    color: "#FF4D4D",
+    color: "#fff",
     fontWeight: "bold",
     fontSize: 16,
   },
@@ -598,15 +485,11 @@ const styles = StyleSheet.create({
   },
   loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
   modalOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    flex: 1,
     backgroundColor: "rgba(0,0,0,0.5)",
     justifyContent: "center",
     alignItems: "center",
-    zIndex: 9999,
+    paddingTop: Platform.OS === 'android' ? 0 : 50,
   },
   modalContent: {
     backgroundColor: "#fff",
@@ -664,5 +547,12 @@ const styles = StyleSheet.create({
   logoutConfirmText: { fontSize: 16, fontWeight: '600', color: '#fff' },
   passwordContainer: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#ddd', borderRadius: 8, marginBottom: 15 },
   passwordInput: { flex: 1, padding: 12, fontSize: 14 },
-  eyeButton: { padding: 12 }
+  eyeButton: { padding: 12 },
+  logoutModalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingTop: Platform.OS === 'android' ? 0 : 50,
+  },
 });

@@ -485,7 +485,7 @@ const styles = StyleSheet.create({
   },
   searchContainer: {
     paddingHorizontal: 15,
-    paddingVertical: 8,
+    paddingVertical: 15,
     backgroundColor: "#F8FAFB"
   },
   searchInputWrapper: {
@@ -499,7 +499,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
-    gap: 10
+    gap: 12
   },
   searchInput: {
     flex: 1,

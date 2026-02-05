@@ -237,7 +237,7 @@ export default function DataPegawaiAdminScreen() {
             {/* Search Container */}
             <View style={styles.searchContainer}>
               <View style={styles.searchInputWrapper}>
-                <Ionicons name="search-outline" size={20} color="#666" style={styles.searchIcon} />
+                <Ionicons name="search-outline" size={20} color="#666" />
                 <TextInput
                   style={styles.searchInput}
                   placeholder="Cari pegawai"
@@ -246,10 +246,7 @@ export default function DataPegawaiAdminScreen() {
                   placeholderTextColor="#999"
                 />
                 {searchQuery.length > 0 && (
-                  <TouchableOpacity 
-                    onPress={() => setSearchQuery('')}
-                    style={styles.clearBtn}
-                  >
+                  <TouchableOpacity onPress={() => setSearchQuery('')}>
                     <Ionicons name="close-circle" size={20} color="#999" />
                   </TouchableOpacity>
                 )}
@@ -539,40 +536,24 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   searchContainer: {
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    backgroundColor: "#ffffff"
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    backgroundColor: '#fff'
   },
   searchInputWrapper: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#f4f3f3ff",
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8F9FA',
     borderRadius: 12,
     paddingHorizontal: 15,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    gap: 12
   },
-  searchIcon: {
-    marginRight: 10
-  },
-  clearBtn: {
-    padding: 4
-  },
-  sortContainer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: 10,
-    paddingHorizontal: 15,
-    marginBottom: 8,
-  },
-
   searchInput: {
     flex: 1,
     fontSize: 16,
-    color: "#333",
+    color: '#333',
     paddingVertical: 12
   },
   sortBtn: {

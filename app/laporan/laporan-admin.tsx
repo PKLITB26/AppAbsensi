@@ -137,7 +137,7 @@ export default function LaporanAdminScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFB' },
+  container: { flex: 1, backgroundColor: '#fff' },
   contentContainer: {
     flex: 1,
   },
