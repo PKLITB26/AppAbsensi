@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import { useRouter, useFocusEffect } from "expo-router";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   Alert,
   Modal,
@@ -12,7 +12,8 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
+  Image
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { API_CONFIG, getApiUrl } from "../../constants/config";
@@ -22,6 +23,9 @@ interface AdminProfile {
   id_user: number;
   email: string;
   role: string;
+  nama_lengkap?: string;
+  foto_profil?: string;
+  no_telepon?: string;
 }
 
 export default function ProfilAdminScreen() {
@@ -30,9 +34,11 @@ export default function ProfilAdminScreen() {
   const [loading, setLoading] = useState(true);
   const [logoutModal, setLogoutModal] = useState(false);
 
-  useEffect(() => {
-    fetchProfile();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchProfile();
+    }, [])
+  );
 
   const fetchProfile = async () => {
     try {
@@ -52,34 +58,46 @@ export default function ProfilAdminScreen() {
       const fallbackProfile = {
         id_user: userData.id_user || userData.id,
         email: userData.email,
-        role: userData.role || 'admin'
+        role: userData.role || 'admin',
+        nama_lengkap: userData.nama_lengkap || 'Administrator',
+        foto_profil: userData.foto_profil || null,
+        no_telepon: userData.no_telepon || ''
       };
       
       setProfile(fallbackProfile);
       
-      // Coba ambil dari server (opsional)
-      try {
-        const userId = userData.id_user || userData.id;
-        const url = getApiUrl(API_CONFIG.ENDPOINTS.ADMIN);
-        console.log("URL:", url);
+        // Coba ambil dari server (opsional)
+        try {
+          const userId = userData.id_user || userData.id;
+          const url = getApiUrl(`${API_CONFIG.ENDPOINTS.ADMIN}/profile`);
+          console.log("Profile URL:", url);
 
-        const response = await fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ user_id: userId || null }),
-        });
-        const result = await response.json();
+          const response = await fetch(url, {
+            method: "GET",
+            headers: { 
+              "Content-Type": "application/json",
+              "user-id": userId.toString()
+            }
+          });
+          const result = await response.json();
 
-        console.log("Profile Response:", JSON.stringify(result, null, 2));
+          console.log("Profile Response:", JSON.stringify(result, null, 2));
 
-        if (result.success && result.user) {
-          console.log("User data from server:", result.user);
-          setProfile(result.user);
+          if (result.success && result.data) {
+            console.log("User data from server:", result.data);
+            setProfile(result.data);
+            
+            // Update AsyncStorage with latest data
+            const updatedUserData = {
+              ...userData,
+              ...result.data
+            };
+            await AsyncStorage.setItem('userData', JSON.stringify(updatedUserData));
+          }
+        } catch (serverError) {
+          console.log("Server error (using fallback):", serverError);
+          // Tetap gunakan data fallback
         }
-      } catch (serverError) {
-        console.log("Server error (using fallback):", serverError);
-        // Tetap gunakan data fallback
-      }
     } catch (error) {
       console.error("Error fetching profile:", error);
       Alert.alert("Error", "Gagal memuat profil admin");
@@ -110,71 +128,150 @@ export default function ProfilAdminScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* HEADER PROFIL - DANA Style */}
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        {/* Background Gradient */}
         <LinearGradient
           colors={['#004643', '#2E7D32']}
-          style={styles.profileHeader}
-        >
+          style={styles.gradientBackground}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+        />
+        
+        {/* HEADER PROFIL - Card dengan Layout Existing */}
+        <View style={styles.profileCard}>
           <View style={styles.profileContainer}>
-            <View style={styles.profileImageWrapper}>
-              <View style={styles.profileAvatar}>
-                <Ionicons name="person" size={32} color="#fff" />
-              </View>
-            </View>
             <View style={styles.profileInfo}>
-              <Text style={styles.profileName}>Administrator</Text>
-              <Text style={styles.profileId}>ID: ADM{String(profile?.id_user).padStart(3, '0')}</Text>
+              <Text style={styles.profileName}>{profile?.nama_lengkap || 'Administrator'}</Text>
+              <Text style={styles.profileEmail}>{profile?.email || 'admin@example.com'}</Text>
             </View>
-            <TouchableOpacity 
-              style={styles.logoutIconBtn}
-              onPress={() => setLogoutModal(true)}
-            >
-              <Ionicons name="log-out-outline" size={22} color="#fff" />
-            </TouchableOpacity>
+            <View style={styles.profileImageWrapper}>
+              {profile?.foto_profil ? (
+                <Image 
+                  source={{ uri: getApiUrl(profile.foto_profil) }} 
+                  style={styles.profileAvatar}
+                />
+              ) : (
+                <View style={styles.profileAvatar}>
+                  <Ionicons name="person" size={40} color="#004643" />
+                </View>
+              )}
+              <TouchableOpacity style={styles.editPhotoBtn}>
+                <Ionicons name="add" size={16} color="#004643" />
+              </TouchableOpacity>
+            </View>
           </View>
-        </LinearGradient>
+          
+          <TouchableOpacity 
+            style={styles.editProfileBtn}
+            onPress={() => router.push('/profile-admin/edit-profil' as any)}
+          >
+            <Text style={styles.editProfileText}>Edit Profile</Text>
+          </TouchableOpacity>
+        </View>
 
-        {/* MENU PENGATURAN */}
-        <View style={styles.menuSection}>
-          <View style={styles.menuGroup}>
+        {/* MENU CONTAINER dengan background */}
+        <View style={styles.menuContainer}>
+        {/* PENGATURAN AKUN */}
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>PENGATURAN AKUN</Text>
+          <View style={styles.menuCard}>
             <TouchableOpacity 
               style={styles.menuItem}
               onPress={() => router.push('/pengaturan-profile-admin/pengaturan-keamanan' as any)}
             >
               <View style={styles.menuLeft}>
-                <View style={styles.menuIconContainer}>
-                  <Ionicons name="shield-checkmark" size={20} color="#004643" />
+                <View style={[styles.iconCircle, { backgroundColor: '#FFF3E0' }]}>
+                  <Ionicons name="lock-closed-outline" size={Platform.OS === 'ios' ? 20 : 22} color="#F57C00" />
                 </View>
-                <Text style={styles.menuText}>Pengaturan Keamanan</Text>
+                <Text style={styles.menuText}>Keamanan</Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color="#C7C7CC" />
+              <Ionicons name="chevron-forward-outline" size={20} color="#999" />
             </TouchableOpacity>
             
             <View style={styles.menuDivider} />
             
             <TouchableOpacity style={styles.menuItem}>
               <View style={styles.menuLeft}>
-                <View style={styles.menuIconContainer}>
-                  <Ionicons name="notifications" size={20} color="#004643" />
+                <View style={[styles.iconCircle, { backgroundColor: '#E3F2FD' }]}>
+                  <Ionicons name="notifications-outline" size={Platform.OS === 'ios' ? 20 : 22} color="#1976D2" />
                 </View>
-                <Text style={styles.menuText}>Pengaturan Notifikasi</Text>
+                <Text style={styles.menuText}>Notifikasi</Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color="#C7C7CC" />
-            </TouchableOpacity>
-            
-            <View style={styles.menuDivider} />
-            
-            <TouchableOpacity style={styles.menuItem}>
-              <View style={styles.menuLeft}>
-                <View style={styles.menuIconContainer}>
-                  <Ionicons name="information-circle" size={20} color="#004643" />
-                </View>
-                <Text style={styles.menuText}>Info Umum</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color="#C7C7CC" />
+              <Ionicons name="chevron-forward-outline" size={20} color="#999" />
             </TouchableOpacity>
           </View>
+        </View>
+
+        {/* INFORMASI UMUM */}
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>INFORMASI UMUM</Text>
+          <View style={styles.menuCard}>
+            <TouchableOpacity style={styles.menuItem}>
+              <View style={styles.menuLeft}>
+                <View style={[styles.iconCircle, { backgroundColor: '#F3E5F5' }]}>
+                  <Ionicons name="information-circle-outline" size={Platform.OS === 'ios' ? 20 : 22} color="#7B1FA2" />
+                </View>
+                <Text style={styles.menuText}>Tentang Aplikasi</Text>
+              </View>
+              <Ionicons name="chevron-forward-outline" size={20} color="#999" />
+            </TouchableOpacity>
+            
+            <View style={styles.menuDivider} />
+            
+            <TouchableOpacity style={styles.menuItem}>
+              <View style={styles.menuLeft}>
+                <View style={[styles.iconCircle, { backgroundColor: '#E8F5E9' }]}>
+                  <Ionicons name="document-text-outline" size={Platform.OS === 'ios' ? 20 : 22} color="#388E3C" />
+                </View>
+                <Text style={styles.menuText}>Syarat dan Ketentuan</Text>
+              </View>
+              <Ionicons name="chevron-forward-outline" size={20} color="#999" />
+            </TouchableOpacity>
+            
+            <View style={styles.menuDivider} />
+            
+            <TouchableOpacity style={styles.menuItem}>
+              <View style={styles.menuLeft}>
+                <View style={[styles.iconCircle, { backgroundColor: '#E0F2F1' }]}>
+                  <Ionicons name="shield-checkmark-outline" size={Platform.OS === 'ios' ? 20 : 22} color="#00897B" />
+                </View>
+                <Text style={styles.menuText}>Kebijakan Privasi</Text>
+              </View>
+              <Ionicons name="chevron-forward-outline" size={20} color="#999" />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* BANTUAN DAN DUKUNGAN */}
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>BANTUAN DAN DUKUNGAN</Text>
+          <View style={styles.menuCard}>
+            <TouchableOpacity style={styles.menuItem}>
+              <View style={styles.menuLeft}>
+                <View style={[styles.iconCircle, { backgroundColor: '#FFF9C4' }]}>
+                  <Ionicons name="help-circle-outline" size={Platform.OS === 'ios' ? 20 : 22} color="#F9A825" />
+                </View>
+                <Text style={styles.menuText}>Bantuan dan Dukungan</Text>
+              </View>
+              <Ionicons name="chevron-forward-outline" size={20} color="#999" />
+            </TouchableOpacity>
+            
+            <View style={styles.menuDivider} />
+            
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => setLogoutModal(true)}
+            >
+              <View style={styles.menuLeft}>
+                <View style={[styles.iconCircle, { backgroundColor: '#FFEBEE' }]}>
+                  <Ionicons name="log-out-outline" size={Platform.OS === 'ios' ? 20 : 22} color="#D32F2F" />
+                </View>
+                <Text style={styles.menuText}>Keluar Akun</Text>
+              </View>
+              <Ionicons name="chevron-forward-outline" size={20} color="#999" />
+            </TouchableOpacity>
+          </View>
+        </View>
         </View>
       </ScrollView>
 
@@ -225,334 +322,210 @@ export default function ProfilAdminScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F5F5F5" },
-  profileHeader: {
-    paddingTop: Platform.OS === 'ios' ? 70 : 60,
-    paddingBottom: 30,
-    paddingHorizontal: 20,
+  scrollContent: {
+    paddingBottom: 20,
   },
-  statsContainer: {
-    marginTop: -15,
+  gradientBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 320,
+    zIndex: -1,
+  },
+  
+  // Profile Card (dengan gradient background)
+  profileCard: {
+    marginTop: Platform.OS === 'ios' ? 60 : 40,
     marginHorizontal: 20,
-    marginBottom: 25,
+    marginBottom: 30,
     backgroundColor: '#fff',
-    borderRadius: 24,
-    padding: 24,
-    elevation: 3,
+    borderRadius: 20,
+    padding: 20,
+    elevation: 8,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 20,
-  },
-  statItem: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 4,
-  },
-  statIconCircle: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  statValueContainer: {
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  trendContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 2,
-  },
-  trendText: {
-    fontSize: 10,
-    fontWeight: '600',
-    marginLeft: 2,
-  },
-  progressBar: {
-    width: '100%',
-    height: 3,
-    backgroundColor: 'rgba(0,0,0,0.1)',
-    borderRadius: 1.5,
-    marginTop: 6,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: 1.5,
-  },
-  statNumber: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1a1a1a',
-    marginTop: 8,
-    textAlign: 'center',
-  },
-  statLabel: {
-    fontSize: 12,
-    color: '#666',
-    textAlign: 'center',
-    fontWeight: '500',
-    marginTop: 4,
-    letterSpacing: 0.2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
   },
   profileContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  profileImageWrapper: {
-    marginRight: 16,
-  },
-  profileAvatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.3)',
+    justifyContent: 'space-between',
+    marginBottom: 20,
   },
   profileInfo: {
     flex: 1,
   },
-  logoutIconBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: '#FF4D4D',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 12,
-    elevation: 3,
-    shadowColor: '#FF4D4D',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-  },
   profileName: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#fff',
+    color: '#333',
     marginBottom: 4,
   },
-  profileId: {
+  profileEmail: {
     fontSize: 14,
-    color: 'rgba(255,255,255,0.8)',
-    fontWeight: '500',
+    color: '#666',
   },
-  section: { marginTop: 20, paddingHorizontal: 20 },
-  menuSection: { marginTop: -15, paddingHorizontal: 20 },
-  menuGroup: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
+  profileImageWrapper: {
+    position: 'relative',
+  },
+  profileAvatar: {
+    width: Platform.OS === 'ios' ? 85 : 90,
+    height: Platform.OS === 'ios' ? 85 : 90,
+    borderRadius: Platform.OS === 'ios' ? 42.5 : 45,
+    backgroundColor: '#E6F0EF',
+    justifyContent: 'center',
+    alignItems: 'center',
     overflow: 'hidden',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
+  },
+  editPhotoBtn: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#fff',
+    borderWidth: 2,
+    borderColor: '#004643',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  editProfileBtn: {
+    backgroundColor: '#fff',
+    borderWidth: 2,
+    borderColor: '#004643',
+    borderRadius: 12,
+    paddingVertical: Platform.OS === 'ios' ? 12 : 14,
+    alignItems: 'center',
+  },
+  editProfileText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#004643',
+  },
+  
+  // Menu Container
+  menuContainer: {
+    backgroundColor: '#F5F5F5',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingTop: 15,
+    paddingBottom: 20,
+    marginTop: -10,
+  },
+  
+  // Section
+  section: {
+    marginTop: 15,
+    paddingHorizontal: 15,
+  },
+  sectionLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#999',
+    marginBottom: 10,
+    marginLeft: 5,
+    letterSpacing: 0.5,
+  },
+  
+  // Menu Card
+  menuCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    overflow: 'hidden',
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 18,
-    paddingHorizontal: 20,
-    backgroundColor: '#fff',
+    paddingVertical: Platform.OS === 'ios' ? 14 : 16,
+    paddingHorizontal: 15,
   },
   menuLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
   },
-  menuIconContainer: {
-    width: 28,
-    height: 28,
+  iconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
+    marginRight: 12,
   },
   menuText: {
-    fontSize: 16,
-    color: '#1a1a1a',
-    fontWeight: '600',
-    letterSpacing: 0.2,
+    fontSize: 15,
+    color: '#333',
+    fontWeight: '500',
   },
   menuDivider: {
     height: 1,
-    backgroundColor: '#f0f0f0',
-    marginLeft: 0,
+    backgroundColor: '#F0F0F0',
   },
-
-  sectionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  sectionTitle: { 
-    fontSize: 16, 
-    fontWeight: "700", 
-    color: "#333",
-    letterSpacing: 0.3,
-  },
-  editBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#E6F0EF",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  editBtnText: {
-    marginLeft: 4,
-    fontSize: 12,
-    color: "#004643",
-    fontWeight: "500",
-  },
-  infoCard: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    paddingVertical: 10,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-  },
-  infoItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 15,
-    paddingVertical: 12,
-  },
-  infoIcon: { width: 35 },
-  infoLabel: { fontSize: 11, color: "#999" },
-  infoValue: { fontSize: 14, color: "#333", fontWeight: "500" },
-  menuLink: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 15,
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F0F0F0",
-  },
-  menuLinkLeft: { flexDirection: "row", alignItems: "center" },
-  menuLinkText: { marginLeft: 15, fontSize: 14, color: "#333" },
-  logoutSection: {
-    marginTop: 30,
-    marginBottom: 30,
-    marginHorizontal: 20,
-  },
-  logoutBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#FF4D4D",
-    paddingVertical: 16,
-    borderRadius: 12,
-    elevation: 3,
-    shadowColor: '#FF4D4D',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-  },
-  logoutText: {
-    marginLeft: 10,
-    color: "#fff",
-    fontWeight: "bold",
-    fontSize: 16,
-  },
-  versionText: {
-    textAlign: "center",
-    color: "#BBB",
-    fontSize: 11,
-    marginBottom: 30,
-  },
-  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-    paddingTop: Platform.OS === 'android' ? 0 : 50,
-  },
-  modalContent: {
-    backgroundColor: "#fff",
-    margin: 20,
-    padding: 20,
-    borderRadius: 15,
-    width: "90%",
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 20,
-    textAlign: "center",
-  },
-  divider: { height: 1, backgroundColor: "#E0E0E0", marginVertical: 15 },
-  sectionLabel: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#666",
-    marginBottom: 10,
-  },
-  inputLabel: {
-    fontSize: 14,
-    fontWeight: "500",
-    marginBottom: 8,
-    color: "#333",
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 15,
-    fontSize: 14,
-  },
-  textArea: { height: 80, textAlignVertical: "top" },
-  modalButtons: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 10,
-  },
-  modalBtn: { flex: 1, padding: 12, borderRadius: 8, marginHorizontal: 5 },
-  cancelBtn: { backgroundColor: "#f5f5f5" },
-  saveBtn: { backgroundColor: "#004643" },
-  cancelBtnText: { textAlign: "center", color: "#666", fontWeight: "500" },
-  saveBtnText: { textAlign: "center", color: "#fff", fontWeight: "bold" },
-  logoutModalContent: { backgroundColor: '#fff', borderRadius: 16, padding: 24, width: '85%', maxWidth: 320 },
-  logoutModalHeader: { alignItems: 'center', marginBottom: 24 },
-  logoutModalTitle: { fontSize: 20, fontWeight: 'bold', color: '#333', marginTop: 12, marginBottom: 8 },
-  logoutModalMessage: { fontSize: 16, color: '#666', textAlign: 'center', lineHeight: 22 },
-  logoutModalButtons: { flexDirection: 'row', gap: 12 },
-  logoutCancelBtn: { flex: 1, paddingVertical: 12, borderRadius: 8, backgroundColor: '#F5F5F5', alignItems: 'center' },
-  logoutCancelText: { fontSize: 16, fontWeight: '600', color: '#666' },
-  logoutConfirmBtn: { flex: 1, paddingVertical: 12, borderRadius: 8, backgroundColor: '#FF4D4D', alignItems: 'center' },
-  logoutConfirmText: { fontSize: 16, fontWeight: '600', color: '#fff' },
-  passwordContainer: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#ddd', borderRadius: 8, marginBottom: 15 },
-  passwordInput: { flex: 1, padding: 12, fontSize: 14 },
-  eyeButton: { padding: 12 },
+  
+  // Modal
   logoutModalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.5)",
     justifyContent: "center",
     alignItems: "center",
     paddingTop: Platform.OS === 'android' ? 0 : 50,
+  },
+  logoutModalContent: { 
+    backgroundColor: '#fff', 
+    borderRadius: 16, 
+    padding: 24, 
+    width: '85%', 
+    maxWidth: 320 
+  },
+  logoutModalHeader: { 
+    alignItems: 'center', 
+    marginBottom: 24 
+  },
+  logoutModalTitle: { 
+    fontSize: 20, 
+    fontWeight: 'bold', 
+    color: '#333', 
+    marginTop: 12, 
+    marginBottom: 8 
+  },
+  logoutModalMessage: { 
+    fontSize: 16, 
+    color: '#666', 
+    textAlign: 'center', 
+    lineHeight: 22 
+  },
+  logoutModalButtons: { 
+    flexDirection: 'row', 
+    gap: 12 
+  },
+  logoutCancelBtn: { 
+    flex: 1, 
+    paddingVertical: 12, 
+    borderRadius: 8, 
+    backgroundColor: '#F5F5F5', 
+    alignItems: 'center' 
+  },
+  logoutCancelText: { 
+    fontSize: 16, 
+    fontWeight: '600', 
+    color: '#666' 
+  },
+  logoutConfirmBtn: { 
+    flex: 1, 
+    paddingVertical: 12, 
+    borderRadius: 8, 
+    backgroundColor: '#FF4D4D', 
+    alignItems: 'center' 
+  },
+  logoutConfirmText: { 
+    fontSize: 16, 
+    fontWeight: '600', 
+    color: '#fff' 
   },
 });

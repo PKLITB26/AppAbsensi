@@ -9,8 +9,8 @@ const getLokasiKantor = async (req, res) => {
         id,
         nama_lokasi,
         alamat,
-        latitude,
-        longitude,
+        lintang,
+        bujur,
         radius,
         jenis_lokasi,
         is_active
@@ -23,8 +23,8 @@ const getLokasiKantor = async (req, res) => {
       id: parseInt(location.id),
       nama_lokasi: location.nama_lokasi,
       alamat: location.alamat,
-      latitude: parseFloat(location.latitude),
-      longitude: parseFloat(location.longitude),
+      lintang: parseFloat(location.lintang),
+      bujur: parseFloat(location.bujur),
       radius: parseInt(location.radius),
       jenis_lokasi: location.jenis_lokasi,
       is_active: Boolean(location.is_active)
@@ -48,10 +48,10 @@ const getLokasiKantor = async (req, res) => {
 
 const createLokasiKantor = async (req, res) => {
   try {
-    const { nama_lokasi, alamat, latitude, longitude, radius, jenis_lokasi } = req.body;
+    const { nama_lokasi, alamat, lintang, bujur, radius, jenis_lokasi } = req.body;
 
     // Validate required fields
-    const required_fields = ['nama_lokasi', 'alamat', 'latitude', 'longitude'];
+    const required_fields = ['nama_lokasi', 'alamat', 'lintang', 'bujur'];
     for (const field of required_fields) {
       if (!req.body[field] || (typeof req.body[field] === 'string' && req.body[field].trim() === '')) {
         return res.status(400).json({
@@ -65,14 +65,14 @@ const createLokasiKantor = async (req, res) => {
 
     const [result] = await db.execute(`
       INSERT INTO lokasi_kantor (
-        nama_lokasi, alamat, latitude, longitude, radius, 
+        nama_lokasi, alamat, lintang, bujur, radius, 
         jenis_lokasi, is_active
       ) VALUES (?, ?, ?, ?, ?, ?, 1)
     `, [
       nama_lokasi.trim(),
       alamat.trim(),
-      latitude,
-      longitude,
+      lintang,
+      bujur,
       radius || 100,
       jenis_lokasi || 'dinas'
     ]);
@@ -99,10 +99,10 @@ const createLokasiKantor = async (req, res) => {
 const updateLokasiKantor = async (req, res) => {
   try {
     const { id } = req.params;
-    const { nama_lokasi, alamat, latitude, longitude, radius } = req.body;
+    const { nama_lokasi, alamat, lintang, bujur, radius } = req.body;
 
     // Validate required fields
-    const required_fields = ['nama_lokasi', 'alamat', 'latitude', 'longitude', 'radius'];
+    const required_fields = ['nama_lokasi', 'alamat', 'lintang', 'bujur', 'radius'];
     for (const field of required_fields) {
       if (!req.body[field] || (typeof req.body[field] === 'string' && req.body[field].trim() === '')) {
         return res.status(400).json({
@@ -126,13 +126,13 @@ const updateLokasiKantor = async (req, res) => {
     // Update location
     const [result] = await db.execute(`
       UPDATE lokasi_kantor 
-      SET nama_lokasi = ?, alamat = ?, latitude = ?, longitude = ?, radius = ?
+      SET nama_lokasi = ?, alamat = ?, lintang = ?, bujur = ?, radius = ?
       WHERE id = ?
     `, [
       nama_lokasi.trim(),
       alamat.trim(),
-      latitude,
-      longitude,
+      lintang,
+      bujur,
       radius,
       id
     ]);

@@ -1,5 +1,155 @@
 const bcrypt = require('bcryptjs');
 const { getConnection } = require('../config/database');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
+// Configure multer for file upload
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const uploadDir = path.join(__dirname, '../../uploads/admin');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, 'admin-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({ 
+  storage: storage,
+  limits: { fileSize: 2 * 1024 * 1024 }, // 2MB
+  fileFilter: function (req, file, cb) {
+    const allowedTypes = /jpeg|jpg|png/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+    if (mimetype && extname) {
+      return cb(null, true);
+    }
+    cb(new Error('Only .png, .jpg and .jpeg format allowed!'));
+  }
+});
+
+const getAdminProfile = async (req, res) => {
+  try {
+    const userId = req.headers['user-id'];
+    
+    if (!userId) {
+      return res.json({ success: false, message: 'User ID tidak ditemukan' });
+    }
+
+    const db = await getConnection();
+    const [rows] = await db.execute(
+      'SELECT id_user, email, nama_lengkap, foto_profil, no_telepon, role FROM users WHERE id_user = ? AND role = "admin"',
+      [userId]
+    );
+
+    if (rows.length === 0) {
+      return res.json({ success: false, message: 'Admin tidak ditemukan' });
+    }
+
+    res.json({
+      success: true,
+      data: rows[0]
+    });
+  } catch (error) {
+    console.error('Get admin profile error:', error);
+    res.json({ success: false, message: 'Database error: ' + error.message });
+  }
+};
+
+const updateAdminProfileData = async (req, res) => {
+  try {
+    const userId = req.headers['user-id'];
+    const { nama_lengkap, email, no_telepon } = req.body;
+    const foto_profil = req.file;
+
+    if (!userId) {
+      return res.json({ success: false, message: 'User ID tidak ditemukan' });
+    }
+
+    const db = await getConnection();
+
+    // Check if admin exists
+    const [adminRows] = await db.execute(
+      'SELECT id_user, foto_profil FROM users WHERE id_user = ? AND role = "admin"',
+      [userId]
+    );
+
+    if (adminRows.length === 0) {
+      return res.json({ success: false, message: 'Admin tidak ditemukan' });
+    }
+
+    // Build update query
+    let updateFields = [];
+    let updateValues = [];
+
+    if (nama_lengkap) {
+      updateFields.push('nama_lengkap = ?');
+      updateValues.push(nama_lengkap);
+    }
+
+    if (email) {
+      // Check if email already exists for other users
+      const [emailCheck] = await db.execute(
+        'SELECT id_user FROM users WHERE email = ? AND id_user != ?',
+        [email, userId]
+      );
+      if (emailCheck.length > 0) {
+        return res.json({ success: false, message: 'Email sudah digunakan' });
+      }
+      updateFields.push('email = ?');
+      updateValues.push(email);
+    }
+
+    if (no_telepon !== undefined) {
+      updateFields.push('no_telepon = ?');
+      updateValues.push(no_telepon);
+    }
+
+    if (foto_profil) {
+      const fotoPath = 'uploads/admin/' + foto_profil.filename;
+      updateFields.push('foto_profil = ?');
+      updateValues.push(fotoPath);
+
+      // Delete old photo if exists
+      const oldPhoto = adminRows[0].foto_profil;
+      if (oldPhoto) {
+        const oldPhotoPath = path.join(__dirname, '../../', oldPhoto);
+        if (fs.existsSync(oldPhotoPath)) {
+          fs.unlinkSync(oldPhotoPath);
+        }
+      }
+    }
+
+    if (updateFields.length === 0) {
+      return res.json({ success: false, message: 'Tidak ada data yang diupdate' });
+    }
+
+    updateValues.push(userId);
+    const updateQuery = `UPDATE users SET ${updateFields.join(', ')} WHERE id_user = ?`;
+    
+    await db.execute(updateQuery, updateValues);
+
+    // Get updated data
+    const [updatedRows] = await db.execute(
+      'SELECT id_user, email, nama_lengkap, foto_profil, no_telepon, role FROM users WHERE id_user = ?',
+      [userId]
+    );
+
+    res.json({
+      success: true,
+      message: 'Profil berhasil diperbarui',
+      data: updatedRows[0]
+    });
+  } catch (error) {
+    console.error('Update admin profile error:', error);
+    res.json({ success: false, message: 'Database error: ' + error.message });
+  }
+};
 
 const getAdminData = async (req, res) => {
   try {
@@ -142,4 +292,4 @@ const updateAdminProfile = async (req, res) => {
 };
 
 
-module.exports = { getAdminData, updateAdminProfile };
+module.exports = { getAdminData, updateAdminProfile, getAdminProfile, updateAdminProfileData, upload };

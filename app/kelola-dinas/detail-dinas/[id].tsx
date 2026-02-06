@@ -219,9 +219,11 @@ export default function DetailDinasScreen() {
               <Text style={styles.dinasStatusText}>{dinasStatus.status}</Text>
             </View>
           </View>
-          <Text style={styles.createdDate}>
-            Tanggal dibuat: {detailDinas.created_at ? formatDate(detailDinas.created_at) : '-'}
-          </Text>
+          {detailDinas.created_at && (
+            <Text style={styles.createdDate}>
+              Tanggal dibuat: {formatDate(detailDinas.created_at)}
+            </Text>
+          )}
         </View>
 
         {/* Informasi Kegiatan */}
@@ -258,15 +260,13 @@ export default function DetailDinasScreen() {
             </View>
           </View>
 
-          {detailDinas.deskripsi && (
-            <View style={styles.infoRow}>
-              <Ionicons name="document-text-outline" size={20} color="#004643" />
-              <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Deskripsi</Text>
-                <Text style={styles.infoValue}>{detailDinas.deskripsi}</Text>
-              </View>
+          <View style={styles.infoRow}>
+            <Ionicons name="document-text-outline" size={20} color="#004643" />
+            <View style={styles.infoContent}>
+              <Text style={styles.infoLabel}>Deskripsi</Text>
+              <Text style={styles.infoValue}>{detailDinas.deskripsi || '-'}</Text>
             </View>
-          )}
+          </View>
         </View>
         <View style={styles.infoCard}>
           <Text style={styles.cardTitle}>Waktu & Jadwal Dinas</Text>
@@ -329,10 +329,10 @@ export default function DetailDinasScreen() {
 
 
         {/* Dokumen SPT */}
-        {detailDinas.dokumen_spt && (
-          <View style={styles.infoCard}>
-            <Text style={styles.cardTitle}>Dokumen SPT</Text>
-            
+        <View style={styles.infoCard}>
+          <Text style={styles.cardTitle}>Dokumen SPT</Text>
+          
+          {detailDinas.dokumen_spt ? (
             <TouchableOpacity style={styles.documentRow}>
               <Ionicons name="document-attach-outline" size={20} color="#004643" />
               <View style={styles.infoContent}>
@@ -341,8 +341,15 @@ export default function DetailDinasScreen() {
               </View>
               <Ionicons name="download-outline" size={20} color="#666" />
             </TouchableOpacity>
-          </View>
-        )}
+          ) : (
+            <View style={styles.infoRow}>
+              <Ionicons name="document-attach-outline" size={20} color="#999" />
+              <View style={styles.infoContent}>
+                <Text style={[styles.infoValue, { color: '#999' }]}>-</Text>
+              </View>
+            </View>
+          )}
+        </View>
 
         {/* Daftar Pegawai */}
         <View style={styles.pegawaiSection}>
@@ -392,14 +399,13 @@ const styles = StyleSheet.create({
   // Header Card
   headerCard: {
     backgroundColor: '#fff',
-    margin: 16,
-    padding: 20,
+    marginHorizontal: 15,
+    marginTop: 15,
+    marginBottom: 12,
+    padding: 15,
     borderRadius: 12,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
   },
   headerTop: {
     flexDirection: 'row',
@@ -440,15 +446,12 @@ const styles = StyleSheet.create({
   // Info Card
   infoCard: {
     backgroundColor: '#fff',
-    marginHorizontal: 16,
-    marginBottom: 16,
-    padding: 20,
+    marginHorizontal: 15,
+    marginBottom: 12,
+    padding: 15,
     borderRadius: 12,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
   },
   cardTitle: {
     fontSize: 16,
@@ -534,19 +537,16 @@ const styles = StyleSheet.create({
 
   // Pegawai Section
   pegawaiSection: {
-    marginHorizontal: 16,
+    marginHorizontal: 15,
     marginBottom: 16,
   },
   pegawaiCard: {
     backgroundColor: '#fff',
-    padding: 16,
+    padding: 15,
     borderRadius: 12,
     marginBottom: 12,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
   },
   pegawaiHeader: {
     flexDirection: 'row',

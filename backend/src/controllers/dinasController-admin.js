@@ -70,11 +70,18 @@ const getDinasAktifAdmin = async (req, res) => {
         id: row.id_dinas,
         namaKegiatan: row.nama_kegiatan,
         nomorSpt: row.nomor_spt,
+        jenisDinas: row.jenis_dinas,
         lokasi: row.alamat_lengkap,
         jamKerja: `${row.jam_mulai}-${row.jam_selesai}`,
         radius: row.radius_absen,
+        koordinat_lat: parseFloat(row.lintang),
+        koordinat_lng: parseFloat(row.bujur),
         tanggal_mulai: row.tanggal_mulai,
         tanggal_selesai: row.tanggal_selesai,
+        deskripsi: row.deskripsi,
+        dokumen_spt: row.dokumen_spt,
+        created_at: row.created_at,
+        created_by: row.created_by,
         pegawai: pegawai
       });
     }
@@ -149,7 +156,7 @@ const createDinasAdmin = async (req, res) => {
       const [result] = await connection.execute(`
         INSERT INTO dinas (
           nama_kegiatan, nomor_spt, jenis_dinas, tanggal_mulai, tanggal_selesai,
-          jam_mulai, jam_selesai, alamat_lengkap, latitude, longitude, radius_absen,
+          jam_mulai, jam_selesai, alamat_lengkap, lintang, bujur, radius_absen,
           deskripsi, status, created_by, created_at
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'aktif', ?, NOW())
       `, [

@@ -46,7 +46,7 @@ export default function AppHeader({
         <View style={styles.headerLeft}>
           {showBack && (
             <TouchableOpacity style={styles.backBtn} onPress={handleBackPress}>
-              <Ionicons name="arrow-back" size={20} color="#004643" />
+              <Ionicons name="arrow-back" size={24} color="#004643" />
             </TouchableOpacity>
           )}
           <Text style={styles.headerTitle}>{title}</Text>

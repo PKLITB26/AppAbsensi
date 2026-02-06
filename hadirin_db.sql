@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Feb 04, 2026 at 03:32 AM
+-- Generation Time: Feb 06, 2026 at 02:18 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -41,7 +41,11 @@ CREATE TABLE `absen_dinas` (
   `foto_masuk` varchar(255) DEFAULT NULL,
   `foto_pulang` varchar(255) DEFAULT NULL,
   `status` enum('hadir','terlambat','tidak_hadir') DEFAULT 'tidak_hadir',
-  `keterangan` text DEFAULT NULL
+  `keterangan` text DEFAULT NULL,
+  `status_validasi` enum('menunggu','disetujui','ditolak') DEFAULT 'menunggu',
+  `divalidasi_oleh` int(11) DEFAULT NULL,
+  `catatan_validasi` text DEFAULT NULL,
+  `waktu_validasi` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -76,7 +80,8 @@ CREATE TABLE `dinas` (
 
 INSERT INTO `dinas` (`id_dinas`, `nama_kegiatan`, `nomor_spt`, `jenis_dinas`, `tanggal_mulai`, `tanggal_selesai`, `jam_mulai`, `jam_selesai`, `alamat_lengkap`, `latitude`, `longitude`, `radius_absen`, `deskripsi`, `dokumen_spt`, `status`, `created_by`, `created_at`) VALUES
 (10, 'Rapat', 'STP 002', 'lokal', '2026-01-20', '2026-01-22', '07:30:00', '16:00:00', 'Lokasi Dinas', -6.89150000, 107.61070000, 100, '', NULL, 'aktif', 10, '2026-01-20 04:00:49'),
-(11, 'rapat', 'Spt/001', 'luar_kota', '2026-02-03', '2026-02-13', '07:30:00', '17:00:00', 'Lokasi Dinas', -6.89150000, 107.61070000, 100, '', NULL, 'aktif', 10, '2026-02-02 06:57:04');
+(11, 'rapat', 'Spt/001', 'luar_kota', '2026-02-03', '2026-02-13', '07:30:00', '17:00:00', 'Lokasi Dinas', -6.89150000, 107.61070000, 100, '', NULL, 'aktif', 10, '2026-02-02 06:57:04'),
+(12, 'Tes', 'Tes', 'luar_kota', '2026-02-28', '2026-03-08', '07:00:00', '16:00:00', 'Lokasi Dinas', -6.89150000, 107.61070000, 100, 'Tes', NULL, 'aktif', 10, '2026-02-04 02:40:14');
 
 -- --------------------------------------------------------
 
@@ -125,7 +130,9 @@ INSERT INTO `dinas_pegawai` (`id`, `id_dinas`, `id_user`, `status_konfirmasi`, `
 (9, 10, 2, 'konfirmasi', '2026-01-20 04:00:49', NULL),
 (10, 10, 5, 'konfirmasi', '2026-01-20 04:00:49', NULL),
 (11, 11, 4, 'konfirmasi', '2026-02-02 06:57:04', NULL),
-(12, 11, 2, 'konfirmasi', '2026-02-02 06:57:04', NULL);
+(12, 11, 2, 'konfirmasi', '2026-02-02 06:57:04', NULL),
+(13, 12, 4, 'konfirmasi', '2026-02-04 02:40:14', NULL),
+(14, 12, 13, 'konfirmasi', '2026-02-04 02:40:14', NULL);
 
 -- --------------------------------------------------------
 
@@ -249,7 +256,8 @@ INSERT INTO `pegawai` (`id_pegawai`, `id_user`, `nama_lengkap`, `nip`, `jenis_ke
 (4, 5, 'Dewi Lestari', 'NIP004', 'Perempuan', '1995-03-25', 'Jl. Thamrin No. 321, Jakarta', '081234567893', 'Staff Marketing', 'Marketing', '2021-02-15', NULL, 'Aktif', '2026-01-15 01:29:42', '2026-01-15 01:29:42'),
 (5, 6, 'Eko Prasetyo', 'NIP005', 'Laki-laki', '1991-07-18', 'Jl. Kuningan No. 654, Jakarta', '081234567894', 'Staff IT', 'IT', '2021-08-20', NULL, 'Aktif', '2026-01-15 01:29:42', '2026-01-15 01:29:42'),
 (11, 12, 'Riska Dwi Ramadani ', 'R00233', 'Perempuan', '0000-00-00', '', '', 'IT', 'IT', '2026-01-19', NULL, 'Aktif', '2026-01-19 03:46:32', '2026-01-19 03:46:32'),
-(12, 9, 'Riska', 'PEG000009', '', NULL, '', '', 'Staff', 'Umum', NULL, NULL, 'Aktif', '2026-01-22 02:26:42', '2026-01-22 02:26:42');
+(12, 9, 'Riska', 'PEG000009', '', NULL, '', '', 'Staff', 'Umum', NULL, NULL, 'Aktif', '2026-01-22 02:26:42', '2026-01-22 02:26:42'),
+(13, 13, 'Cindy Yuliani ', 'C0001', 'Perempuan', '0000-00-00', 'Cisarua', '08379157216', 'IT', 'IT', '2026-02-04', NULL, 'Aktif', '2026-02-04 02:39:32', '2026-02-04 02:39:32');
 
 -- --------------------------------------------------------
 
@@ -261,7 +269,7 @@ CREATE TABLE `pengajuan` (
   `id_pengajuan` int(11) NOT NULL,
   `id_user` int(11) NOT NULL,
   `id_pegawai` int(11) DEFAULT NULL,
-  `jenis_pengajuan` enum('cuti_sakit','cuti_tahunan','izin_pribadi','pulang_cepat_terencana','pulang_cepat_mendadak','koreksi_presensi','lembur_weekday','lembur_weekend','lembur_holiday','dinas_lokal','dinas_luar_kota','dinas_luar_negeri') NOT NULL,
+  `jenis_pengajuan` enum('cuti_sakit','cuti_tahunan','izin_pribadi','pulang_cepat_terencana','pulang_cepat_mendadak','koreksi_presensi','lembur_hari_kerja','lembur_akhir_pekan','lembur_hari_libur','dinas_lokal','dinas_luar_kota','dinas_luar_negeri') NOT NULL,
   `tanggal_mulai` date NOT NULL,
   `tanggal_selesai` date DEFAULT NULL,
   `jam_mulai` time DEFAULT NULL,
@@ -269,12 +277,12 @@ CREATE TABLE `pengajuan` (
   `alasan_text` text NOT NULL,
   `lokasi_dinas` varchar(255) DEFAULT NULL,
   `dokumen_foto` varchar(255) DEFAULT NULL,
-  `status` enum('pending','approved','rejected') DEFAULT 'pending',
+  `status` enum('menunggu','disetujui','ditolak') DEFAULT 'menunggu',
   `is_retrospektif` tinyint(1) DEFAULT 0,
-  `approved_by` int(11) DEFAULT NULL,
+  `disetujui_oleh` int(11) DEFAULT NULL,
   `tanggal_pengajuan` timestamp NOT NULL DEFAULT current_timestamp(),
-  `tanggal_approval` timestamp NULL DEFAULT NULL,
-  `catatan_approval` text DEFAULT NULL
+  `waktu_persetujuan` timestamp NULL DEFAULT NULL,
+  `catatan_persetujuan` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -301,15 +309,19 @@ CREATE TABLE `presensi` (
   `id_user` int(11) DEFAULT NULL,
   `tanggal` date DEFAULT NULL,
   `jam_masuk` time DEFAULT NULL,
-  `lat_absen` double DEFAULT NULL,
-  `long_absen` double DEFAULT NULL,
-  `foto_selfie` varchar(255) DEFAULT NULL,
+  `lintang_masuk` double DEFAULT NULL,
+  `bujur_masuk` double DEFAULT NULL,
+  `foto_masuk` varchar(255) DEFAULT NULL,
   `status` enum('Hadir','Tidak Hadir','Terlambat','Izin','Sakit','Cuti','Pulang Cepat','Dinas Luar/ Perjalanan Dinas') DEFAULT NULL,
   `alasan_luar_lokasi` text DEFAULT NULL,
   `jam_pulang` time DEFAULT NULL,
-  `lat_pulang` double DEFAULT NULL,
-  `long_pulang` double DEFAULT NULL,
-  `foto_pulang` varchar(255) DEFAULT NULL
+  `lintang_pulang` double DEFAULT NULL,
+  `bujur_pulang` double DEFAULT NULL,
+  `foto_pulang` varchar(255) DEFAULT NULL,
+  `status_validasi` enum('menunggu','disetujui','ditolak') DEFAULT 'disetujui',
+  `divalidasi_oleh` int(11) DEFAULT NULL,
+  `catatan_validasi` text DEFAULT NULL,
+  `waktu_validasi` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -336,8 +348,9 @@ INSERT INTO `users` (`id_user`, `email`, `password`, `role`, `device_id`) VALUES
 (5, 'dewi@itb.ac.id', '$2y$10$ghBDG.IOG/dPTExfmkFIRuRU9E9Fpg2BBw5Jm26vdv2yREJSXKekS', 'pegawai', 'device_004'),
 (6, 'eko@itb.ac.id', '$2y$10$ghBDG.IOG/dPTExfmkFIRuRU9E9Fpg2BBw5Jm26vdv2yREJSXKekS', 'pegawai', 'device_005'),
 (9, 'riska@itb.ac.id', '$2y$10$ghBDG.IOG/dPTExfmkFIRuRU9E9Fpg2BBw5Jm26vdv2yREJSXKekS', 'pegawai', NULL),
-(10, 'admin@itb.ac.id', '$2y$10$ghBDG.IOG/dPTExfmkFIRuRU9E9Fpg2BBw5Jm26vdv2yREJSXKekS', 'admin', NULL),
-(12, 'riskadwiramadani94@gmail.com', '$2y$10$ghBDG.IOG/dPTExfmkFIRuRU9E9Fpg2BBw5Jm26vdv2yREJSXKekS', 'pegawai', NULL);
+(10, 'admin@itb.ac.id', '$2a$10$RU3fzrbHzUOYmJzeWgMw2uC11KBt5s3bsP./ywAV6ef8thrRXT1RK', 'admin', NULL),
+(12, 'riskadwiramadani94@gmail.com', '$2y$10$ghBDG.IOG/dPTExfmkFIRuRU9E9Fpg2BBw5Jm26vdv2yREJSXKekS', 'pegawai', NULL),
+(13, 'cindy@itb.ac.id', '$2a$10$YpT5K4qo6mWzTlSZb5SS2uLhsXB6gFV2IgBzXtkGw14XYnd293R0O', 'pegawai', NULL);
 
 --
 -- Indexes for dumped tables
@@ -411,7 +424,7 @@ ALTER TABLE `pegawai`
 ALTER TABLE `pengajuan`
   ADD PRIMARY KEY (`id_pengajuan`),
   ADD KEY `id_user` (`id_user`),
-  ADD KEY `approved_by` (`approved_by`),
+  ADD KEY `approved_by` (`disetujui_oleh`),
   ADD KEY `fk_pegawai_pengajuan` (`id_pegawai`);
 
 --
@@ -449,7 +462,7 @@ ALTER TABLE `absen_dinas`
 -- AUTO_INCREMENT for table `dinas`
 --
 ALTER TABLE `dinas`
-  MODIFY `id_dinas` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `id_dinas` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT for table `dinas_lokasi`
@@ -461,7 +474,7 @@ ALTER TABLE `dinas_lokasi`
 -- AUTO_INCREMENT for table `dinas_pegawai`
 --
 ALTER TABLE `dinas_pegawai`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 
 --
 -- AUTO_INCREMENT for table `hari_libur`
@@ -473,7 +486,7 @@ ALTER TABLE `hari_libur`
 -- AUTO_INCREMENT for table `jam_kerja_hari`
 --
 ALTER TABLE `jam_kerja_hari`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=113;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=134;
 
 --
 -- AUTO_INCREMENT for table `lokasi_kantor`
@@ -485,7 +498,7 @@ ALTER TABLE `lokasi_kantor`
 -- AUTO_INCREMENT for table `pegawai`
 --
 ALTER TABLE `pegawai`
-  MODIFY `id_pegawai` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `id_pegawai` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT for table `pengajuan`
@@ -509,7 +522,7 @@ ALTER TABLE `presensi`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id_user` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `id_user` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- Constraints for dumped tables
@@ -547,7 +560,7 @@ ALTER TABLE `pegawai`
 ALTER TABLE `pengajuan`
   ADD CONSTRAINT `fk_pegawai_pengajuan` FOREIGN KEY (`id_pegawai`) REFERENCES `pegawai` (`id_pegawai`) ON DELETE CASCADE,
   ADD CONSTRAINT `pengajuan_ibfk_1` FOREIGN KEY (`id_user`) REFERENCES `users` (`id_user`) ON DELETE CASCADE,
-  ADD CONSTRAINT `pengajuan_ibfk_2` FOREIGN KEY (`approved_by`) REFERENCES `users` (`id_user`) ON DELETE SET NULL;
+  ADD CONSTRAINT `pengajuan_ibfk_2` FOREIGN KEY (`disetujui_oleh`) REFERENCES `users` (`id_user`) ON DELETE SET NULL;
 
 --
 -- Constraints for table `presensi`
