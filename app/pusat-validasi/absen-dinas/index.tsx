@@ -299,6 +299,13 @@ export default function AbsenDinasValidasiScreen() {
         {selectedDate && pegawaiData.length > 0 && (
           <View style={styles.pegawaiList}>
             {pegawaiData.map((pegawai, index) => {
+              // Cek apakah tanggal yang dipilih sudah tiba
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              const selectedDateObj = new Date(selectedDate);
+              selectedDateObj.setHours(0, 0, 0, 0);
+              const belumWaktuAbsen = selectedDateObj > today;
+              
               // Tentukan status berdasarkan kondisi
               const sudahAbsen = pegawai.status === 'hadir';
               const belumAbsen = !sudahAbsen;
@@ -307,15 +314,28 @@ export default function AbsenDinasValidasiScreen() {
               const jamAbsenPegawai = pegawai.jamAbsen || '00:00';
               const terlambat = sudahAbsen && jamAbsenPegawai > batasAbsen;
               
-              // Cek apakah tidak hadir (belum absen & sudah lewat batas)
-              const tidakHadir = belumAbsen && lewatBatasAbsen;
+              // Cek apakah tidak hadir (belum absen & sudah lewat batas & bukan tanggal masa depan)
+              const tidakHadir = belumAbsen && lewatBatasAbsen && !belumWaktuAbsen;
               
               return (
               <View key={index} style={styles.pegawaiCard}>
                 <View style={styles.pegawaiInfo}>
-                  <Text style={styles.pegawaiName}>
-                    {sudahAbsen ? (terlambat ? '⚠ ' : '✓ ') : tidakHadir ? '❌ ' : '⏱ '}{pegawai.nama}
-                  </Text>
+                  <View style={styles.pegawaiNameRow}>
+                    {sudahAbsen ? (
+                      terlambat ? (
+                        <Ionicons name="warning" size={16} color="#FF9800" style={styles.statusIcon} />
+                      ) : (
+                        <Ionicons name="checkmark-circle" size={16} color="#4CAF50" style={styles.statusIcon} />
+                      )
+                    ) : belumWaktuAbsen ? (
+                      <Ionicons name="calendar-outline" size={16} color="#2196F3" style={styles.statusIcon} />
+                    ) : tidakHadir ? (
+                      <Ionicons name="close-circle" size={16} color="#F44336" style={styles.statusIcon} />
+                    ) : (
+                      <Ionicons name="time-outline" size={16} color="#FF9800" style={styles.statusIcon} />
+                    )}
+                    <Text style={styles.pegawaiName}>{pegawai.nama}</Text>
+                  </View>
                   <Text style={styles.pegawaiNip}>NIP: {pegawai.nip || 'Tidak ada NIP'}</Text>
                   
                   {pegawai.lokasiAbsen && (
@@ -330,14 +350,29 @@ export default function AbsenDinasValidasiScreen() {
                     </View>
                   )}
                   
-                  <Text style={[
-                    styles.statusText,
-                    sudahAbsen ? (terlambat ? styles.statusTerlambat : styles.statusHadir) : tidakHadir ? styles.statusTidakHadir : styles.statusBelum
-                  ]}>
-                    {sudahAbsen 
-                      ? (terlambat ? `⚠ Terlambat - ${pegawai.jamAbsen}` : `✓ Sudah Absen - ${pegawai.jamAbsen}`) 
-                      : tidakHadir ? '❌ Tidak Hadir' : '⏱ Belum Absen'}
-                  </Text>
+                  <View style={styles.statusRow}>
+                    {sudahAbsen ? (
+                      terlambat ? (
+                        <Ionicons name="warning" size={14} color="#FF9800" />
+                      ) : (
+                        <Ionicons name="checkmark-circle" size={14} color="#4CAF50" />
+                      )
+                    ) : belumWaktuAbsen ? (
+                      <Ionicons name="calendar-outline" size={14} color="#2196F3" />
+                    ) : tidakHadir ? (
+                      <Ionicons name="close-circle" size={14} color="#F44336" />
+                    ) : (
+                      <Ionicons name="time-outline" size={14} color="#FF9800" />
+                    )}
+                    <Text style={[
+                      styles.statusText,
+                      sudahAbsen ? (terlambat ? styles.statusTerlambat : styles.statusHadir) : belumWaktuAbsen ? styles.statusBelumWaktu : tidakHadir ? styles.statusTidakHadir : styles.statusBelum
+                    ]}>
+                      {sudahAbsen 
+                        ? (terlambat ? `Terlambat - ${pegawai.jamAbsen}` : `Sudah Absen - ${pegawai.jamAbsen}`) 
+                        : belumWaktuAbsen ? 'Belum Waktunya Absen' : tidakHadir ? 'Tidak Hadir' : 'Belum Absen'}
+                    </Text>
+                  </View>
                 </View>
                 
                 <View style={styles.actionButtons}>
@@ -690,11 +725,23 @@ const styles = StyleSheet.create({
   pegawaiInfo: {
     flex: 1,
   },
+  pegawaiNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  statusIcon: {
+    marginRight: 6,
+  },
   pegawaiName: {
     fontSize: 15,
     fontWeight: '600',
     color: '#333',
-    marginBottom: 4,
+  },
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   pegawaiNip: {
     fontSize: 12,
@@ -730,6 +777,9 @@ const styles = StyleSheet.create({
   },
   statusBelum: {
     color: '#FF9800',
+  },
+  statusBelumWaktu: {
+    color: '#2196F3',
   },
   statusTerlambat: {
     color: '#FF9800',

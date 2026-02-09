@@ -92,29 +92,73 @@ const pusatValidasiController = {
     }
   },
 
-  // Get statistik untuk counter tabs
+  // Get statistik untuk ringkasan validasi
   getStatistik: async (req, res) => {
     try {
       const db = await getConnection();
-      // Count absen dinas
-      const [absenDinasCount] = await db.execute(`
+      
+      // ABSEN DINAS
+      // Perlu Validasi
+      const [perluValidasi] = await db.execute(`
         SELECT COUNT(*) as count 
         FROM absen_dinas 
-        WHERE status_validasi = 'menunggu'
+        WHERE status IN ('hadir', 'terlambat') 
+        AND status_validasi = 'menunggu'
       `);
 
-      // Count pengajuan
-      const [pengajuanCount] = await db.execute(`
+      // Sudah Divalidasi
+      const [sudahValidasi] = await db.execute(`
+        SELECT COUNT(*) as count 
+        FROM absen_dinas 
+        WHERE status_validasi = 'disetujui'
+      `);
+
+      // Tidak Hadir (pegawai yang tidak ada record absen & sudah lewat jam masuk)
+      const [tidakHadir] = await db.execute(`
+        SELECT COUNT(*) as count 
+        FROM dinas_pegawai dp
+        INNER JOIN dinas d ON dp.id_dinas = d.id_dinas
+        LEFT JOIN absen_dinas ad ON dp.id_user = ad.id_user 
+          AND ad.id_dinas = dp.id_dinas 
+          AND ad.tanggal_absen = CURDATE()
+        WHERE ad.id IS NULL 
+        AND CURDATE() BETWEEN d.tanggal_mulai AND d.tanggal_selesai
+        AND CURTIME() > d.jam_mulai
+        AND dp.status_konfirmasi = 'konfirmasi'
+      `);
+
+      // PENGAJUAN
+      const [menunggu] = await db.execute(`
         SELECT COUNT(*) as count 
         FROM pengajuan 
         WHERE status = 'menunggu'
       `);
 
+      const [disetujui] = await db.execute(`
+        SELECT COUNT(*) as count 
+        FROM pengajuan 
+        WHERE status = 'disetujui'
+      `);
+
+      const [ditolak] = await db.execute(`
+        SELECT COUNT(*) as count 
+        FROM pengajuan 
+        WHERE status = 'ditolak'
+      `);
+
       const stats = {
-        luar_lokasi: 0,
-        absen_dinas: absenDinasCount[0].count,
-        pengajuan: pengajuanCount[0].count,
-        total: absenDinasCount[0].count + pengajuanCount[0].count
+        absen_dinas: {
+          perlu_validasi: perluValidasi[0].count,
+          sudah_divalidasi: sudahValidasi[0].count,
+          tidak_hadir: tidakHadir[0].count,
+          total: perluValidasi[0].count + sudahValidasi[0].count + tidakHadir[0].count
+        },
+        pengajuan: {
+          menunggu: menunggu[0].count,
+          disetujui: disetujui[0].count,
+          ditolak: ditolak[0].count,
+          total: menunggu[0].count + disetujui[0].count + ditolak[0].count
+        }
       };
 
       res.json({

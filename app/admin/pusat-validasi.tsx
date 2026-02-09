@@ -52,10 +52,18 @@ interface PengajuanItem {
 }
 
 interface Statistics {
-  luar_lokasi: number;
-  absen_dinas: number;
-  pengajuan: number;
-  total: number;
+  absen_dinas: {
+    perlu_validasi: number;
+    sudah_divalidasi: number;
+    tidak_hadir: number;
+    total: number;
+  };
+  pengajuan: {
+    menunggu: number;
+    disetujui: number;
+    ditolak: number;
+    total: number;
+  };
 }
 
 export default function PusatValidasiScreen() {
@@ -98,10 +106,18 @@ export default function PusatValidasiScreen() {
   const [absenDinasData, setAbsenDinasData] = useState<AbsenDinasItem[]>([]);
   const [pengajuanData, setPengajuanData] = useState<PengajuanItem[]>([]);
   const [statistics, setStatistics] = useState<Statistics>({
-    luar_lokasi: 0,
-    absen_dinas: 0,
-    pengajuan: 0,
-    total: 0
+    absen_dinas: {
+      perlu_validasi: 0,
+      sudah_divalidasi: 0,
+      tidak_hadir: 0,
+      total: 0
+    },
+    pengajuan: {
+      menunggu: 0,
+      disetujui: 0,
+      ditolak: 0,
+      total: 0
+    }
   });
   
   // Modal states
@@ -115,7 +131,6 @@ export default function PusatValidasiScreen() {
   
   // Filter states
   const [filterPeriod, setFilterPeriod] = useState('semua');
-  const [filterStatus, setFilterStatus] = useState('semua');
   const [filterJenis, setFilterJenis] = useState('semua');
   
   // Bottom sheet animation
@@ -536,27 +551,6 @@ export default function PusatValidasiScreen() {
       });
     }
 
-    // Filter berdasarkan Status Validasi
-    if (filterStatus !== 'semua') {
-      data = data.filter((item: any) => {
-        // Untuk pengajuan, cek status langsung
-        if (activeTab === 'pengajuan') {
-          // Asumsi ada field status di pengajuan
-          const status = item.status || 'menunggu';
-          return status === filterStatus;
-        }
-        // Untuk absen dinas, cek status pegawai
-        if (activeTab === 'absen_dinas') {
-          if (filterStatus === 'menunggu') {
-            return item.pegawai?.some((p: any) => p.status === 'hadir' && !p.isValidated);
-          } else if (filterStatus === 'disetujui') {
-            return item.pegawai?.some((p: any) => p.isValidated === true);
-          }
-        }
-        return true;
-      });
-    }
-
     // Filter berdasarkan Jenis
     if (filterJenis !== 'semua') {
       data = data.filter((item: any) => {
@@ -570,7 +564,7 @@ export default function PusatValidasiScreen() {
     }
 
     return data;
-  }, [absenDinasData, pengajuanData, activeTab, filterPeriod, filterStatus, filterJenis]);
+  }, [absenDinasData, pengajuanData, activeTab, filterPeriod, filterJenis]);
 
   const renderCurrentTab = () => {
     const data = getCurrentData();
@@ -623,38 +617,61 @@ export default function PusatValidasiScreen() {
       />
 
       <View style={styles.contentWrapper}>
-        {/* Statistics Header */}
+        {/* Statistics Header - Compact & Professional */}
         <View style={styles.statsSection}>
           <View style={styles.statsHeader}>
-            <Text style={styles.statsTitle}>Ringkasan Validasi</Text>
+            <View style={styles.statsTitleRow}>
+              <Ionicons name="stats-chart" size={16} color="#004643" />
+              <Text style={styles.statsTitle}>Ringkasan Validasi</Text>
+            </View>
             <View style={styles.statusBadge}>
               <View style={styles.statusDot} />
               <Text style={styles.statusText}>Real-time</Text>
             </View>
           </View>
           
-          <View style={styles.chartContainer}>
-            {/* Progress Ring Chart */}
-            <View style={styles.progressRing}>
-              <View style={styles.progressRingInner}>
-                <Text style={styles.totalNumber}>{statistics.total}</Text>
-                <Text style={styles.totalLabel}>Total</Text>
+          <View style={styles.statsContent}>
+            {/* Absen Dinas Row */}
+            <View style={styles.statRow}>
+              <View style={styles.statIconWrapper}>
+                <Ionicons name="briefcase" size={16} color="#004643" />
+              </View>
+              <Text style={styles.statCategory}>Dinas</Text>
+              <View style={styles.statValues}>
+                <View style={styles.statBadge}>
+                  <Text style={styles.statBadgeLabel}>Perlu</Text>
+                  <Text style={styles.statBadgeNumber}>{statistics.absen_dinas.perlu_validasi}</Text>
+                </View>
+                <View style={styles.statBadge}>
+                  <Text style={styles.statBadgeLabel}>Valid</Text>
+                  <Text style={styles.statBadgeNumber}>{statistics.absen_dinas.sudah_divalidasi}</Text>
+                </View>
+                <View style={styles.statBadge}>
+                  <Text style={styles.statBadgeLabel}>Tidak</Text>
+                  <Text style={styles.statBadgeNumber}>{statistics.absen_dinas.tidak_hadir}</Text>
+                </View>
               </View>
             </View>
             
-            {/* Legend */}
-            <View style={styles.legendContainer}>
-              <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: '#FF9800' }]} />
-                <Text style={styles.legendText}>Pending ({statistics.total})</Text>
+            {/* Pengajuan Row */}
+            <View style={styles.statRow}>
+              <View style={styles.statIconWrapper}>
+                <Ionicons name="document-text" size={16} color="#004643" />
               </View>
-              <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: '#4CAF50' }]} />
-                <Text style={styles.legendText}>Approved (12)</Text>
-              </View>
-              <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: '#F44336' }]} />
-                <Text style={styles.legendText}>Rejected (3)</Text>
+              <Text style={styles.statCategory}>Pengajuan</Text>
+              <View style={styles.statValues}>
+                <View style={styles.statBadge}>
+                  <Text style={styles.statBadgeLabel}>Tunggu</Text>
+                  <Text style={styles.statBadgeNumber}>{statistics.pengajuan.menunggu}</Text>
+                </View>
+                <View style={styles.statBadge}>
+                  <Text style={styles.statBadgeLabel}>Setuju</Text>
+                  <Text style={styles.statBadgeNumber}>{statistics.pengajuan.disetujui}</Text>
+                </View>
+                <View style={styles.statBadge}>
+                  <Text style={styles.statBadgeLabel}>Tolak</Text>
+                  <Text style={styles.statBadgeNumber}>{statistics.pengajuan.ditolak}</Text>
+                </View>
               </View>
             </View>
           </View>
@@ -689,9 +706,9 @@ export default function PusatValidasiScreen() {
               <Text style={[styles.tabText, activeTab === 'absen_dinas' && styles.activeTabText]}>
                 Absen Dinas
               </Text>
-              {statistics.absen_dinas > 0 && (
+              {statistics.absen_dinas.perlu_validasi > 0 && (
                 <View style={styles.badge}>
-                  <Text style={styles.badgeText}>{statistics.absen_dinas}</Text>
+                  <Text style={styles.badgeText}>{statistics.absen_dinas.perlu_validasi}</Text>
                 </View>
               )}
             </TouchableOpacity>
@@ -703,9 +720,9 @@ export default function PusatValidasiScreen() {
               <Text style={[styles.tabText, activeTab === 'pengajuan' && styles.activeTabText]}>
                 Pengajuan
               </Text>
-              {statistics.pengajuan > 0 && (
+              {statistics.pengajuan.menunggu > 0 && (
                 <View style={styles.badge}>
-                  <Text style={styles.badgeText}>{statistics.pengajuan}</Text>
+                  <Text style={styles.badgeText}>{statistics.pengajuan.menunggu}</Text>
                 </View>
               )}
             </TouchableOpacity>
@@ -751,7 +768,6 @@ export default function PusatValidasiScreen() {
                   style={styles.filterResetBtn}
                   onPress={() => {
                     setFilterPeriod('semua');
-                    setFilterStatus('semua');
                     setFilterJenis('semua');
                   }}
                 >
@@ -784,26 +800,6 @@ export default function PusatValidasiScreen() {
                         {period === 'hari_ini' ? 'Hari ini' :
                          period === '3_hari' ? '3 Hari' :
                          period === 'minggu_ini' ? 'Minggu ini' : 'Bulan ini'}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
-              
-              {/* Status Validasi */}
-              <View style={styles.filterSection}>
-                <Text style={styles.filterSectionTitle}>Status Validasi</Text>
-                <View style={styles.filterChipsContainer}>
-                  {['semua', 'menunggu', 'disetujui', 'ditolak'].map((status) => (
-                    <TouchableOpacity
-                      key={status}
-                      style={[styles.filterChipLarge, filterStatus === status && styles.filterChipActive]}
-                      onPress={() => setFilterStatus(status)}
-                    >
-                      <Text style={[styles.filterChipTextLarge, filterStatus === status && styles.filterChipTextActive]}>
-                        {status === 'semua' ? 'Semua' :
-                         status === 'menunggu' ? 'Menunggu' :
-                         status === 'disetujui' ? 'Disetujui' : 'Ditolak'}
                       </Text>
                     </TouchableOpacity>
                   ))}
@@ -982,99 +978,108 @@ const styles = StyleSheet.create({
   
   // Statistics Section
   statsSection: {
-    backgroundColor: '#fff',
+    backgroundColor: '#F8F9FA',
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    borderBottomColor: '#E0E0E0',
   },
   statsHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 12,
+  },
+  statsTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   statsTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-  },
-  statsSubtitle: {
-    fontSize: 12,
-    color: '#666',
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1A1A1A',
   },
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#E8F5E8',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: 'rgba(76, 175, 80, 0.3)',
   },
   statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
     backgroundColor: '#4CAF50',
-    marginRight: 6,
+    marginRight: 5,
   },
   statusText: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '600',
     color: '#2E7D32',
   },
-  chartContainer: {
+  statsContent: {
+    gap: 10,
+  },
+  statRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    backgroundColor: '#fff',
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
   },
-  progressRing: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    borderWidth: 8,
-    borderColor: '#F0F0F0',
-    borderTopColor: '#FF9800',
-    borderRightColor: '#4CAF50',
+  statIconWrapper: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: '#E8F5E8',
     justifyContent: 'center',
     alignItems: 'center',
-    transform: [{ rotate: '-90deg' }],
+    marginRight: 10,
   },
-  progressRingInner: {
-    transform: [{ rotate: '90deg' }],
-    alignItems: 'center',
-  },
-  totalNumber: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#333',
-  },
-  totalLabel: {
-    fontSize: 10,
-    color: '#666',
-    fontWeight: '500',
-  },
-  legendContainer: {
-    flex: 1,
-    marginLeft: 24,
-  },
-  legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  legendDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 8,
-  },
-  legendText: {
+  statCategory: {
     fontSize: 13,
+    fontWeight: '600',
+    color: '#333',
+    width: 75,
+  },
+  statValues: {
+    flexDirection: 'row',
+    flex: 1,
+    gap: 8,
+    justifyContent: 'flex-end',
+  },
+  statBadge: {
+    backgroundColor: '#F8F9FA',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    alignItems: 'center',
+    minWidth: 55,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  statBadgeLabel: {
+    fontSize: 9,
     color: '#666',
     fontWeight: '500',
+    marginBottom: 2,
+  },
+  statBadgeNumber: {
+    fontSize: 14,
+    color: '#004643',
+    fontWeight: '700',
   },
   
   // Search and Filter Section
