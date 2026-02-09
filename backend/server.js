@@ -1,6 +1,7 @@
 const express = require('express');
 const { connectDB } = require('./src/config/database');
 const corsMiddleware = require('./src/middleware/cors');
+require('dotenv').config();
 
 // Import routes
 const authRoutes = require('./src/routes/auth');
@@ -88,9 +89,10 @@ const startServer = async () => {
     }
     
     app.listen(PORT, '0.0.0.0', () => {
+      const HOST_IP = process.env.HOST || 'localhost';
       console.log(`\n✅ Server running successfully!`);
       console.log(`🌐 Local: http://localhost:${PORT}`);
-      console.log(`📱 Mobile: http://${process.env.HOST || '10.251.109.186'}:${PORT}`);
+      console.log(`📱 Mobile: http://${HOST_IP}:${PORT}`);
       console.log(`\n📄 Available endpoints:`);
       console.log(`   POST /auth/api/login`);
       console.log(`   GET  /auth/api/profile`);

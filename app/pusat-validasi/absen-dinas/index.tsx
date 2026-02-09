@@ -167,6 +167,15 @@ export default function AbsenDinasValidasiScreen() {
 
   const renderDinasCard = ({ item }: { item: DinasItem }) => {
     const totalPegawai = item.pegawai?.length || 0;
+    
+    // Parse jam kerja untuk mendapatkan batas waktu absen
+    const jamKerjaParts = item.jamKerja?.split('-') || [];
+    const batasAbsen = jamKerjaParts[0]?.trim() || '08:00';
+    
+    // Get current time
+    const now = new Date();
+    const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    const lewatBatasAbsen = currentTime > batasAbsen;
 
     return (
       <View>
@@ -290,12 +299,22 @@ export default function AbsenDinasValidasiScreen() {
         {selectedDate && pegawaiData.length > 0 && (
           <View style={styles.pegawaiList}>
             {pegawaiData.map((pegawai, index) => {
-              console.log('Pegawai item:', pegawai);
+              // Tentukan status berdasarkan kondisi
+              const sudahAbsen = pegawai.status === 'hadir';
+              const belumAbsen = !sudahAbsen;
+              
+              // Cek apakah terlambat (absen setelah batas)
+              const jamAbsenPegawai = pegawai.jamAbsen || '00:00';
+              const terlambat = sudahAbsen && jamAbsenPegawai > batasAbsen;
+              
+              // Cek apakah tidak hadir (belum absen & sudah lewat batas)
+              const tidakHadir = belumAbsen && lewatBatasAbsen;
+              
               return (
               <View key={index} style={styles.pegawaiCard}>
                 <View style={styles.pegawaiInfo}>
                   <Text style={styles.pegawaiName}>
-                    {pegawai.status === 'hadir' ? '✓ ' : '⏱ '}{pegawai.nama}
+                    {sudahAbsen ? (terlambat ? '⚠ ' : '✓ ') : tidakHadir ? '❌ ' : '⏱ '}{pegawai.nama}
                   </Text>
                   <Text style={styles.pegawaiNip}>NIP: {pegawai.nip || 'Tidak ada NIP'}</Text>
                   
@@ -313,11 +332,11 @@ export default function AbsenDinasValidasiScreen() {
                   
                   <Text style={[
                     styles.statusText,
-                    pegawai.status === 'hadir' ? styles.statusHadir : styles.statusBelum
+                    sudahAbsen ? (terlambat ? styles.statusTerlambat : styles.statusHadir) : tidakHadir ? styles.statusTidakHadir : styles.statusBelum
                   ]}>
-                    {pegawai.status === 'hadir' 
-                      ? `✓ Sudah Absen${pegawai.jamAbsen ? ` - ${pegawai.jamAbsen}` : ''}` 
-                      : '⏱ Belum Absen'}
+                    {sudahAbsen 
+                      ? (terlambat ? `⚠ Terlambat - ${pegawai.jamAbsen}` : `✓ Sudah Absen - ${pegawai.jamAbsen}`) 
+                      : tidakHadir ? '❌ Tidak Hadir' : '⏱ Belum Absen'}
                   </Text>
                 </View>
                 
@@ -711,6 +730,12 @@ const styles = StyleSheet.create({
   },
   statusBelum: {
     color: '#FF9800',
+  },
+  statusTerlambat: {
+    color: '#FF9800',
+  },
+  statusTidakHadir: {
+    color: '#F44336',
   },
   actionIconBtn: {
     width: 36,

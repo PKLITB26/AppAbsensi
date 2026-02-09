@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { 
   View, Text, StyleSheet, TouchableOpacity, FlatList, 
   Alert, ActivityIndicator, Modal, Image, ScrollView, TextInput, Platform, RefreshControl, Animated, PanResponder 
@@ -346,20 +346,57 @@ export default function PusatValidasiScreen() {
 
   const renderAbsenDinasItem = ({ item }: { item: AbsenDinasItem }) => {
     const totalPegawai = item.pegawai?.length || 0;
+    
+    // Parse jam kerja untuk mendapatkan batas waktu absen
+    // Format jam kerja: "08:00 - 17:00"
+    const jamKerjaParts = item.jamKerja?.split('-') || [];
+    const batasAbsen = jamKerjaParts[0]?.trim() || '08:00'; // Ambil jam mulai sebagai batas
+    
+    // Get current time
+    const now = new Date();
+    const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    
+    // Hitung badge status
+    const sudahValidasi = item.pegawai?.filter((p: any) => p.isValidated === true).length || 0;
+    const perluValidasi = item.pegawai?.filter((p: any) => p.status === 'hadir' && !p.isValidated).length || 0;
+    
+    // Tidak hadir: belum absen DAN sudah lewat batas waktu absen
+    const tidakHadir = item.pegawai?.filter((p: any) => {
+      const belumAbsen = p.status !== 'hadir';
+      const lewatBatas = currentTime > batasAbsen;
+      return belumAbsen && lewatBatas;
+    }).length || 0;
 
     return (
-      <View style={styles.dinasCard}>
+      <TouchableOpacity 
+        style={styles.dinasCard}
+        onPress={handleOpenAbsenDinas}
+        activeOpacity={0.7}
+      >
         <View style={styles.dinasCardHeader}>
           <View style={styles.dinasCardTitle}>
             <Text style={styles.dinasKegiatanName}>{item.namaKegiatan}</Text>
             <Text style={styles.dinasSptNumber}>{item.nomorSpt}</Text>
           </View>
-          <TouchableOpacity 
-            style={styles.eyeIconBtn}
-            onPress={handleOpenAbsenDinas}
-          >
-            <Ionicons name="eye-outline" size={20} color="#004643" />
-          </TouchableOpacity>
+          
+          {/* Badge Status di Pojok Kanan Atas */}
+          <View style={styles.badgeContainer}>
+            {sudahValidasi > 0 && (
+              <View style={[styles.statusBadgeSmall, styles.statusBadgeGreen]}>
+                <Text style={styles.statusBadgeText}>{sudahValidasi}</Text>
+              </View>
+            )}
+            {perluValidasi > 0 && (
+              <View style={[styles.statusBadgeSmall, styles.statusBadgeYellow]}>
+                <Text style={styles.statusBadgeText}>{perluValidasi}</Text>
+              </View>
+            )}
+            {tidakHadir > 0 && (
+              <View style={[styles.statusBadgeSmall, styles.statusBadgeRed]}>
+                <Text style={styles.statusBadgeText}>{tidakHadir}</Text>
+              </View>
+            )}
+          </View>
         </View>
 
         <View style={styles.dinasCardInfo}>
@@ -391,12 +428,8 @@ export default function PusatValidasiScreen() {
             <Ionicons name="people-outline" size={14} color="#666" />
             <Text style={styles.dinasInfoText}>{totalPegawai} orang bertugas</Text>
           </View>
-          <View style={styles.dinasInfoRow}>
-            <Ionicons name="radio-outline" size={14} color="#666" />
-            <Text style={styles.dinasInfoText}>Radius: {item.radius} meter</Text>
-          </View>
         </View>
-      </View>
+      </TouchableOpacity>
     );
   };
 
@@ -431,7 +464,7 @@ export default function PusatValidasiScreen() {
           </View>
         )}
         <View style={styles.reasonBox}>
-          <Ionicons name="quote" size={16} color="#004643" style={styles.reasonIcon} />
+          <Ionicons name="chatbox-ellipses-outline" size={16} color="#004643" style={styles.reasonIcon} />
           <Text style={styles.reasonText}>{item.alasan_text}</Text>
         </View>
         {item.dokumen_foto && (
@@ -468,6 +501,77 @@ export default function PusatValidasiScreen() {
     }
   };
 
+  // Filter data dengan useMemo
+  const filteredData = useMemo(() => {
+    let data: any[] = getCurrentData();
+
+    // Filter berdasarkan Periode
+    if (filterPeriod !== 'semua') {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      data = data.filter((item: any) => {
+        const tanggalMulai = new Date(item.tanggal_mulai || item.tanggal_pengajuan);
+        const tanggalSelesai = item.tanggal_selesai ? new Date(item.tanggal_selesai) : tanggalMulai;
+        
+        tanggalMulai.setHours(0, 0, 0, 0);
+        tanggalSelesai.setHours(23, 59, 59, 999);
+
+        if (filterPeriod === 'hari_ini') {
+          return today >= tanggalMulai && today <= tanggalSelesai;
+        } else if (filterPeriod === '3_hari') {
+          const threeDaysAgo = new Date(today);
+          threeDaysAgo.setDate(today.getDate() - 3);
+          return tanggalMulai >= threeDaysAgo;
+        } else if (filterPeriod === 'minggu_ini') {
+          const startOfWeek = new Date(today);
+          startOfWeek.setDate(today.getDate() - today.getDay());
+          const endOfWeek = new Date(startOfWeek);
+          endOfWeek.setDate(startOfWeek.getDate() + 6);
+          return tanggalMulai <= endOfWeek && tanggalSelesai >= startOfWeek;
+        } else if (filterPeriod === 'bulan_ini') {
+          return tanggalMulai.getMonth() === today.getMonth() && tanggalMulai.getFullYear() === today.getFullYear();
+        }
+        return true;
+      });
+    }
+
+    // Filter berdasarkan Status Validasi
+    if (filterStatus !== 'semua') {
+      data = data.filter((item: any) => {
+        // Untuk pengajuan, cek status langsung
+        if (activeTab === 'pengajuan') {
+          // Asumsi ada field status di pengajuan
+          const status = item.status || 'menunggu';
+          return status === filterStatus;
+        }
+        // Untuk absen dinas, cek status pegawai
+        if (activeTab === 'absen_dinas') {
+          if (filterStatus === 'menunggu') {
+            return item.pegawai?.some((p: any) => p.status === 'hadir' && !p.isValidated);
+          } else if (filterStatus === 'disetujui') {
+            return item.pegawai?.some((p: any) => p.isValidated === true);
+          }
+        }
+        return true;
+      });
+    }
+
+    // Filter berdasarkan Jenis
+    if (filterJenis !== 'semua') {
+      data = data.filter((item: any) => {
+        if (activeTab === 'absen_dinas') {
+          return item.jenisDinas === filterJenis;
+        } else if (activeTab === 'pengajuan') {
+          return item.jenis_pengajuan === filterJenis;
+        }
+        return true;
+      });
+    }
+
+    return data;
+  }, [absenDinasData, pengajuanData, activeTab, filterPeriod, filterStatus, filterJenis]);
+
   const renderCurrentTab = () => {
     const data = getCurrentData();
     
@@ -491,7 +595,7 @@ export default function PusatValidasiScreen() {
 
     return (
       <FlatList
-        data={data}
+        data={filteredData}
         keyExtractor={(item: any) => {
           if (activeTab === 'absen_dinas') return item.id.toString();
           return item.id_pengajuan.toString();
@@ -1580,6 +1684,11 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     borderWidth: 1,
     borderColor: '#E0E0E0',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
   },
   dinasCardHeader: {
     flexDirection: 'row',
@@ -1614,15 +1723,39 @@ const styles = StyleSheet.create({
     color: '#666',
     marginLeft: 6,
   },
-  eyeIconBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#E8F5E8',
+  
+  // Badge Container
+  badgeContainer: {
+    flexDirection: 'row',
+    gap: 6,
+    alignItems: 'center',
+  },
+  statusBadgeSmall: {
+    minWidth: 28,
+    height: 28,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(0, 70, 67, 0.2)',
+    paddingHorizontal: 8,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+  },
+  statusBadgeGreen: {
+    backgroundColor: '#4CAF50',
+  },
+  statusBadgeYellow: {
+    backgroundColor: '#FF9800',
+  },
+  statusBadgeRed: {
+    backgroundColor: '#F44336',
+  },
+  statusBadgeText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '700',
   },
 
 });
