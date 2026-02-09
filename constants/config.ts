@@ -49,6 +49,8 @@ export const API_CONFIG = {
     DETAIL_DINAS: '/admin/kelola-dinas/api/detail-dinas',
     RIWAYAT_DINAS: '/admin/kelola-dinas/api/riwayat-dinas',
     VALIDASI_ABSEN: '/admin/kelola-dinas/api/validasi-absen',
+    DINAS_LOKASI: '/admin/kelola-dinas/api/dinas',
+    CHECK_ABSEN_LOCATION: '/admin/kelola-dinas/api/check-location',
     
     // Pusat Validasi
     PUSAT_VALIDASI: '/admin/pusat-validasi/api',
@@ -352,6 +354,28 @@ export const KelolaDinasAPI = {
       return response.json();
     } catch (error) {
       return { success: false, message: 'Tidak dapat terhubung ke server', data: null };
+    }
+  },
+  
+  getDinasLokasi: async (id_dinas: number) => {
+    try {
+      const response = await fetchWithRetry(`${getApiUrl(API_CONFIG.ENDPOINTS.DINAS_LOKASI)}/${id_dinas}/lokasi`);
+      return response.json();
+    } catch (error) {
+      return { success: false, message: 'Tidak dapat terhubung ke server', data: [] };
+    }
+  },
+  
+  checkAbsenLocation: async (id_dinas: number, latitude: number, longitude: number) => {
+    try {
+      const response = await fetchWithRetry(getApiUrl(API_CONFIG.ENDPOINTS.CHECK_ABSEN_LOCATION), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id_dinas, latitude, longitude }),
+      });
+      return response.json();
+    } catch (error) {
+      return { success: false, message: 'Tidak dapat terhubung ke server' };
     }
   },
 };

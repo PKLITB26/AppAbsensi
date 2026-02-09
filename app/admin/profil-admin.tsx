@@ -13,11 +13,13 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-  Image
+  Image,
+  ActivityIndicator
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { API_CONFIG, getApiUrl } from "../../constants/config";
 import { SkeletonLoader } from "../../components";
+import * as ImagePicker from 'expo-image-picker';
 
 interface AdminProfile {
   id_user: number;
@@ -33,6 +35,7 @@ export default function ProfilAdminScreen() {
   const [profile, setProfile] = useState<AdminProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [logoutModal, setLogoutModal] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -85,6 +88,8 @@ export default function ProfilAdminScreen() {
 
           if (result.success && result.data) {
             console.log("User data from server:", result.data);
+            console.log("Foto profil path:", result.data.foto_profil);
+            console.log("Full foto URL:", result.data.foto_profil ? getApiUrl(result.data.foto_profil) : 'No photo');
             setProfile(result.data);
             
             // Update AsyncStorage with latest data
@@ -118,66 +123,163 @@ export default function ProfilAdminScreen() {
     }
   };
 
+  const pickAndUploadImage = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'Izin akses galeri diperlukan');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        const photoUri = result.assets[0].uri;
+        await uploadPhoto(photoUri);
+      }
+    } catch (error) {
+      console.error('Error picking image:', error);
+      Alert.alert('Error', 'Gagal memilih foto');
+    }
+  };
+
+  const uploadPhoto = async (photoUri: string) => {
+    setUploading(true);
+    try {
+      const userDataStr = await AsyncStorage.getItem('userData');
+      const userData = userDataStr ? JSON.parse(userDataStr) : null;
+
+      if (!userData) {
+        Alert.alert('Error', 'Silakan login ulang');
+        router.replace('/');
+        return;
+      }
+
+      const userId = userData.id_user || userData.id;
+      const formData = new FormData();
+      
+      formData.append('nama_lengkap', profile?.nama_lengkap || userData.nama_lengkap);
+      formData.append('email', profile?.email || userData.email);
+      formData.append('no_telepon', profile?.no_telepon || userData.no_telepon || '');
+
+      const filename = photoUri.split('/').pop() || 'profile.jpg';
+      const match = /\.(\w+)$/.exec(filename);
+      const type = match ? `image/${match[1]}` : 'image/jpeg';
+
+      formData.append('foto_profil', {
+        uri: photoUri,
+        name: filename,
+        type: type,
+      } as any);
+
+      const url = getApiUrl(`${API_CONFIG.ENDPOINTS.ADMIN}/profile`);
+      
+      const response = await fetch(url, {
+        method: 'PUT',
+        headers: {
+          'user-id': userId.toString()
+        },
+        body: formData
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        const updatedUserData = {
+          ...userData,
+          foto_profil: result.data?.foto_profil || profile?.foto_profil
+        };
+        await AsyncStorage.setItem('userData', JSON.stringify(updatedUserData));
+        
+        setProfile({
+          ...profile!,
+          foto_profil: result.data?.foto_profil || profile?.foto_profil || null
+        });
+        
+        Alert.alert('Berhasil', 'Foto profil berhasil diperbarui');
+      } else {
+        Alert.alert('Error', result.message || 'Gagal memperbarui foto profil');
+      }
+    } catch (error) {
+      console.error('Error uploading photo:', error);
+      Alert.alert('Error', 'Gagal mengupload foto profil');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
         <SkeletonLoader type="form" count={3} message="Memuat profil admin..." />
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        {/* Background Gradient */}
-        <LinearGradient
-          colors={['#004643', '#2E7D32']}
-          style={styles.gradientBackground}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-        />
         
-        {/* HEADER PROFIL - Card dengan Layout Existing */}
-        <View style={styles.profileCard}>
-          <View style={styles.profileContainer}>
-            <View style={styles.profileInfo}>
-              <Text style={styles.profileName}>{profile?.nama_lengkap || 'Administrator'}</Text>
-              <Text style={styles.profileEmail}>{profile?.email || 'admin@example.com'}</Text>
-            </View>
-            <View style={styles.profileImageWrapper}>
-              {profile?.foto_profil ? (
-                <Image 
-                  source={{ uri: getApiUrl(profile.foto_profil) }} 
-                  style={styles.profileAvatar}
-                />
-              ) : (
-                <View style={styles.profileAvatar}>
-                  <Ionicons name="person" size={40} color="#004643" />
-                </View>
-              )}
-              <TouchableOpacity style={styles.editPhotoBtn}>
-                <Ionicons name="add" size={16} color="#004643" />
-              </TouchableOpacity>
-            </View>
+        {/* SECTION: PROFILE INFO */}
+        <View style={styles.profileSection}>
+          <View style={styles.profileInfo}>
+            <Text style={styles.profileName}>{profile?.nama_lengkap || 'Administrator'}</Text>
+            <Text style={styles.profileEmail}>{profile?.email || 'admin@example.com'}</Text>
+            
+            {/* BUTTON: EDIT PROFILE */}
+            <TouchableOpacity 
+              style={styles.editProfileBtn}
+              onPress={() => router.push({ pathname: '/profile-admin/edit-profil', params: { modal: 'true' } } as any)}
+            >
+              <Text style={styles.editProfileText}>Edit Profil</Text>
+            </TouchableOpacity>
           </View>
-          
-          <TouchableOpacity 
-            style={styles.editProfileBtn}
-            onPress={() => router.push('/profile-admin/edit-profil' as any)}
-          >
-            <Text style={styles.editProfileText}>Edit Profile</Text>
-          </TouchableOpacity>
+          <View style={styles.profileImageWrapper}>
+            {profile?.foto_profil ? (
+              <View style={styles.profileAvatar}>
+                <Image 
+                  source={{ uri: getApiUrl(`/${profile.foto_profil}`) }} 
+                  style={styles.profileAvatarImage}
+                  onError={(e) => {
+                    console.log('Image load error:', e.nativeEvent.error);
+                    console.log('Image URL:', getApiUrl(`/${profile.foto_profil}`));
+                  }}
+                />
+              </View>
+            ) : (
+              <View style={styles.profileAvatar}>
+                <Ionicons name="person" size={40} color="#004643" />
+              </View>
+            )}
+            <TouchableOpacity 
+              style={styles.editPhotoBtn}
+              onPress={pickAndUploadImage}
+              disabled={uploading}
+            >
+              {uploading ? (
+                <ActivityIndicator size="small" color="#004643" />
+              ) : (
+                <Ionicons name="camera-outline" size={16} color="#004643" />
+              )}
+            </TouchableOpacity>
+          </View>
         </View>
 
-        {/* MENU CONTAINER dengan background */}
-        <View style={styles.menuContainer}>
-        {/* PENGATURAN AKUN */}
+        {/* DIVIDER */}
+        <View style={styles.divider} />
+        {/* MENU SECTIONS */}
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>PENGATURAN AKUN</Text>
           <View style={styles.menuCard}>
             <TouchableOpacity 
               style={styles.menuItem}
-              onPress={() => router.push('/pengaturan-profile-admin/pengaturan-keamanan' as any)}
+              onPress={() => router.push('/profile-admin/pengaturan-akun/keamanan' as any)}
             >
               <View style={styles.menuLeft}>
                 <View style={[styles.iconCircle, { backgroundColor: '#FFF3E0' }]}>
@@ -272,7 +374,6 @@ export default function ProfilAdminScreen() {
             </TouchableOpacity>
           </View>
         </View>
-        </View>
       </ScrollView>
 
       {/* Modal Konfirmasi Logout */}
@@ -314,7 +415,7 @@ export default function ProfilAdminScreen() {
           </View>
         </TouchableOpacity>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -323,36 +424,17 @@ export default function ProfilAdminScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F5F5F5" },
   scrollContent: {
-    paddingBottom: 20,
-  },
-  gradientBackground: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 320,
-    zIndex: -1,
+    paddingBottom: 30,
   },
   
-  // Profile Card (dengan gradient background)
-  profileCard: {
-    marginTop: Platform.OS === 'ios' ? 60 : 40,
-    marginHorizontal: 20,
-    marginBottom: 30,
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    padding: 20,
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-  },
-  profileContainer: {
+  // Profile Section
+  profileSection: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 20,
+    alignItems: 'flex-start',
+    paddingHorizontal: 20,
+    paddingTop: Platform.OS === 'ios' ? 60 : 50,
+    paddingBottom: 20,
   },
   profileInfo: {
     flex: 1,
@@ -366,18 +448,24 @@ const styles = StyleSheet.create({
   profileEmail: {
     fontSize: 14,
     color: '#666',
+    marginBottom: 12,
   },
   profileImageWrapper: {
     position: 'relative',
   },
   profileAvatar: {
-    width: Platform.OS === 'ios' ? 85 : 90,
-    height: Platform.OS === 'ios' ? 85 : 90,
-    borderRadius: Platform.OS === 'ios' ? 42.5 : 45,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     backgroundColor: '#E6F0EF',
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
+  },
+  profileAvatarImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
   },
   editPhotoBtn: {
     position: 'absolute',
@@ -392,34 +480,33 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  
   editProfileBtn: {
     backgroundColor: '#fff',
     borderWidth: 2,
     borderColor: '#004643',
-    borderRadius: 12,
-    paddingVertical: Platform.OS === 'ios' ? 12 : 14,
-    alignItems: 'center',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    alignSelf: 'flex-start',
   },
   editProfileText: {
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: '600',
     color: '#004643',
   },
   
-  // Menu Container
-  menuContainer: {
-    backgroundColor: '#F5F5F5',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingTop: 15,
-    paddingBottom: 20,
-    marginTop: -10,
+  // Divider
+  divider: {
+    height: 1,
+    backgroundColor: '#E0E0E0',
+    marginVertical: 10,
   },
   
   // Section
   section: {
-    marginTop: 15,
-    paddingHorizontal: 15,
+    paddingHorizontal: 20,
+    marginTop: 10,
   },
   sectionLabel: {
     fontSize: 12,
@@ -466,6 +553,7 @@ const styles = StyleSheet.create({
   menuDivider: {
     height: 1,
     backgroundColor: '#F0F0F0',
+    marginHorizontal: -15,
   },
   
   // Modal

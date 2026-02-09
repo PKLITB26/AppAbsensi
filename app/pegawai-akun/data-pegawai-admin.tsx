@@ -334,7 +334,15 @@ export default function DataPegawaiAdminScreen() {
               );
             }}
             renderItem={({ item }) => (
-              <View style={styles.pegawaiCard}>
+              <TouchableOpacity 
+                style={styles.pegawaiCard}
+                onPress={() => {
+                  router.push(
+                    `/pegawai-akun/detail/${item.id_pegawai || item.id_user}` as any
+                  );
+                }}
+                activeOpacity={0.7}
+              >
                 <View style={styles.avatar}>
                   <Text style={styles.avatarText}>
                     {item.nama_lengkap?.charAt(0) || "P"}
@@ -352,7 +360,8 @@ export default function DataPegawaiAdminScreen() {
                 <View style={styles.pegawaiActions}>
                   <TouchableOpacity
                     style={styles.moreBtn}
-                    onPress={() => {
+                    onPress={(e) => {
+                      e.stopPropagation();
                       setSelectedPegawai(item);
                       openModal();
                     }}
@@ -360,7 +369,7 @@ export default function DataPegawaiAdminScreen() {
                     <Ionicons name="ellipsis-vertical" size={18} color="#666" />
                   </TouchableOpacity>
                 </View>
-              </View>
+              </TouchableOpacity>
             )}
             contentInsetAdjustmentBehavior="never"
             contentContainerStyle={[styles.listContent, { 
@@ -405,21 +414,6 @@ export default function DataPegawaiAdminScreen() {
             <View style={styles.bottomSheetHeader}>
               <View style={styles.actionCard}>
                 <View style={styles.bottomSheetActions}>
-                  <TouchableOpacity
-                    style={styles.bottomSheetItem}
-                    onPress={() => {
-                      setShowActionModal(false);
-                      router.push(
-                        `/pegawai-akun/detail/${selectedPegawai?.id_pegawai || selectedPegawai?.id_user}` as any
-                      );
-                    }}
-                  >
-                    <Ionicons name="eye-outline" size={20} color="#2196F3" />
-                    <Text style={styles.bottomSheetItemText}>Lihat Detail</Text>
-                  </TouchableOpacity>
-                  
-                  <View style={styles.actionDivider} />
-                  
                   <TouchableOpacity
                     style={styles.bottomSheetItem}
                     onPress={() => {

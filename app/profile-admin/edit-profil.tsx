@@ -19,6 +19,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import AppHeader from '../../components/AppHeader';
 import { API_CONFIG, getApiUrl } from '../../constants/config';
 
+export const unstable_settings = {
+  presentation: 'modal'
+};
+
 interface ProfileData {
   nama_lengkap: string;
   email: string;
@@ -106,7 +110,7 @@ export default function EditProfilAdminScreen() {
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ['images'],
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.8,
@@ -230,7 +234,7 @@ export default function EditProfilAdminScreen() {
     );
   }
 
-  const photoUri = newPhoto || (profile.foto_profil ? getApiUrl(profile.foto_profil) : null);
+  const photoUri = newPhoto || (profile.foto_profil ? getApiUrl(`/${profile.foto_profil}`) : null);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -328,22 +332,27 @@ export default function EditProfilAdminScreen() {
             )}
           </View>
 
-          {/* Tombol Simpan di kanan bawah */}
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity 
-              style={[styles.saveButtonInline, saving && styles.saveButtonDisabled]}
-              onPress={handleSave}
-              disabled={saving}
-            >
-              {saving ? (
-                <ActivityIndicator size="small" color="#004643" />
-              ) : (
-                <Text style={styles.saveButtonInlineText}>Simpan</Text>
-              )}
-            </TouchableOpacity>
-          </View>
+          <View style={styles.divider} />
         </View>
       </ScrollView>
+
+      {/* Button Footer - Fixed di bawah */}
+      <View style={styles.buttonFooter}>
+        <TouchableOpacity 
+          style={[styles.saveButton, saving && styles.saveButtonDisabled]}
+          onPress={handleSave}
+          disabled={saving}
+        >
+          {saving ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <>
+              <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
+              <Text style={styles.saveButtonText}>Simpan Perubahan</Text>
+            </>
+          )}
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 }
@@ -379,27 +388,24 @@ const styles = StyleSheet.create({
   },
   rowWithPhoto: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'flex-end',
     justifyContent: 'space-between',
   },
   inputSection: {
-    flex: 1,
-    paddingVertical: 8,
-  },
-  buttonContainer: {
-    alignItems: 'flex-end',
-    marginTop: 12,
+    paddingVertical: 2,
   },
   label: {
     fontSize: 13,
     fontWeight: '600',
     color: '#666',
     marginBottom: 8,
+    marginTop: 4,
   },
   input: {
     fontSize: 15,
     color: '#333',
     paddingVertical: Platform.OS === 'ios' ? 8 : 4,
+    paddingBottom: 2,
   },
   inputError: {
     color: '#D32F2F',
@@ -444,24 +450,39 @@ const styles = StyleSheet.create({
   divider: {
     height: 1,
     backgroundColor: '#F0F0F0',
-    marginVertical: 16,
+    marginVertical: 6,
   },
-  saveButtonInline: {
-    backgroundColor: '#fff',
-    borderWidth: 2,
-    borderColor: '#004643',
-    paddingHorizontal: 24,
-    paddingVertical: 10,
-    borderRadius: 8,
+  buttonFooter: {
+    backgroundColor: 'white',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 20,
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  saveButton: {
+    backgroundColor: '#004643',
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    minHeight: 50
   },
   saveButtonDisabled: {
     opacity: 0.6,
   },
-  saveButtonInlineText: {
-    fontSize: 14,
+  saveButtonText: {
+    color: '#fff',
+    fontSize: 15,
     fontWeight: '600',
-    color: '#004643',
+    marginLeft: 6,
+    textAlign: 'center'
   },
 });

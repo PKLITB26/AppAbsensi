@@ -12,8 +12,8 @@ import {
   TouchableOpacity,
   View
 } from "react-native";
-import { API_CONFIG, getApiUrl } from "../../constants/config";
-import AppHeader from "../../components/AppHeader";
+import { API_CONFIG, getApiUrl } from "../../../constants/config";
+import AppHeader from "../../../components/AppHeader";
 
 export default function PengaturanKeamananScreen() {
   const router = useRouter();
@@ -66,25 +66,21 @@ export default function PengaturanKeamananScreen() {
   };
 
   const handleUpdateProfile = async () => {
-    if (!formData.email) {
-      Alert.alert("Error", "Email harus diisi");
+    if (!formData.passwordLama) {
+      Alert.alert("Error", "Password lama harus diisi");
       return;
     }
-
-    // Jika ubah password
-    if (formData.passwordBaru) {
-      if (!formData.passwordLama) {
-        Alert.alert("Error", "Password lama harus diisi untuk ubah password");
-        return;
-      }
-      if (formData.passwordBaru !== formData.konfirmasiPassword) {
-        Alert.alert("Error", "Password baru dan konfirmasi tidak cocok");
-        return;
-      }
-      if (formData.passwordBaru.length < 6) {
-        Alert.alert("Error", "Password minimal 6 karakter");
-        return;
-      }
+    if (!formData.passwordBaru) {
+      Alert.alert("Error", "Password baru harus diisi");
+      return;
+    }
+    if (formData.passwordBaru !== formData.konfirmasiPassword) {
+      Alert.alert("Error", "Password baru dan konfirmasi tidak cocok");
+      return;
+    }
+    if (formData.passwordBaru.length < 6) {
+      Alert.alert("Error", "Password minimal 6 karakter");
+      return;
     }
 
     try {
@@ -111,14 +107,9 @@ export default function PengaturanKeamananScreen() {
       const requestBody: any = {
         action: "update",
         user_id: parseInt(String(userId)),
-        email: formData.email.trim()
+        password_lama: formData.passwordLama.trim(),
+        password_baru: formData.passwordBaru.trim()
       };
-
-      // Only include password fields if user wants to change password
-      if (formData.passwordBaru && formData.passwordBaru.trim()) {
-        requestBody.password_lama = formData.passwordLama.trim();
-        requestBody.password_baru = formData.passwordBaru.trim();
-      }
 
       console.log('Sending update request:', requestBody);
 
@@ -132,32 +123,13 @@ export default function PengaturanKeamananScreen() {
       console.log('Update response:', result);
 
       if (result.success) {
-        // Clear cache jika password diubah
-        if (formData.passwordBaru) {
-          await AsyncStorage.removeItem('userData');
-          await AsyncStorage.removeItem('userToken');
-          Alert.alert("Sukses", "Profil berhasil diubah. Silakan login ulang.", [
-            { text: "OK", onPress: () => router.replace('/') }
-          ]);
-        } else {
-          // Update email di AsyncStorage
-          const updatedUserData = { ...userData, email: formData.email.trim() };
-          await AsyncStorage.setItem('userData', JSON.stringify(updatedUserData));
-          
-          Alert.alert("Sukses", "Email berhasil diubah", [
-            { text: "OK", onPress: () => router.back() }
-          ]);
-        }
-        
-        // Reset password fields
-        setFormData(prev => ({
-          ...prev,
-          passwordLama: "",
-          passwordBaru: "",
-          konfirmasiPassword: "",
-        }));
+        await AsyncStorage.removeItem('userData');
+        await AsyncStorage.removeItem('userToken');
+        Alert.alert("Sukses", "Password berhasil diubah. Silakan login ulang.", [
+          { text: "OK", onPress: () => router.replace('/') }
+        ]);
       } else {
-        Alert.alert("Error", result.message || "Gagal update profil");
+        Alert.alert("Error", result.message || "Gagal update password");
       }
     } catch (error) {
       console.error("Update Profile Error:", error);
@@ -172,28 +144,26 @@ export default function PengaturanKeamananScreen() {
 
         {/* FORM UBAH EMAIL & PASSWORD */}
         <View style={styles.content}>
-          {/* EDIT EMAIL */}
-          <View style={styles.card}>
-            <View style={styles.cardHeader}>
-              <Ionicons name="mail" size={24} color="#004643" />
-              <Text style={styles.cardTitle}>Email Admin</Text>
+          {/* INFO KEAMANAN */}
+          <View style={styles.infoCard}>
+            <View style={styles.infoRow}>
+              <Ionicons name="information-circle" size={20} color="#004643" />
+              <View style={styles.infoContent}>
+                <Text style={styles.infoTitle}>Tips Keamanan</Text>
+                <Text style={styles.infoText}>• Password minimal 6 karakter</Text>
+                <Text style={styles.infoText}>• Kombinasikan huruf besar, kecil, dan angka</Text>
+                <Text style={styles.infoText}>• Jangan gunakan password yang mudah ditebak</Text>
+                <Text style={styles.infoText}>• Ubah password secara berkala</Text>
+                <Text style={styles.infoText}>• Jangan bagikan password kepada siapapun</Text>
+              </View>
             </View>
-
-            <Text style={styles.inputLabel}>Email *</Text>
-            <TextInput
-              style={styles.input}
-              value={formData.email}
-              onChangeText={(text) => setFormData({ ...formData, email: text })}
-              placeholder="Masukkan email"
-              keyboardType="email-address"
-            />
           </View>
 
           {/* UBAH PASSWORD */}
           <View style={styles.card}>
             <View style={styles.cardHeader}>
               <Ionicons name="shield-checkmark" size={24} color="#004643" />
-              <Text style={styles.cardTitle}>Ubah Password (Opsional)</Text>
+              <Text style={styles.cardTitle}>Ubah Password</Text>
             </View>
 
             <Text style={styles.inputLabel}>Password Lama</Text>
@@ -204,7 +174,7 @@ export default function PengaturanKeamananScreen() {
                 onChangeText={(text) =>
                   setFormData({ ...formData, passwordLama: text })
                 }
-                placeholder="Kosongkan jika tidak ubah password"
+                placeholder="Masukkan password lama"
                 secureTextEntry={!showPasswordLama}
               />
               <TouchableOpacity 
@@ -271,19 +241,6 @@ export default function PengaturanKeamananScreen() {
             >
               <Text style={styles.saveButtonText}>Simpan Perubahan</Text>
             </TouchableOpacity>
-          </View>
-
-          {/* INFO KEAMANAN */}
-          <View style={styles.infoCard}>
-            <View style={styles.infoHeader}>
-              <Ionicons name="information-circle" size={20} color="#FF9800" />
-              <Text style={styles.infoTitle}>Tips Keamanan</Text>
-            </View>
-            <Text style={styles.infoText}>• Gunakan email yang valid dan aktif</Text>
-            <Text style={styles.infoText}>• Password minimal 6 karakter</Text>
-            <Text style={styles.infoText}>• Kombinasikan huruf besar, kecil, dan angka</Text>
-            <Text style={styles.infoText}>• Jangan gunakan password yang mudah ditebak</Text>
-            <Text style={styles.infoText}>• Ubah password secara berkala</Text>
           </View>
         </View>
       </ScrollView>
@@ -361,27 +318,33 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   infoCard: {
-    backgroundColor: '#FFF9E6',
-    borderRadius: 12,
-    padding: 16,
-    borderLeftWidth: 4,
-    borderLeftColor: '#FF9800',
-  },
-  infoHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
+    backgroundColor: '#F0F8F7',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 16,
+    alignItems: 'flex-start',
+    borderWidth: 1,
+    borderColor: '#D0E8E4',
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  infoContent: {
+    flex: 1,
+    marginLeft: 12,
   },
   infoTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: 'bold',
-    color: '#333',
-    marginLeft: 8,
+    color: '#004643',
+    marginBottom: 8,
   },
   infoText: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 6,
-    lineHeight: 20,
+    fontSize: 12,
+    color: '#004643',
+    marginBottom: 4,
+    lineHeight: 18,
   },
 });

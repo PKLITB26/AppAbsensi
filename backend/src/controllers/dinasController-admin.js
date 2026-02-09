@@ -40,6 +40,22 @@ const getDinasAktifAdmin = async (req, res) => {
     const dinas_list = [];
 
     for (const row of rows) {
+      // Get lokasi details for this dinas
+      let lokasiRows = [];
+      try {
+        const [rows] = await db.execute(`
+          SELECT lk.id, lk.nama_lokasi, lk.alamat, lk.lintang, lk.bujur, lk.radius, dl.is_lokasi_utama
+          FROM dinas_lokasi dl
+          JOIN lokasi_kantor lk ON dl.id_lokasi_kantor = lk.id
+          WHERE dl.id_dinas = ? AND lk.is_active = 1
+          ORDER BY dl.urutan
+        `, [row.id_dinas]);
+        lokasiRows = rows;
+      } catch (err) {
+        console.log('Lokasi query error, trying fallback:', err.message);
+        lokasiRows = [];
+      }
+
       // Get pegawai details for this dinas
       const [pegawaiRows] = await db.execute(`
         SELECT dp.*, p.nama_lengkap, p.nip,
@@ -61,6 +77,7 @@ const getDinasAktifAdmin = async (req, res) => {
 
         return {
           nama: pegawaiRow.nama_lengkap,
+          nip: pegawaiRow.nip,
           status: status,
           jamAbsen: pegawaiRow.jam_masuk
         };
@@ -71,7 +88,18 @@ const getDinasAktifAdmin = async (req, res) => {
         namaKegiatan: row.nama_kegiatan,
         nomorSpt: row.nomor_spt,
         jenisDinas: row.jenis_dinas,
-        lokasi: row.alamat_lengkap,
+        lokasi: lokasiRows.length > 0 
+          ? lokasiRows.map(l => l.nama_lokasi).join(', ') 
+          : 'Belum ada lokasi terdaftar',
+        lokasi_list: lokasiRows.map(l => ({
+          id: l.id,
+          nama_lokasi: l.nama_lokasi,
+          alamat: l.alamat,
+          latitude: parseFloat(l.lintang),
+          longitude: parseFloat(l.bujur),
+          radius: l.radius,
+          is_lokasi_utama: l.is_lokasi_utama
+        })),
         jamKerja: `${row.jam_mulai}-${row.jam_selesai}`,
         radius: row.radius_absen,
         koordinat_lat: parseFloat(row.lintang),
@@ -100,15 +128,15 @@ const getDinasAktifAdmin = async (req, res) => {
 const createDinasAdmin = async (req, res) => {
   let connection;
   try {
-    const { nama_kegiatan, nomor_spt, tanggal_mulai, tanggal_selesai, pegawai_ids, alamat_lengkap, latitude, longitude, radius_absen, jam_mulai, jam_selesai, jenis_dinas, deskripsi } = req.body;
+    const { nama_kegiatan, nomor_spt, tanggal_mulai, tanggal_selesai, pegawai_ids, lokasi_ids, jam_mulai, jam_selesai, jenis_dinas, deskripsi } = req.body;
 
     // Validate required fields
-    const required_fields = ['nama_kegiatan', 'nomor_spt', 'tanggal_mulai', 'tanggal_selesai', 'pegawai_ids'];
+    const required_fields = ['nama_kegiatan', 'nomor_spt', 'tanggal_mulai', 'tanggal_selesai', 'pegawai_ids', 'lokasi_ids'];
     for (const field of required_fields) {
       if (!req.body[field] || (typeof req.body[field] === 'string' && req.body[field].trim() === '')) {
         return res.status(400).json({
           success: false,
-          message: `Field '${field}' is required`
+          message: `Field '${field}' wajib diisi`
         });
       }
     }
@@ -116,7 +144,14 @@ const createDinasAdmin = async (req, res) => {
     if (!Array.isArray(pegawai_ids) || pegawai_ids.length === 0) {
       return res.status(400).json({
         success: false,
-        message: 'At least one pegawai must be selected'
+        message: 'Minimal pilih 1 pegawai untuk dinas'
+      });
+    }
+
+    if (!Array.isArray(lokasi_ids) || lokasi_ids.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'WAJIB pilih minimal 1 lokasi dinas! Tidak boleh kosong.'
       });
     }
 
@@ -149,14 +184,25 @@ const createDinasAdmin = async (req, res) => {
       });
     }
 
+    // Validate lokasi_ids
+    const lokasiPlaceholders = lokasi_ids.map(() => '?').join(',');
+    const [validLokasi] = await connection.execute(`SELECT id FROM lokasi_kantor WHERE id IN (${lokasiPlaceholders}) AND is_active = 1`, lokasi_ids);
+
+    if (validLokasi.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No valid lokasi IDs found in database'
+      });
+    }
+
     await connection.beginTransaction();
 
     try {
-      // Insert dinas data
+      // Insert dinas data (keep old fields for backward compatibility)
       const [result] = await connection.execute(`
         INSERT INTO dinas (
           nama_kegiatan, nomor_spt, jenis_dinas, tanggal_mulai, tanggal_selesai,
-          jam_mulai, jam_selesai, alamat_lengkap, lintang, bujur, radius_absen,
+          jam_mulai, jam_selesai, alamat_lengkap, latitude, longitude, radius_absen,
           deskripsi, status, created_by, created_at
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'aktif', ?, NOW())
       `, [
@@ -167,15 +213,23 @@ const createDinasAdmin = async (req, res) => {
         tanggal_selesai,
         jam_mulai || '08:00:00',
         jam_selesai || '17:00:00',
-        alamat_lengkap || 'Lokasi Dinas',
-        latitude || -6.8915,
-        longitude || 107.6107,
-        radius_absen || 100,
+        'Multiple Locations',
+        -6.8915,
+        107.6107,
+        100,
         deskripsi || '',
         adminUser.id_user
       ]);
 
       const dinas_id = result.insertId;
+
+      // Insert lokasi dinas relationships
+      for (let i = 0; i < validLokasi.length; i++) {
+        await connection.execute(`
+          INSERT INTO dinas_lokasi (id_dinas, id_lokasi_kantor, id_lokasi, urutan, is_lokasi_utama)
+          VALUES (?, ?, ?, ?, ?)
+        `, [dinas_id, validLokasi[i].id, validLokasi[i].id, i + 1, i === 0 ? 1 : 0]);
+      }
 
       // Insert pegawai dinas relationships
       for (const user of validUsers) {
@@ -340,10 +394,118 @@ const getDinasStats = async (req, res) => {
   }
 };
 
+const getDinasLokasi = async (req, res) => {
+  try {
+    const { id_dinas } = req.params;
+    const db = await getConnection();
+
+    const [rows] = await db.execute(`
+      SELECT lk.*, dl.urutan, dl.is_lokasi_utama
+      FROM dinas_lokasi dl
+      JOIN lokasi_kantor lk ON dl.id_lokasi_kantor = lk.id
+      WHERE dl.id_dinas = ? AND lk.is_active = 1
+      ORDER BY dl.urutan
+    `, [id_dinas]);
+
+    res.json({
+      success: true,
+      data: rows
+    });
+  } catch (error) {
+    console.error('Get dinas lokasi error:', error);
+    res.json({ success: false, message: 'Database error: ' + error.message });
+  }
+};
+
+const checkAbsenLocation = async (req, res) => {
+  try {
+    const { id_dinas, latitude, longitude } = req.body;
+    
+    if (!id_dinas || !latitude || !longitude) {
+      return res.status(400).json({
+        success: false,
+        message: 'id_dinas, latitude, dan longitude wajib diisi'
+      });
+    }
+
+    const db = await getConnection();
+
+    // Get all locations for this dinas
+    const [lokasi] = await db.execute(`
+      SELECT lk.*, dl.is_lokasi_utama
+      FROM dinas_lokasi dl
+      JOIN lokasi_kantor lk ON dl.id_lokasi_kantor = lk.id
+      WHERE dl.id_dinas = ? AND lk.is_active = 1
+    `, [id_dinas]);
+
+    if (lokasi.length === 0) {
+      return res.json({
+        success: false,
+        message: 'Tidak ada lokasi dinas yang terdaftar'
+      });
+    }
+
+    // Check if user is within radius of any location
+    const userLat = parseFloat(latitude);
+    const userLng = parseFloat(longitude);
+
+    for (const loc of lokasi) {
+      const distance = calculateDistance(
+        userLat,
+        userLng,
+        parseFloat(loc.latitude),
+        parseFloat(loc.longitude)
+      );
+
+      if (distance <= loc.radius) {
+        return res.json({
+          success: true,
+          inRadius: true,
+          lokasi: {
+            id: loc.id,
+            nama: loc.nama_lokasi,
+            alamat: loc.alamat,
+            distance: Math.round(distance)
+          }
+        });
+      }
+    }
+
+    // Not in any location radius
+    res.json({
+      success: true,
+      inRadius: false,
+      message: 'Anda berada di luar radius semua lokasi dinas'
+    });
+
+  } catch (error) {
+    console.error('Check location error:', error);
+    res.status(500).json({ success: false, message: 'Server error: ' + error.message });
+  }
+};
+
+// Haversine formula to calculate distance between two coordinates
+function calculateDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371e3; // Earth radius in meters
+  const φ1 = lat1 * Math.PI / 180;
+  const φ2 = lat2 * Math.PI / 180;
+  const Δφ = (lat2 - lat1) * Math.PI / 180;
+  const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+  const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+    Math.cos(φ1) * Math.cos(φ2) *
+    Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return R * c; // Distance in meters
+}
+
 module.exports = { 
   getDinasAktifAdmin, 
   createDinasAdmin, 
   getRiwayatDinasAdmin, 
   getValidasiAbsenAdmin,
-  getDinasStats
+  getDinasStats,
+  getDinasLokasi,
+  checkAbsenLocation
 };

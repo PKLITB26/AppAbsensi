@@ -472,6 +472,8 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     marginHorizontal: 15,
     alignItems: "flex-start",
+    borderWidth: 1,
+    borderColor: "#D0E8E4",
   },
   infoText: {
     flex: 1,

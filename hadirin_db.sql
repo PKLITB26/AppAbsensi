@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Feb 06, 2026 at 02:18 AM
+-- Generation Time: Feb 06, 2026 at 09:04 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -34,10 +34,10 @@ CREATE TABLE `absen_dinas` (
   `tanggal_absen` date NOT NULL,
   `jam_masuk` time DEFAULT NULL,
   `jam_pulang` time DEFAULT NULL,
-  `latitude_masuk` decimal(10,8) DEFAULT NULL,
-  `longitude_masuk` decimal(11,8) DEFAULT NULL,
-  `latitude_pulang` decimal(10,8) DEFAULT NULL,
-  `longitude_pulang` decimal(11,8) DEFAULT NULL,
+  `lintang_masuk` double DEFAULT NULL,
+  `bujur_masuk` double DEFAULT NULL,
+  `lintang_pulang` double DEFAULT NULL,
+  `bujur_pulang` double DEFAULT NULL,
   `foto_masuk` varchar(255) DEFAULT NULL,
   `foto_pulang` varchar(255) DEFAULT NULL,
   `status` enum('hadir','terlambat','tidak_hadir') DEFAULT 'tidak_hadir',
@@ -64,8 +64,8 @@ CREATE TABLE `dinas` (
   `jam_mulai` time NOT NULL,
   `jam_selesai` time NOT NULL,
   `alamat_lengkap` text NOT NULL,
-  `latitude` decimal(10,8) NOT NULL,
-  `longitude` decimal(11,8) NOT NULL,
+  `lintang` decimal(10,8) NOT NULL,
+  `bujur` decimal(11,8) NOT NULL,
   `radius_absen` int(11) NOT NULL DEFAULT 100,
   `deskripsi` text DEFAULT NULL,
   `dokumen_spt` varchar(255) DEFAULT NULL,
@@ -78,7 +78,7 @@ CREATE TABLE `dinas` (
 -- Dumping data for table `dinas`
 --
 
-INSERT INTO `dinas` (`id_dinas`, `nama_kegiatan`, `nomor_spt`, `jenis_dinas`, `tanggal_mulai`, `tanggal_selesai`, `jam_mulai`, `jam_selesai`, `alamat_lengkap`, `latitude`, `longitude`, `radius_absen`, `deskripsi`, `dokumen_spt`, `status`, `created_by`, `created_at`) VALUES
+INSERT INTO `dinas` (`id_dinas`, `nama_kegiatan`, `nomor_spt`, `jenis_dinas`, `tanggal_mulai`, `tanggal_selesai`, `jam_mulai`, `jam_selesai`, `alamat_lengkap`, `lintang`, `bujur`, `radius_absen`, `deskripsi`, `dokumen_spt`, `status`, `created_by`, `created_at`) VALUES
 (10, 'Rapat', 'STP 002', 'lokal', '2026-01-20', '2026-01-22', '07:30:00', '16:00:00', 'Lokasi Dinas', -6.89150000, 107.61070000, 100, '', NULL, 'aktif', 10, '2026-01-20 04:00:49'),
 (11, 'rapat', 'Spt/001', 'luar_kota', '2026-02-03', '2026-02-13', '07:30:00', '17:00:00', 'Lokasi Dinas', -6.89150000, 107.61070000, 100, '', NULL, 'aktif', 10, '2026-02-02 06:57:04'),
 (12, 'Tes', 'Tes', 'luar_kota', '2026-02-28', '2026-03-08', '07:00:00', '16:00:00', 'Lokasi Dinas', -6.89150000, 107.61070000, 100, 'Tes', NULL, 'aktif', 10, '2026-02-04 02:40:14');
@@ -104,7 +104,9 @@ CREATE TABLE `dinas_lokasi` (
 --
 
 INSERT INTO `dinas_lokasi` (`id`, `id_dinas`, `id_lokasi_kantor`, `urutan`, `is_lokasi_utama`, `created_at`, `id_lokasi`) VALUES
-(1, 10, 6, 1, 0, '2026-01-20 04:00:49', 6);
+(1, 10, 6, 1, 0, '2026-01-20 04:00:49', 6),
+(2, 11, 6, 1, 1, NOW(), 6),
+(3, 12, 6, 1, 1, NOW(), 6);
 
 -- --------------------------------------------------------
 
@@ -203,8 +205,8 @@ CREATE TABLE `lokasi_kantor` (
   `id` int(11) NOT NULL,
   `nama_lokasi` varchar(255) NOT NULL,
   `alamat` text NOT NULL,
-  `latitude` decimal(10,8) NOT NULL,
-  `longitude` decimal(11,8) NOT NULL,
+  `lintang` decimal(10,8) NOT NULL,
+  `bujur` decimal(11,8) NOT NULL,
   `radius` int(11) DEFAULT NULL,
   `status` enum('aktif','nonaktif') DEFAULT 'aktif',
   `jenis_lokasi` enum('tetap','dinas') DEFAULT 'tetap',
@@ -218,7 +220,7 @@ CREATE TABLE `lokasi_kantor` (
 -- Dumping data for table `lokasi_kantor`
 --
 
-INSERT INTO `lokasi_kantor` (`id`, `nama_lokasi`, `alamat`, `latitude`, `longitude`, `radius`, `status`, `jenis_lokasi`, `is_active`, `tanggal_mulai_dinas`, `tanggal_selesai_dinas`, `keterangan`) VALUES
+INSERT INTO `lokasi_kantor` (`id`, `nama_lokasi`, `alamat`, `lintang`, `bujur`, `radius`, `status`, `jenis_lokasi`, `is_active`, `tanggal_mulai_dinas`, `tanggal_selesai_dinas`, `keterangan`) VALUES
 (1, 'Test Update', 'Test Alamat', -6.20000000, 106.80000000, 100, 'aktif', 'tetap', 1, NULL, NULL, NULL),
 (6, 'Itb Ganesha', 'Jalan Ganesa 10, Lebak Siliwangi, Kecamatan Coblong, Jawa Barat', -6.89036170, 107.61019120, 300, 'aktif', 'dinas', 1, NULL, NULL, NULL);
 
@@ -335,6 +337,9 @@ CREATE TABLE `users` (
   `email` varchar(100) NOT NULL,
   `password` varchar(255) NOT NULL,
   `role` enum('admin','pegawai') NOT NULL,
+  `nama_lengkap` varchar(100) DEFAULT NULL,
+  `foto_profil` varchar(255) DEFAULT NULL,
+  `no_telepon` varchar(15) DEFAULT NULL,
   `device_id` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -342,15 +347,15 @@ CREATE TABLE `users` (
 -- Dumping data for table `users`
 --
 
-INSERT INTO `users` (`id_user`, `email`, `password`, `role`, `device_id`) VALUES
-(2, 'budi@itb.ac.id', '$2y$10$ghBDG.IOG/dPTExfmkFIRuRU9E9Fpg2BBw5Jm26vdv2yREJSXKekS', 'pegawai', 'device_001'),
-(4, 'ahmad@itb.ac.id', '$2y$10$ghBDG.IOG/dPTExfmkFIRuRU9E9Fpg2BBw5Jm26vdv2yREJSXKekS', 'pegawai', 'device_003'),
-(5, 'dewi@itb.ac.id', '$2y$10$ghBDG.IOG/dPTExfmkFIRuRU9E9Fpg2BBw5Jm26vdv2yREJSXKekS', 'pegawai', 'device_004'),
-(6, 'eko@itb.ac.id', '$2y$10$ghBDG.IOG/dPTExfmkFIRuRU9E9Fpg2BBw5Jm26vdv2yREJSXKekS', 'pegawai', 'device_005'),
-(9, 'riska@itb.ac.id', '$2y$10$ghBDG.IOG/dPTExfmkFIRuRU9E9Fpg2BBw5Jm26vdv2yREJSXKekS', 'pegawai', NULL),
-(10, 'admin@itb.ac.id', '$2a$10$RU3fzrbHzUOYmJzeWgMw2uC11KBt5s3bsP./ywAV6ef8thrRXT1RK', 'admin', NULL),
-(12, 'riskadwiramadani94@gmail.com', '$2y$10$ghBDG.IOG/dPTExfmkFIRuRU9E9Fpg2BBw5Jm26vdv2yREJSXKekS', 'pegawai', NULL),
-(13, 'cindy@itb.ac.id', '$2a$10$YpT5K4qo6mWzTlSZb5SS2uLhsXB6gFV2IgBzXtkGw14XYnd293R0O', 'pegawai', NULL);
+INSERT INTO `users` (`id_user`, `email`, `password`, `role`, `nama_lengkap`, `foto_profil`, `no_telepon`, `device_id`) VALUES
+(2, 'budi@itb.ac.id', '$2y$10$ghBDG.IOG/dPTExfmkFIRuRU9E9Fpg2BBw5Jm26vdv2yREJSXKekS', 'pegawai', NULL, NULL, NULL, 'device_001'),
+(4, 'ahmad@itb.ac.id', '$2y$10$ghBDG.IOG/dPTExfmkFIRuRU9E9Fpg2BBw5Jm26vdv2yREJSXKekS', 'pegawai', NULL, NULL, NULL, 'device_003'),
+(5, 'dewi@itb.ac.id', '$2y$10$ghBDG.IOG/dPTExfmkFIRuRU9E9Fpg2BBw5Jm26vdv2yREJSXKekS', 'pegawai', NULL, NULL, NULL, 'device_004'),
+(6, 'eko@itb.ac.id', '$2y$10$ghBDG.IOG/dPTExfmkFIRuRU9E9Fpg2BBw5Jm26vdv2yREJSXKekS', 'pegawai', NULL, NULL, NULL, 'device_005'),
+(9, 'riska@itb.ac.id', '$2y$10$ghBDG.IOG/dPTExfmkFIRuRU9E9Fpg2BBw5Jm26vdv2yREJSXKekS', 'pegawai', NULL, NULL, NULL, NULL),
+(10, 'admin@itb.ac.id', '$2a$10$aQi1P4jBnkDDAlozVBlyvuahJOA8dvDMcjTtCLKpFIJro3EKm4sha', 'admin', 'Riska Dwi Ramadani ', 'uploads/admin/admin-1770347672865-249731700.jpeg', '083176266583', NULL),
+(12, 'riskadwiramadani94@gmail.com', '$2y$10$ghBDG.IOG/dPTExfmkFIRuRU9E9Fpg2BBw5Jm26vdv2yREJSXKekS', 'pegawai', NULL, NULL, NULL, NULL),
+(13, 'cindy@itb.ac.id', '$2a$10$YpT5K4qo6mWzTlSZb5SS2uLhsXB6gFV2IgBzXtkGw14XYnd293R0O', 'pegawai', NULL, NULL, NULL, NULL);
 
 --
 -- Indexes for dumped tables
@@ -486,7 +491,7 @@ ALTER TABLE `hari_libur`
 -- AUTO_INCREMENT for table `jam_kerja_hari`
 --
 ALTER TABLE `jam_kerja_hari`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=134;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=148;
 
 --
 -- AUTO_INCREMENT for table `lokasi_kantor`

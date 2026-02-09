@@ -1,10 +1,11 @@
-const db = require('../config/database');
+const { getConnection } = require('../config/database');
 
 const pusatValidasiController = {
 
   // Get absen dinas yang menunggu validasi
   getAbsenDinas: async (req, res) => {
     try {
+      const db = await getConnection();
       const query = `
         SELECT 
           ad.id,
@@ -49,6 +50,7 @@ const pusatValidasiController = {
   // Get pengajuan yang menunggu persetujuan
   getPengajuan: async (req, res) => {
     try {
+      const db = await getConnection();
       const query = `
         SELECT 
           p.id_pengajuan,
@@ -93,6 +95,7 @@ const pusatValidasiController = {
   // Get statistik untuk counter tabs
   getStatistik: async (req, res) => {
     try {
+      const db = await getConnection();
       // Count absen dinas
       const [absenDinasCount] = await db.execute(`
         SELECT COUNT(*) as count 
@@ -130,6 +133,7 @@ const pusatValidasiController = {
   // Setujui item
   setujui: async (req, res) => {
     try {
+      const db = await getConnection();
       const { type, id, catatan } = req.body;
       const adminId = req.user?.id_user || 10; // Default admin ID
       
@@ -186,6 +190,7 @@ const pusatValidasiController = {
   // Tolak item
   tolak: async (req, res) => {
     try {
+      const db = await getConnection();
       const { type, id, catatan } = req.body;
       const adminId = req.user?.id_user || 10; // Default admin ID
       

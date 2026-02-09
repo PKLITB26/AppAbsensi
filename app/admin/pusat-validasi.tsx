@@ -8,26 +8,29 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import * as NavigationBar from 'expo-navigation-bar';
 import { AppHeader } from "../../components";
-import { PusatValidasiAPI } from '../../constants/config';
+import { PusatValidasiAPI, KelolaDinasAPI } from '../../constants/config';
 
 
 
-interface AbsenDinasItem {
+interface DinasItem {
   id: number;
-  id_dinas: number;
-  id_user: number;
-  tanggal_absen: string;
-  jam_masuk: string;
-  latitude_masuk: number;
-  longitude_masuk: number;
-  foto_masuk: string;
-  status: string;
-  nama_lengkap: string;
-  nip: string;
-  nama_kegiatan: string;
-  nomor_spt: string;
-  alamat_lengkap: string;
+  namaKegiatan: string;
+  nomorSpt: string;
+  jenisDinas?: string;
+  tanggal_mulai: string;
+  tanggal_selesai: string;
+  jamKerja: string;
+  lokasi: string;
+  radius: number;
+  pegawai: Array<{
+    nama: string;
+    nip?: string;
+    status: string;
+    jamAbsen: string | null;
+  }>;
 }
+
+interface AbsenDinasItem extends DinasItem {}
 
 interface PengajuanItem {
   id_pengajuan: number;
@@ -149,9 +152,24 @@ export default function PusatValidasiScreen() {
 
   const fetchAbsenDinas = async () => {
     try {
-      const result = await PusatValidasiAPI.getAbsenDinas();
+      const result = await KelolaDinasAPI.getDinasAktif();
       if (result.success) {
-        setAbsenDinasData(result.data);
+        // Filter hanya dinas yang sedang berlangsung
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        const dinasAktif = result.data.filter((dinas: DinasItem) => {
+          const mulai = new Date(dinas.tanggal_mulai);
+          const selesai = new Date(dinas.tanggal_selesai);
+          
+          mulai.setHours(0, 0, 0, 0);
+          selesai.setHours(23, 59, 59, 999);
+          
+          // Hanya ambil yang sedang berlangsung
+          return today >= mulai && today <= selesai;
+        });
+        
+        setAbsenDinasData(dinasAktif);
       }
     } catch (error) {
       console.error('Error fetching absen dinas:', error);
@@ -320,59 +338,67 @@ export default function PusatValidasiScreen() {
 
 
 
-  const renderAbsenDinasItem = ({ item }: { item: AbsenDinasItem }) => (
-    <View style={styles.itemCard}>
-      <View style={styles.cardAccent} />
-      <View style={styles.itemHeader}>
-        <View style={styles.userInfo}>
-          <Text style={styles.userName}>{item.nama_lengkap}</Text>
-          <Text style={styles.userDetail}>NIP: {item.nip}</Text>
-        </View>
-        <Text style={styles.timeText}>{item.jam_masuk}</Text>
-      </View>
-      
-      <View style={styles.itemContent}>
-        <View style={styles.infoRow}>
-          <Ionicons name="briefcase-outline" size={16} color="#666" />
-          <Text style={styles.infoText}>{item.nama_kegiatan}</Text>
-        </View>
-        <View style={styles.infoRow}>
-          <Ionicons name="document-text-outline" size={16} color="#666" />
-          <Text style={styles.infoText}>{item.nomor_spt}</Text>
-        </View>
-        <View style={styles.infoRow}>
-          <Ionicons name="location-outline" size={16} color="#666" />
-          <Text style={styles.infoText}>{item.alamat_lengkap}</Text>
-        </View>
-        <View style={styles.actionRow}>
-          <TouchableOpacity style={styles.photoBtn}>
-            <Ionicons name="camera-outline" size={16} color="#004643" />
-            <Text style={styles.photoBtnText}>Foto</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.locationBtn}>
-            <Ionicons name="map-outline" size={16} color="#004643" />
-            <Text style={styles.locationBtnText}>Lokasi</Text>
+  const handleOpenAbsenDinas = () => {
+    router.push('/pusat-validasi/absen-dinas/' as any);
+  };
+
+
+
+  const renderAbsenDinasItem = ({ item }: { item: AbsenDinasItem }) => {
+    const totalPegawai = item.pegawai?.length || 0;
+
+    return (
+      <View style={styles.dinasCard}>
+        <View style={styles.dinasCardHeader}>
+          <View style={styles.dinasCardTitle}>
+            <Text style={styles.dinasKegiatanName}>{item.namaKegiatan}</Text>
+            <Text style={styles.dinasSptNumber}>{item.nomorSpt}</Text>
+          </View>
+          <TouchableOpacity 
+            style={styles.eyeIconBtn}
+            onPress={handleOpenAbsenDinas}
+          >
+            <Ionicons name="eye-outline" size={20} color="#004643" />
           </TouchableOpacity>
         </View>
+
+        <View style={styles.dinasCardInfo}>
+          {item.jenisDinas && (
+            <View style={styles.dinasInfoRow}>
+              <Ionicons name="business-outline" size={14} color="#666" />
+              <Text style={styles.dinasInfoText}>
+                {item.jenisDinas === 'lokal' ? 'Dinas Lokal' : 
+                 item.jenisDinas === 'luar_kota' ? 'Dinas Luar Kota' : 
+                 item.jenisDinas === 'luar_negeri' ? 'Dinas Luar Negeri' : item.jenisDinas}
+              </Text>
+            </View>
+          )}
+          <View style={styles.dinasInfoRow}>
+            <Ionicons name="location-outline" size={14} color="#666" />
+            <Text style={styles.dinasInfoText}>{item.lokasi}</Text>
+          </View>
+          <View style={styles.dinasInfoRow}>
+            <Ionicons name="time-outline" size={14} color="#666" />
+            <Text style={styles.dinasInfoText}>{item.jamKerja}</Text>
+          </View>
+          <View style={styles.dinasInfoRow}>
+            <Ionicons name="calendar-outline" size={14} color="#666" />
+            <Text style={styles.dinasInfoText}>
+              {formatDate(item.tanggal_mulai)} - {formatDate(item.tanggal_selesai)}
+            </Text>
+          </View>
+          <View style={styles.dinasInfoRow}>
+            <Ionicons name="people-outline" size={14} color="#666" />
+            <Text style={styles.dinasInfoText}>{totalPegawai} orang bertugas</Text>
+          </View>
+          <View style={styles.dinasInfoRow}>
+            <Ionicons name="radio-outline" size={14} color="#666" />
+            <Text style={styles.dinasInfoText}>Radius: {item.radius} meter</Text>
+          </View>
+        </View>
       </View>
-      
-      <View style={styles.actionButtons}>
-        <TouchableOpacity 
-          style={styles.approveBtn}
-          onPress={() => handleApprove('absen_dinas', item)}
-          disabled={actionLoading}
-        >
-          <Text style={styles.approveBtnText}>✓ Setuju</Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={styles.rejectBtn}
-          onPress={() => openActionModal('absen_dinas', item)}
-        >
-          <Text style={styles.rejectBtnText}>✗ Tolak</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
+    );
+  };
 
   const renderPengajuanItem = ({ item }: { item: PengajuanItem }) => (
     <View style={styles.itemCard}>
@@ -826,6 +852,8 @@ export default function PusatValidasiScreen() {
           </View>
         </View>
       </Modal>
+
+
     </View>
   );
 }
@@ -1543,4 +1571,58 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     backgroundColor: '#004643',
   },
+
+  // Dinas Card
+  dinasCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 15,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  dinasCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  dinasCardTitle: { 
+    flex: 1, 
+    marginRight: 10 
+  },
+  dinasKegiatanName: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 2,
+  },
+  dinasSptNumber: {
+    fontSize: 11,
+    color: '#666',
+  },
+  dinasCardInfo: { 
+    marginBottom: 0,
+  },
+  dinasInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  dinasInfoText: {
+    fontSize: 12,
+    color: '#666',
+    marginLeft: 6,
+  },
+  eyeIconBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#E8F5E8',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 70, 67, 0.2)',
+  },
+
 });

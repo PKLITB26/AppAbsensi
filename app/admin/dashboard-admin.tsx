@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { 
   StyleSheet, View, Text, ScrollView, TouchableOpacity, 
   Image, RefreshControl, Modal, Platform 
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { getApiUrl, API_CONFIG } from '../../constants/config';
@@ -45,13 +45,21 @@ export default function AdminDashboard() {
     loadUserData();
     getDashboardData();
     
-    // Auto refresh setiap 30 detik
+    // Auto refresh setiap 30 detik - load user data juga
     const interval = setInterval(() => {
+      loadUserData();
       getDashboardData();
     }, 30000);
     
     return () => clearInterval(interval);
   }, []);
+
+  // Auto-refresh saat kembali ke halaman ini
+  useFocusEffect(
+    useCallback(() => {
+      loadUserData();
+    }, [])
+  );
 
   const loadUserData = async () => {
     try {
@@ -61,7 +69,7 @@ export default function AdminDashboard() {
         setData(prev => ({
           ...prev,
           user: {
-            nama_lengkap: user.nama || user.nama_lengkap || 'Administrator',
+            nama_lengkap: user.nama_lengkap || 'Administrator',
             email: user.email || '',
             password: ''
           }
@@ -82,26 +90,26 @@ export default function AdminDashboard() {
       if (result.success) {
         const totalPegawai = result.stats?.total_pegawai || 0;
         
-        setData({
+        setData(prev => ({
           stats: {
             hadir: result.stats?.hadir || 0,
             tidak_hadir: result.stats?.tidak_hadir || 0,
             total_pegawai: totalPegawai
           },
           recent: result.recent || [],
-          user: result.user || { nama_lengkap: 'Administrator', email: 'admin@itb.ac.id', password: '' }
-        });
+          user: prev.user // Pertahankan data user dari AsyncStorage
+        }));
       } else {
         console.log('API returned success: false', result.message);
       }
     } catch (error) {
       console.log("Koneksi Error:", error);
-      // Set default data jika error
-      setData({
+      // Set default data jika error, tapi pertahankan user data
+      setData(prev => ({
         stats: { hadir: 0, tidak_hadir: 0, total_pegawai: 0 },
         recent: [],
-        user: { nama_lengkap: 'Administrator', email: 'admin@itb.ac.id', password: '' }
-      });
+        user: prev.user // Pertahankan data user dari AsyncStorage
+      }));
     } finally {
       setLoading(false);
     }
@@ -130,7 +138,7 @@ export default function AdminDashboard() {
         <View style={styles.headerSection}>
           <View style={styles.adminInfo}>
             <Text style={styles.greetingText}>Selamat datang,</Text>
-            <Text style={styles.userName}>Administrator</Text>
+            <Text style={styles.userName}>{data.user?.nama_lengkap || 'Administrator'}</Text>
           </View>
           <View style={styles.rightSection}>
             <View style={styles.dateTimeContainer}>
@@ -345,7 +353,7 @@ const styles = StyleSheet.create({
   passwordText: { fontSize: 12, color: '#E8F5E9', fontFamily: 'monospace' },
   eyeBtn: { padding: 2, marginLeft: 2 },
   greetingText: { fontSize: 14, color: '#E8F5E9' },
-  userName: { fontSize: 22, fontWeight: 'bold', color: '#fff' },
+  userName: { fontSize: 18, fontWeight: 'bold', color: '#fff' },
   userJob: { fontSize: 12, color: '#E8F5E9', fontWeight: '500', marginTop: 2 },
   notificationBtn: { padding: 10, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)' },
   dotBadge: { position: 'absolute', top: 10, right: 12, width: 8, height: 8, borderRadius: 4, backgroundColor: '#FF4D4D', borderWidth: 1, borderColor: '#fff' },
@@ -360,12 +368,12 @@ const styles = StyleSheet.create({
   },
   quickStatBox: {
     flex: 1,
-    marginHorizontal: 6,
+    marginHorizontal: 4,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.3)',
-    borderRadius: 10,
-    padding: 12,
-    paddingBottom: 10,
+    borderRadius: 8,
+    padding: 8,
+    paddingBottom: 8,
     backgroundColor: 'rgba(255,255,255,0.05)',
     position: 'relative',
     overflow: 'hidden',
@@ -405,17 +413,17 @@ const styles = StyleSheet.create({
   },
   statContent: {
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 4,
   },
   quickStatNumber: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
     color: '#fff',
-    marginTop: 4,
+    marginTop: 2,
     textAlign: 'center',
   },
   quickStatLabel: {
-    fontSize: 9,
+    fontSize: 8,
     color: 'rgba(255,255,255,0.9)',
     textAlign: 'center',
     fontWeight: '400',
@@ -448,14 +456,14 @@ const styles = StyleSheet.create({
     alignItems: 'center' 
   },
   menuIconCircle: { 
-    width: Platform.OS === 'ios' ? 52 : 56, 
-    height: Platform.OS === 'ios' ? 52 : 56, 
-    borderRadius: 16, 
+    width: Platform.OS === 'ios' ? 48 : 50, 
+    height: Platform.OS === 'ios' ? 48 : 50, 
+    borderRadius: 12, 
     justifyContent: 'center', 
     alignItems: 'center', 
-    marginBottom: 8 
+    marginBottom: 6 
   },
-  menuLabel: { fontSize: 11, color: '#444', fontWeight: '500', textAlign: 'center' },
+  menuLabel: { fontSize: 10, color: '#444', fontWeight: '500', textAlign: 'center' },
   recentList: { paddingHorizontal: 20, marginTop: 10, backgroundColor: '#fff', marginHorizontal: 20, borderRadius: 16, padding: 20, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 4 },
   activityCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', padding: 15, borderRadius: 15, marginBottom: 10, borderWidth: 1, borderColor: '#F0F0F0' },
   avatar: { width: 40, height: 40, borderRadius: 20, marginRight: 12 },

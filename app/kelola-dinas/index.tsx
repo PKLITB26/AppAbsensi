@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, FlatList, TextInput, Modal, Animated, PanResponder, Platform } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, FlatList, TextInput, Platform } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -29,62 +29,7 @@ export default function KelolaDinasScreen() {
   const [currentPage, setCurrentPage] = useState(1);
   const [dinasAktif, setDinasAktif] = useState<DinasAktif[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showMenuModal, setShowMenuModal] = useState(false);
-  const [selectedDinas, setSelectedDinas] = useState<DinasAktif | null>(null);
   const itemsPerPage = 10;
-  const translateY = useRef(new Animated.Value(300)).current;
-  
-  const openModal = () => {
-    setShowMenuModal(true);
-    Animated.timing(translateY, {
-      toValue: 0,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
-  };
-
-  const closeModal = () => {
-    Animated.timing(translateY, {
-      toValue: 300,
-      duration: 200,
-      useNativeDriver: true,
-    }).start(() => {
-      setShowMenuModal(false);
-    });
-  };
-
-  const panResponder = PanResponder.create({
-    onStartShouldSetPanResponder: () => true,
-    onMoveShouldSetPanResponder: (_, gestureState) => {
-      return gestureState.dy > 5;
-    },
-    onPanResponderMove: (_, gestureState) => {
-      if (gestureState.dy > 0) {
-        translateY.setValue(gestureState.dy);
-      }
-    },
-    onPanResponderRelease: (_, gestureState) => {
-      if (gestureState.dy > 100) {
-        closeModal();
-      } else {
-        Animated.spring(translateY, {
-          toValue: 0,
-          useNativeDriver: true,
-        }).start();
-      }
-    },
-  });
-
-  const handleMenuAction = (action: string) => {
-    closeModal();
-    
-    switch (action) {
-      case 'detail':
-        // Navigate to detail dinas
-        router.push(`/kelola-dinas/detail-dinas/${selectedDinas?.id}` as any);
-        break;
-    }
-  };
   
   useEffect(() => {
     fetchDinasAktif();
@@ -192,7 +137,11 @@ export default function KelolaDinasScreen() {
     const dinasStatusInfo = getDinasStatus(item.tanggal_mulai, item.tanggal_selesai);
 
     return (
-      <View style={styles.dinasCard}>
+      <TouchableOpacity 
+        style={styles.dinasCard}
+        onPress={() => router.push(`/kelola-dinas/detail-dinas/${item.id}` as any)}
+        activeOpacity={0.7}
+      >
         <View style={styles.cardHeader}>
           <View style={styles.cardTitle}>
             <Text style={styles.kegiatanName}>{item.namaKegiatan}</Text>
@@ -205,15 +154,6 @@ export default function KelolaDinasScreen() {
                  dinasStatusInfo.status === 'Belum Dimulai' ? 'Belum Mulai' : 'Selesai'}
               </Text>
             </View>
-            <TouchableOpacity 
-              style={styles.moreBtn}
-              onPress={() => {
-                setSelectedDinas(item);
-                openModal();
-              }}
-            >
-              <Ionicons name="options-outline" size={18} color="#666" />
-            </TouchableOpacity>
           </View>
         </View>
 
@@ -238,7 +178,7 @@ export default function KelolaDinasScreen() {
             <Text style={styles.infoText}>{totalPegawai} orang bertugas</Text>
           </View>
         </View>
-      </View>
+      </TouchableOpacity>
     );
   };
 
@@ -252,7 +192,6 @@ export default function KelolaDinasScreen() {
         showBack={true}
         showAddButton={true}
         onAddPress={() => router.push('/kelola-dinas/tambah-dinas' as any)}
-        fallbackRoute="/admin/dashboard-admin"
       />
 
       <View style={styles.contentWrapper}>
@@ -379,46 +318,6 @@ export default function KelolaDinasScreen() {
           }}
         />
       </View>
-      
-      {/* Menu Modal */}
-      <Modal
-        visible={showMenuModal}
-        transparent={true}
-        animationType="none"
-        statusBarTranslucent={true}
-        onRequestClose={() => closeModal()}
-      >
-        <View style={styles.modalOverlay}>
-          <TouchableOpacity 
-            style={styles.modalBackdrop} 
-            activeOpacity={1}
-            onPress={() => closeModal()}
-          />
-          <Animated.View style={[styles.bottomSheetModal, {
-            transform: [{ translateY }]
-          }]}>
-            <View {...panResponder.panHandlers} style={styles.handleContainer}>
-              <View style={styles.handleBar} />
-            </View>
-            
-            <View style={styles.bottomSheetHeader}>
-              <View style={styles.actionCard}>
-                <View style={styles.bottomSheetActions}>
-                  <TouchableOpacity
-                    style={styles.bottomSheetItem}
-                    onPress={() => handleMenuAction('detail')}
-                  >
-                    <Ionicons name="eye-outline" size={20} color="#2196F3" />
-                    <Text style={styles.bottomSheetItemText}>Detail Dinas</Text>
-                  </TouchableOpacity>
-                  
-
-                </View>
-              </View>
-            </View>
-          </Animated.View>
-        </View>
-      </Modal>
     </View>
   );
 }
@@ -629,9 +528,9 @@ const styles = StyleSheet.create({
 
   dinasCard: {
     backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 15,
-    marginBottom: 12,
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 10,
     marginHorizontal: 15,
     borderWidth: 1,
     borderColor: '#E0E0E0',
@@ -640,7 +539,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 12
+    marginBottom: 10
   },
   cardTitle: { flex: 1, marginRight: 10 },
   cardHeaderRight: {
@@ -648,36 +547,33 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  moreBtn: { 
-    padding: 8, 
-  },
   dinasStatusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 6,
   },
   dinasStatusText: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: 'bold'
   },
   kegiatanName: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: 'bold',
     color: '#333',
     marginBottom: 2
   },
   sptNumber: {
-    fontSize: 11,
+    fontSize: 10,
     color: '#666'
   },
-  cardInfo: { marginBottom: 12 },
+  cardInfo: { marginBottom: 10 },
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 6
+    marginBottom: 5
   },
   infoText: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#666',
     marginLeft: 6
   },
@@ -692,67 +588,5 @@ const styles = StyleSheet.create({
     color: '#666',
     textAlign: 'center',
     fontStyle: 'italic'
-  },
-  
-  // Modal Styles
-  modalOverlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    paddingTop: Platform.OS === 'android' ? 0 : 50,
-  },
-  modalBackdrop: {
-    flex: 1,
-  },
-  bottomSheetModal: {
-    backgroundColor: '#F8F9FA',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingBottom: Platform.OS === 'ios' ? 34 : 20,
-    paddingTop: 8,
-  },
-  handleContainer: {
-    paddingVertical: 12,
-    alignItems: 'center',
-    width: '100%',
-  },
-  handleBar: {
-    width: 40,
-    height: 4,
-    backgroundColor: '#DDD',
-    borderRadius: 2,
-    alignSelf: 'center',
-    marginTop: 8,
-    marginBottom: 16,
-  },
-  bottomSheetHeader: {
-    paddingHorizontal: 20,
-    paddingBottom: 16,
-  },
-  actionCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
-  bottomSheetActions: {
-    backgroundColor: 'transparent',
-  },
-  bottomSheetItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 18,
-    backgroundColor: 'transparent',
-    gap: 15,
-  },
-  actionDivider: {
-    height: 0.5,
-    backgroundColor: 'rgba(0, 0, 0, 0.05)',
-    marginLeft: 55,
-  },
-  bottomSheetItemText: {
-    fontSize: 16,
-    color: '#333',
-    fontWeight: '500',
   },
 });

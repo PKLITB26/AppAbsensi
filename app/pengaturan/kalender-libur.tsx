@@ -409,7 +409,9 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     marginBottom: 16,
-    alignItems: 'flex-start'
+    alignItems: 'flex-start',
+    borderWidth: 1,
+    borderColor: '#D0E8E4',
   },
   infoText: {
     flex: 1,
