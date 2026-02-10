@@ -1,7 +1,13 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import React from "react";
+import {
+  Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 interface AppHeaderProps {
   title: string;
@@ -13,6 +19,8 @@ interface AppHeaderProps {
   onAddPress?: () => void;
   rightComponent?: React.ReactNode;
   fallbackRoute?: string;
+  primaryColor?: string;
+  backgroundColor?: string;
 }
 
 export default function AppHeader({
@@ -24,7 +32,9 @@ export default function AppHeader({
   showAddButton = false,
   onAddPress,
   rightComponent,
-  fallbackRoute
+  fallbackRoute,
+  primaryColor = "#004643",
+  backgroundColor = "#fff",
 }: AppHeaderProps) {
   const router = useRouter();
 
@@ -35,35 +45,39 @@ export default function AppHeader({
       if (router.canGoBack()) {
         router.back();
       } else {
-        router.push((fallbackRoute || '/(tabs)/beranda') as any);
+        router.push((fallbackRoute || "/(tabs)/beranda") as any);
       }
     }
   };
 
   return (
-    <View style={styles.headerSection}>
+    <View style={[styles.headerSection, { backgroundColor }]}>
       <View style={styles.headerContent}>
         <View style={styles.headerLeft}>
           {showBack && (
             <TouchableOpacity style={styles.backBtn} onPress={handleBackPress}>
-              <Ionicons name="arrow-back" size={24} color="#004643" />
+              <Ionicons name="chevron-back" size={28} color={primaryColor} />
             </TouchableOpacity>
           )}
-          <Text style={styles.headerTitle}>{title}</Text>
+          <Text style={[styles.headerTitle, { color: primaryColor }]}>
+            {title}
+          </Text>
         </View>
-        
+
         {showStats && statsText && (
           <View style={styles.headerStats}>
-            <Text style={styles.statsText}>{statsText}</Text>
+            <Text style={[styles.statsText, { color: primaryColor }]}>
+              {statsText}
+            </Text>
           </View>
         )}
-        
+
         {showAddButton && (
           <TouchableOpacity style={styles.addButton} onPress={onAddPress}>
-            <Ionicons name="add" size={24} color="#004643" />
+            <Ionicons name="add" size={28} color={primaryColor} />
           </TouchableOpacity>
         )}
-        
+
         {rightComponent}
       </View>
     </View>
@@ -72,9 +86,8 @@ export default function AppHeader({
 
 const styles = StyleSheet.create({
   headerSection: {
-    backgroundColor: "#fff",
-    paddingTop: Platform.OS === 'ios' ? 50 : 45,
-    paddingBottom: 15,
+    paddingTop: Platform.OS === "ios" ? 0 : 40,
+    paddingBottom: 10,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
     borderBottomColor: "#E0E0E0",
@@ -88,15 +101,18 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     flex: 1,
+    justifyContent: "center",
   },
   backBtn: {
-    padding: 10,
-    marginRight: 15,
+    position: "absolute",
+    left: 0,
+    padding: 0,
+    marginRight: 0,
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: "bold",
-    color: "#004643",
+    alignItems: "center",
   },
   headerStats: {
     backgroundColor: "#E6F0EF",
@@ -104,15 +120,14 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 12,
   },
-  statsText: { 
-    fontSize: 12, 
-    fontWeight: "bold", 
-    color: "#004643" 
+  statsText: {
+    fontSize: 12,
+    fontWeight: "bold",
   },
   addButton: {
     padding: 8,
   },
   addButtonText: {
-    display: 'none',
+    display: "none",
   },
 });

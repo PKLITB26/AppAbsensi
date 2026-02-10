@@ -123,7 +123,11 @@ export default function EditPegawai() {
         fallbackRoute="/pegawai-akun/data-pegawai-admin"
       />
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+      <View style={styles.contentWrapper}>
+        <ScrollView 
+          showsVerticalScrollIndicator={false} 
+          contentContainerStyle={styles.scrollContent}
+        >
         {/* Informasi Pribadi */}
         <View style={styles.formCard}>
           <View style={styles.cardHeader}>
@@ -296,6 +300,7 @@ export default function EditPegawai() {
 
 
       </ScrollView>
+      </View>
       
       {/* Button Footer - Fixed di bawah seperti header */}
       <View style={styles.buttonFooter}>
@@ -323,6 +328,14 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F8FAFB',
   },
+  contentWrapper: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  scrollContent: {
+    paddingTop: 20,
+    paddingBottom: 20,
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -333,14 +346,6 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 16,
     color: '#666',
-  },
-
-  content: {
-    flex: 1,
-    paddingTop: 10,
-  },
-  scrollContent: {
-    paddingBottom: 20,
   },
   formCard: {
     backgroundColor: '#fff',

@@ -12,8 +12,13 @@ import {
   TouchableOpacity,
   View
 } from "react-native";
+import { StatusBar } from 'expo-status-bar';
 import { API_CONFIG, getApiUrl } from "../../../constants/config";
 import AppHeader from "../../../components/AppHeader";
+
+export const unstable_settings = {
+  presentation: 'modal'
+};
 
 export default function PengaturanKeamananScreen() {
   const router = useRouter();
@@ -139,7 +144,7 @@ export default function PengaturanKeamananScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <AppHeader title="Pengaturan Keamanan" showBack />
+      <AppHeader title="Pengaturan Keamanan" showBack onBackPress={() => router.push('/admin/profil-admin' as any)} />
       <ScrollView showsVerticalScrollIndicator={false}>
 
         {/* FORM UBAH EMAIL & PASSWORD */}

@@ -235,7 +235,7 @@ export default function AdminDashboard() {
           <Text style={styles.sectionTitle}>Aktivitas Terbaru</Text>
           
           {loading ? (
-            <SkeletonLoader type="list" count={3} message="Memuat aktivitas..." />
+            <SkeletonLoader message="Memuat aktivitas..." />
           ) : (
             (data.recent && Array.isArray(data.recent) && data.recent.length > 0) ? (
               data.recent.map((item: any, index: number) => (
@@ -336,7 +336,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 320,
-    zIndex: -1,
   },
   scrollContent: { paddingBottom: 30 },
   headerSection: { 
@@ -344,7 +343,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between', 
     alignItems: 'flex-start', 
     paddingHorizontal: 20, 
-    paddingTop: Platform.OS === 'ios' ? 60 : 40, 
+    paddingTop: Platform.OS === 'ios' ? 60 : 30, 
     marginBottom: 20 
   },
   adminInfo: { flex: 1 },
@@ -429,7 +428,7 @@ const styles = StyleSheet.create({
     fontWeight: '400',
   },
   menuSection: { 
-    marginTop: -10, 
+    marginTop: 5, 
     marginHorizontal: 20, 
     backgroundColor: '#fff', 
     borderRadius: 16, 
@@ -456,14 +455,14 @@ const styles = StyleSheet.create({
     alignItems: 'center' 
   },
   menuIconCircle: { 
-    width: Platform.OS === 'ios' ? 48 : 50, 
-    height: Platform.OS === 'ios' ? 48 : 50, 
-    borderRadius: 12, 
+    width: Platform.OS === 'ios' ? 56 : 58, 
+    height: Platform.OS === 'ios' ? 56 : 58, 
+    borderRadius: 14, 
     justifyContent: 'center', 
     alignItems: 'center', 
-    marginBottom: 6 
+    marginBottom: 8 
   },
-  menuLabel: { fontSize: 10, color: '#444', fontWeight: '500', textAlign: 'center' },
+  menuLabel: { fontSize: 11, color: '#444', fontWeight: '500', textAlign: 'center' },
   recentList: { paddingHorizontal: 20, marginTop: 10, backgroundColor: '#fff', marginHorizontal: 20, borderRadius: 16, padding: 20, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 4 },
   activityCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', padding: 15, borderRadius: 15, marginBottom: 10, borderWidth: 1, borderColor: '#F0F0F0' },
   avatar: { width: 40, height: 40, borderRadius: 20, marginRight: 12 },

@@ -225,7 +225,7 @@ export default function EditProfilAdminScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <AppHeader title="Edit Profil" showBack />
+        <AppHeader title="Edit Profil" showBack onBackPress={() => router.push('/admin/profil-admin' as any)} />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#004643" />
           <Text style={styles.loadingText}>Memuat profil...</Text>
@@ -241,32 +241,19 @@ export default function EditProfilAdminScreen() {
       <AppHeader 
         title="Edit Profil" 
         showBack
+        onBackPress={() => router.push('/admin/profil-admin' as any)}
       />
       
       <ScrollView 
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.formCard}>
-          {/* Row 1: Nama Lengkap + Foto */}
-          <View style={styles.rowWithPhoto}>
-            <View style={styles.inputSection}>
-              <Text style={styles.label}>Nama Lengkap</Text>
-              <TextInput
-                style={[styles.input, errors.nama_lengkap && styles.inputError]}
-                value={profile.nama_lengkap}
-                onChangeText={(text) => {
-                  setProfile({ ...profile, nama_lengkap: text });
-                  if (errors.nama_lengkap) {
-                    setErrors({ ...errors, nama_lengkap: '' });
-                  }
-                }}
-                placeholder="Masukkan nama lengkap"
-                placeholderTextColor="#999"
-              />
-              {errors.nama_lengkap && (
-                <Text style={styles.errorText}>{errors.nama_lengkap}</Text>
-              )}
+        <View style={styles.content}>
+          {/* FOTO PROFIL CARD */}
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Ionicons name="camera" size={24} color="#004643" />
+              <Text style={styles.cardTitle}>Foto Profil</Text>
             </View>
             
             <View style={styles.photoSection}>
@@ -275,21 +262,42 @@ export default function EditProfilAdminScreen() {
                   <Image source={{ uri: photoUri }} style={styles.photoImage} />
                 ) : (
                   <View style={styles.photoPlaceholder}>
-                    <Ionicons name="person-outline" size={40} color="#004643" />
+                    <Ionicons name="person-outline" size={50} color="#004643" />
                   </View>
                 )}
                 <View style={styles.photoEditBtn}>
-                  <Ionicons name="camera-outline" size={16} color="#004643" />
+                  <Ionicons name="camera-outline" size={18} color="#004643" />
                 </View>
               </TouchableOpacity>
+              <Text style={styles.photoHint}>Ketuk untuk mengubah foto</Text>
             </View>
           </View>
 
-          <View style={styles.divider} />
+          {/* DATA PROFIL CARD */}
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Ionicons name="person" size={24} color="#004643" />
+              <Text style={styles.cardTitle}>Data Profil</Text>
+            </View>
 
-          {/* Row 2: Email */}
-          <View style={styles.inputSection}>
-            <Text style={styles.label}>Email</Text>
+            <Text style={styles.inputLabel}>Nama Lengkap</Text>
+            <TextInput
+              style={[styles.input, errors.nama_lengkap && styles.inputError]}
+              value={profile.nama_lengkap}
+              onChangeText={(text) => {
+                setProfile({ ...profile, nama_lengkap: text });
+                if (errors.nama_lengkap) {
+                  setErrors({ ...errors, nama_lengkap: '' });
+                }
+              }}
+              placeholder="Masukkan nama lengkap"
+              placeholderTextColor="#999"
+            />
+            {errors.nama_lengkap && (
+              <Text style={styles.errorText}>{errors.nama_lengkap}</Text>
+            )}
+
+            <Text style={styles.inputLabel}>Email</Text>
             <TextInput
               style={[styles.input, errors.email && styles.inputError]}
               value={profile.email}
@@ -300,20 +308,15 @@ export default function EditProfilAdminScreen() {
                 }
               }}
               placeholder="Masukkan email"
-              placeholderTextColor="##999"
+              placeholderTextColor="#999"
               keyboardType="email-address"
               autoCapitalize="none"
             />
             {errors.email && (
               <Text style={styles.errorText}>{errors.email}</Text>
             )}
-          </View>
 
-          <View style={styles.divider} />
-
-          {/* Row 3: Nomor Telepon */}
-          <View style={styles.inputSection}>
-            <Text style={styles.label}>Nomor Telepon</Text>
+            <Text style={styles.inputLabel}>Nomor Telepon</Text>
             <TextInput
               style={[styles.input, errors.no_telepon && styles.inputError]}
               value={profile.no_telepon}
@@ -331,8 +334,6 @@ export default function EditProfilAdminScreen() {
               <Text style={styles.errorText}>{errors.no_telepon}</Text>
             )}
           </View>
-
-          <View style={styles.divider} />
         </View>
       </ScrollView>
 
@@ -344,7 +345,10 @@ export default function EditProfilAdminScreen() {
           disabled={saving}
         >
           {saving ? (
-            <ActivityIndicator size="small" color="#fff" />
+            <>
+              <Ionicons name="hourglass-outline" size={20} color="#fff" />
+              <Text style={styles.saveButtonText}>Menyimpan...</Text>
+            </>
           ) : (
             <>
               <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
@@ -375,61 +379,78 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-  formCard: {
+  content: {
+    padding: 20,
+  },
+  infoCard: {
+    flexDirection: 'row',
+    backgroundColor: '#F0F8F7',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 16,
+    alignItems: 'flex-start',
+    borderWidth: 1,
+    borderColor: '#D0E8E4',
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  infoContent: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  infoTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#004643',
+    marginBottom: 8,
+  },
+  infoText: {
+    fontSize: 12,
+    color: '#004643',
+    marginBottom: 4,
+    lineHeight: 18,
+  },
+  card: {
     backgroundColor: '#fff',
     borderRadius: 16,
-    margin: 20,
     padding: 20,
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    marginBottom: 20,
   },
-  rowWithPhoto: {
+  cardHeader: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
   },
-  inputSection: {
-    paddingVertical: 2,
-  },
-  label: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#666',
-    marginBottom: 8,
-    marginTop: 4,
-  },
-  input: {
-    fontSize: 15,
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
     color: '#333',
-    paddingVertical: Platform.OS === 'ios' ? 8 : 4,
-    paddingBottom: 2,
-  },
-  inputError: {
-    color: '#D32F2F',
-  },
-  errorText: {
-    fontSize: 12,
-    color: '#D32F2F',
-    marginTop: 4,
+    marginLeft: 10,
   },
   photoSection: {
-    marginLeft: 16,
+    alignItems: 'center',
+    marginBottom: 10,
   },
   photoWrapper: {
     position: 'relative',
+    marginBottom: 10,
   },
   photoImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
   },
   photoPlaceholder: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
     backgroundColor: '#E6F0EF',
     justifyContent: 'center',
     alignItems: 'center',
@@ -438,32 +459,43 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 0,
     right: 0,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: '#fff',
     borderWidth: 2,
     borderColor: '#004643',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  divider: {
-    height: 1,
-    backgroundColor: '#F0F0F0',
-    marginVertical: 6,
+  photoHint: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
   },
-  buttonFooter: {
-    backgroundColor: 'white',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    paddingBottom: Platform.OS === 'ios' ? 34 : 20,
-    borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 5,
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginBottom: 8,
+    color: '#333',
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 15,
+    fontSize: 14,
+    color: '#333',
+  },
+  inputError: {
+    borderColor: '#D32F2F',
+  },
+  errorText: {
+    fontSize: 12,
+    color: '#D32F2F',
+    marginTop: -10,
+    marginBottom: 10,
   },
   saveButton: {
     backgroundColor: '#004643',
@@ -476,7 +508,7 @@ const styles = StyleSheet.create({
     minHeight: 50
   },
   saveButtonDisabled: {
-    opacity: 0.6,
+    backgroundColor: '#999'
   },
   saveButtonText: {
     color: '#fff',
@@ -484,5 +516,17 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginLeft: 6,
     textAlign: 'center'
+  },
+  buttonFooter: {
+    backgroundColor: 'white',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 5,
   },
 });

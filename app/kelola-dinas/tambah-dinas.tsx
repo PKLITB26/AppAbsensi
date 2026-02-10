@@ -661,17 +661,16 @@ export default function TambahDinasScreen() {
         fallbackRoute="/kelola-dinas"
       />
 
-      <View style={styles.contentContainer}>
-        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.formContainer}>
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
           
           {/* Informasi Dasar */}
-          <View style={styles.formCard}>
-            <View style={styles.cardHeader}>
-              <Ionicons name="information-circle-outline" size={20} color="#004643" />
-              <Text style={styles.cardTitle}>Informasi Dasar Dinas</Text>
-            </View>
-            <View style={styles.cardContent}>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="information-circle-outline" size={20} color="#004643" />
+            <Text style={styles.sectionTitle}>Informasi Dasar Dinas</Text>
+          </View>
+          <View style={styles.divider} />
+          
+          <View style={styles.formContent}>
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>Nama Kegiatan *</Text>
                 <TextInput
@@ -758,15 +757,15 @@ export default function TambahDinasScreen() {
                 />
               </View>
             </View>
-          </View>
 
           {/* Waktu & Jadwal */}
-          <View style={styles.formCard}>
-            <View style={styles.cardHeader}>
-              <Ionicons name="time-outline" size={20} color="#004643" />
-              <Text style={styles.cardTitle}>Waktu & Jadwal Dinas</Text>
-            </View>
-            <View style={styles.cardContent}>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="time-outline" size={20} color="#004643" />
+            <Text style={styles.sectionTitle}>Waktu & Jadwal Dinas</Text>
+          </View>
+          <View style={styles.divider} />
+          
+          <View style={styles.formContent}>
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>Tanggal Mulai *</Text>
                 <View style={styles.dateInputContainer}>
@@ -863,15 +862,15 @@ export default function TambahDinasScreen() {
                 )}
               </View>
             </View>
-          </View>
 
           {/* Lokasi & Pegawai */}
-          <View style={styles.formCard}>
-            <View style={styles.cardHeader}>
-              <Ionicons name="location-outline" size={20} color="#004643" />
-              <Text style={styles.cardTitle}>Lokasi & Pegawai Dinas</Text>
-            </View>
-            <View style={styles.cardContent}>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="location-outline" size={20} color="#004643" />
+            <Text style={styles.sectionTitle}>Lokasi & Pegawai Dinas</Text>
+          </View>
+          <View style={styles.divider} />
+          
+          <View style={styles.formContent}>
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>Lokasi Dinas *</Text>
                 <TouchableOpacity 
@@ -1054,11 +1053,8 @@ export default function TambahDinasScreen() {
                 </TouchableOpacity>
               </View>
             </View>
-          </View>
 
-        </View>
-      </ScrollView>
-      </View>
+        </ScrollView>
 
       {/* Calendar Modals */}
       <Modal visible={showDateMulaiPicker} transparent animationType="none" statusBarTranslucent={true}>
@@ -1281,42 +1277,35 @@ export default function TambahDinasScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFB' },
+  container: { flex: 1, backgroundColor: '#fff' },
+
   content: {
     flex: 1,
   },
-  contentContainer: {
-    flex: 1,
+  scrollContent: {
+    paddingBottom: 20,
   },
-  formContainer: {
-    paddingHorizontal: 5,
-    paddingTop: 20,
-    paddingBottom: 20
-  },
-  formCard: {
-    backgroundColor: '#fff',
-    marginHorizontal: 15,
-    marginBottom: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-  },
-  cardHeader: {
+  sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 15,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0'
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 12,
   },
-  cardTitle: {
+  sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
     color: '#004643',
     marginLeft: 8
   },
-  cardContent: {
-    padding: 15
+  divider: {
+    height: 1,
+    backgroundColor: '#E0E0E0',
+    marginHorizontal: 20,
+    marginBottom: 16,
+  },
+  formContent: {
+    paddingHorizontal: 20,
   },
   inputGroup: {
     marginBottom: 16
@@ -1492,7 +1481,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    paddingBottom: Platform.OS === 'ios' ? 34 : 20,
     borderTopWidth: 1,
     borderTopColor: '#e0e0e0',
     shadowColor: '#000',

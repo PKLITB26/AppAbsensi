@@ -520,8 +520,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffffff",
   },
   fixedControls: {
-    paddingTop: 8,
-    paddingBottom: 8,
+    paddingTop: 0,
+    paddingBottom: 0,
     borderBottomWidth: 1,
     borderBottomColor: "#F0F0F0",
     backgroundColor: "#ffffffff",

@@ -387,199 +387,199 @@ export default function AddDataPegawaiForm() {
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
             
             {/* Informasi Pribadi */}
-            <View style={styles.formCard}>
-              <View style={styles.cardHeader}>
-                <Ionicons name="person-outline" size={20} color="#004643" />
-                <Text style={styles.cardTitle}>Informasi Pribadi</Text>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="person-outline" size={20} color="#004643" />
+              <Text style={styles.sectionTitle}>Informasi Pribadi</Text>
+            </View>
+            <View style={styles.divider} />
+            
+            <View style={styles.formContent}>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Nama Lengkap *</Text>
+                <TextInput
+                  style={[styles.textInput, validationErrors.nama_lengkap && styles.inputError]}
+                  placeholder="Masukkan nama lengkap"
+                  value={formData.nama_lengkap}
+                  onChangeText={handleNameChange}
+                />
+                {validationErrors.nama_lengkap && (
+                  <Text style={styles.errorText}>{validationErrors.nama_lengkap}</Text>
+                )}
               </View>
-              <View style={styles.cardContent}>
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Nama Lengkap *</Text>
-                  <TextInput
-                    style={[styles.textInput, validationErrors.nama_lengkap && styles.inputError]}
-                    placeholder="Masukkan nama lengkap"
-                    value={formData.nama_lengkap}
-                    onChangeText={handleNameChange}
-                  />
-                  {validationErrors.nama_lengkap && (
-                    <Text style={styles.errorText}>{validationErrors.nama_lengkap}</Text>
-                  )}
-                </View>
 
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>NIP *</Text>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>NIP *</Text>
+                <TextInput
+                  style={[styles.textInput, validationErrors.nip && styles.inputError]}
+                  placeholder="Masukkan NIP"
+                  value={formData.nip}
+                  onChangeText={(text) => {
+                    setFormData({...formData, nip: text});
+                    validateField('nip', text);
+                  }}
+                />
+                {validationErrors.nip && (
+                  <Text style={styles.errorText}>{validationErrors.nip}</Text>
+                )}
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>No. Telepon</Text>
+                <TextInput
+                  style={[styles.textInput, validationErrors.no_telepon && styles.inputError]}
+                  placeholder="Masukkan nomor telepon"
+                  value={formData.no_telepon}
+                  onChangeText={(text) => {
+                    setFormData({...formData, no_telepon: text});
+                    validateField('no_telepon', text);
+                  }}
+                  keyboardType="phone-pad"
+                />
+                {validationErrors.no_telepon && (
+                  <Text style={styles.errorText}>{validationErrors.no_telepon}</Text>
+                )}
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Tanggal Lahir</Text>
+                <View style={styles.dateInputContainer}>
                   <TextInput
-                    style={[styles.textInput, validationErrors.nip && styles.inputError]}
-                    placeholder="Masukkan NIP"
-                    value={formData.nip}
+                    style={styles.textInput}
+                    placeholder="DD/MM/YYYY"
+                    value={formData.tanggal_lahir}
                     onChangeText={(text) => {
-                      setFormData({...formData, nip: text});
-                      validateField('nip', text);
+                      const formatted = formatTanggal(text);
+                      setFormData({...formData, tanggal_lahir: formatted});
                     }}
+                    keyboardType="numeric"
+                    maxLength={10}
                   />
-                  {validationErrors.nip && (
-                    <Text style={styles.errorText}>{validationErrors.nip}</Text>
-                  )}
+                  <TouchableOpacity onPress={showCalendarModal} style={styles.calendarButton}>
+                    <Ionicons name="calendar" size={20} color="#004643" />
+                  </TouchableOpacity>
                 </View>
+              </View>
 
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>No. Telepon</Text>
-                  <TextInput
-                    style={[styles.textInput, validationErrors.no_telepon && styles.inputError]}
-                    placeholder="Masukkan nomor telepon"
-                    value={formData.no_telepon}
-                    onChangeText={(text) => {
-                      setFormData({...formData, no_telepon: text});
-                      validateField('no_telepon', text);
-                    }}
-                    keyboardType="phone-pad"
-                  />
-                  {validationErrors.no_telepon && (
-                    <Text style={styles.errorText}>{validationErrors.no_telepon}</Text>
-                  )}
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Jenis Kelamin *</Text>
+                <View style={styles.genderContainer}>
+                  <TouchableOpacity 
+                    style={[styles.genderBtn, formData.jenis_kelamin === 'Laki-laki' && styles.genderBtnActive]}
+                    onPress={() => setFormData({...formData, jenis_kelamin: 'Laki-laki'})}
+                  >
+                    <Text style={[styles.genderText, formData.jenis_kelamin === 'Laki-laki' && styles.genderTextActive]}>
+                      Laki-laki
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={[styles.genderBtn, formData.jenis_kelamin === 'Perempuan' && styles.genderBtnActive]}
+                    onPress={() => setFormData({...formData, jenis_kelamin: 'Perempuan'})}
+                  >
+                    <Text style={[styles.genderText, formData.jenis_kelamin === 'Perempuan' && styles.genderTextActive]}>
+                      Perempuan
+                    </Text>
+                  </TouchableOpacity>
                 </View>
+                {validationErrors.jenis_kelamin && (
+                  <Text style={styles.errorText}>{validationErrors.jenis_kelamin}</Text>
+                )}
+              </View>
 
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Tanggal Lahir</Text>
-                  <View style={styles.dateInputContainer}>
-                    <TextInput
-                      style={styles.textInput}
-                      placeholder="DD/MM/YYYY"
-                      value={formData.tanggal_lahir}
-                      onChangeText={(text) => {
-                        const formatted = formatTanggal(text);
-                        setFormData({...formData, tanggal_lahir: formatted});
-                      }}
-                      keyboardType="numeric"
-                      maxLength={10}
-                    />
-                    <TouchableOpacity onPress={showCalendarModal} style={styles.calendarButton}>
-                      <Ionicons name="calendar" size={20} color="#004643" />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Jenis Kelamin *</Text>
-                  <View style={styles.genderContainer}>
-                    <TouchableOpacity 
-                      style={[styles.genderBtn, formData.jenis_kelamin === 'Laki-laki' && styles.genderBtnActive]}
-                      onPress={() => setFormData({...formData, jenis_kelamin: 'Laki-laki'})}
-                    >
-                      <Text style={[styles.genderText, formData.jenis_kelamin === 'Laki-laki' && styles.genderTextActive]}>
-                        Laki-laki
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity 
-                      style={[styles.genderBtn, formData.jenis_kelamin === 'Perempuan' && styles.genderBtnActive]}
-                      onPress={() => setFormData({...formData, jenis_kelamin: 'Perempuan'})}
-                    >
-                      <Text style={[styles.genderText, formData.jenis_kelamin === 'Perempuan' && styles.genderTextActive]}>
-                        Perempuan
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                  {validationErrors.jenis_kelamin && (
-                    <Text style={styles.errorText}>{validationErrors.jenis_kelamin}</Text>
-                  )}
-                </View>
-
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Alamat Lengkap</Text>
-                  <TextInput
-                    style={[styles.textInput, styles.textArea]}
-                    placeholder="Masukkan alamat lengkap"
-                    value={formData.alamat}
-                    onChangeText={(text) => setFormData({...formData, alamat: text})}
-                    multiline
-                    numberOfLines={3}
-                  />
-                </View>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Alamat Lengkap</Text>
+                <TextInput
+                  style={[styles.textInput, styles.textArea]}
+                  placeholder="Masukkan alamat lengkap"
+                  value={formData.alamat}
+                  onChangeText={(text) => setFormData({...formData, alamat: text})}
+                  multiline
+                  numberOfLines={3}
+                />
               </View>
             </View>
 
             {/* Informasi Kepegawaian */}
-            <View style={styles.formCard}>
-              <View style={styles.cardHeader}>
-                <Ionicons name="briefcase-outline" size={20} color="#004643" />
-                <Text style={styles.cardTitle}>Informasi Kepegawaian</Text>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="briefcase-outline" size={20} color="#004643" />
+              <Text style={styles.sectionTitle}>Informasi Kepegawaian</Text>
+            </View>
+            <View style={styles.divider} />
+            
+            <View style={styles.formContent}>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Jabatan *</Text>
+                <TextInput
+                  style={[styles.textInput, validationErrors.jabatan && styles.inputError]}
+                  placeholder="Masukkan jabatan"
+                  value={formData.jabatan}
+                  onChangeText={(text) => {
+                    setFormData({...formData, jabatan: text});
+                    validateField('jabatan', text);
+                  }}
+                />
+                {validationErrors.jabatan && (
+                  <Text style={styles.errorText}>{validationErrors.jabatan}</Text>
+                )}
               </View>
-              <View style={styles.cardContent}>
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Jabatan *</Text>
-                  <TextInput
-                    style={[styles.textInput, validationErrors.jabatan && styles.inputError]}
-                    placeholder="Masukkan jabatan"
-                    value={formData.jabatan}
-                    onChangeText={(text) => {
-                      setFormData({...formData, jabatan: text});
-                      validateField('jabatan', text);
-                    }}
-                  />
-                  {validationErrors.jabatan && (
-                    <Text style={styles.errorText}>{validationErrors.jabatan}</Text>
-                  )}
-                </View>
 
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Divisi *</Text>
-                  <TextInput
-                    style={[styles.textInput, validationErrors.divisi && styles.inputError]}
-                    placeholder="Masukkan divisi"
-                    value={formData.divisi}
-                    onChangeText={(text) => {
-                      setFormData({...formData, divisi: text});
-                      validateField('divisi', text);
-                    }}
-                  />
-                  {validationErrors.divisi && (
-                    <Text style={styles.errorText}>{validationErrors.divisi}</Text>
-                  )}
-                </View>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Divisi *</Text>
+                <TextInput
+                  style={[styles.textInput, validationErrors.divisi && styles.inputError]}
+                  placeholder="Masukkan divisi"
+                  value={formData.divisi}
+                  onChangeText={(text) => {
+                    setFormData({...formData, divisi: text});
+                    validateField('divisi', text);
+                  }}
+                />
+                {validationErrors.divisi && (
+                  <Text style={styles.errorText}>{validationErrors.divisi}</Text>
+                )}
               </View>
             </View>
 
             {/* Informasi Akun */}
-            <View style={styles.formCard}>
-              <View style={styles.cardHeader}>
-                <Ionicons name="lock-closed-outline" size={20} color="#004643" />
-                <Text style={styles.cardTitle}>Informasi Akun</Text>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="lock-closed-outline" size={20} color="#004643" />
+              <Text style={styles.sectionTitle}>Informasi Akun</Text>
+            </View>
+            <View style={styles.divider} />
+            
+            <View style={styles.formContent}>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Email *</Text>
+                <TextInput
+                  style={[styles.textInput, validationErrors.email && styles.inputError]}
+                  placeholder="Masukkan email"
+                  value={formData.email}
+                  onChangeText={(text) => {
+                    setFormData({...formData, email: text});
+                    validateField('email', text);
+                  }}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
+                {validationErrors.email && (
+                  <Text style={styles.errorText}>{validationErrors.email}</Text>
+                )}
               </View>
-              <View style={styles.cardContent}>
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Email *</Text>
-                  <TextInput
-                    style={[styles.textInput, validationErrors.email && styles.inputError]}
-                    placeholder="Masukkan email"
-                    value={formData.email}
-                    onChangeText={(text) => {
-                      setFormData({...formData, email: text});
-                      validateField('email', text);
-                    }}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                  />
-                  {validationErrors.email && (
-                    <Text style={styles.errorText}>{validationErrors.email}</Text>
-                  )}
-                </View>
 
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Password *</Text>
-                  <TextInput
-                    style={[styles.textInput, validationErrors.password && styles.inputError]}
-                    placeholder="Masukkan password"
-                    value={formData.password}
-                    onChangeText={(text) => {
-                      setFormData({...formData, password: text});
-                      validateField('password', text);
-                    }}
-                    secureTextEntry
-                  />
-                  {validationErrors.password && (
-                    <Text style={styles.errorText}>{validationErrors.password}</Text>
-                  )}
-                </View>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Password *</Text>
+                <TextInput
+                  style={[styles.textInput, validationErrors.password && styles.inputError]}
+                  placeholder="Masukkan password"
+                  value={formData.password}
+                  onChangeText={(text) => {
+                    setFormData({...formData, password: text});
+                    validateField('password', text);
+                  }}
+                  secureTextEntry
+                />
+                {validationErrors.password && (
+                  <Text style={styles.errorText}>{validationErrors.password}</Text>
+                )}
               </View>
             </View>
 
@@ -734,38 +734,35 @@ export default function AddDataPegawaiForm() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFB' },
+  container: { flex: 1, backgroundColor: '#fff' },
 
   content: {
     flex: 1,
-    paddingHorizontal: 5,
-    paddingTop: 20,
   },
   scrollContent: {
     paddingBottom: 20,
   },
-  formCard: {
-    backgroundColor: '#fff',
-    marginHorizontal: 15,
-    marginBottom: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-  },
-  cardHeader: {
+  sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 15,
-    paddingVertical: 16,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 12,
   },
-  cardTitle: {
+  sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
     color: '#004643',
     marginLeft: 8
   },
-  cardContent: {
-    padding: 15
+  divider: {
+    height: 1,
+    backgroundColor: '#E0E0E0',
+    marginHorizontal: 20,
+    marginBottom: 16,
+  },
+  formContent: {
+    paddingHorizontal: 20,
   },
   inputGroup: {
     marginBottom: 16

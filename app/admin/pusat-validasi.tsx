@@ -55,6 +55,7 @@ interface Statistics {
   absen_dinas: {
     perlu_validasi: number;
     sudah_divalidasi: number;
+    ditolak: number;
     tidak_hadir: number;
     total: number;
   };
@@ -109,6 +110,7 @@ export default function PusatValidasiScreen() {
     absen_dinas: {
       perlu_validasi: 0,
       sudah_divalidasi: 0,
+      ditolak: 0,
       tidak_hadir: 0,
       total: 0
     },
@@ -639,16 +641,16 @@ export default function PusatValidasiScreen() {
               <Text style={styles.statCategory}>Dinas</Text>
               <View style={styles.statValues}>
                 <View style={styles.statBadge}>
-                  <Text style={styles.statBadgeLabel}>Perlu</Text>
+                  <Text style={styles.statBadgeLabel}>Tunggu</Text>
                   <Text style={styles.statBadgeNumber}>{statistics.absen_dinas.perlu_validasi}</Text>
                 </View>
                 <View style={styles.statBadge}>
-                  <Text style={styles.statBadgeLabel}>Valid</Text>
+                  <Text style={styles.statBadgeLabel}>Setuju</Text>
                   <Text style={styles.statBadgeNumber}>{statistics.absen_dinas.sudah_divalidasi}</Text>
                 </View>
                 <View style={styles.statBadge}>
-                  <Text style={styles.statBadgeLabel}>Tidak</Text>
-                  <Text style={styles.statBadgeNumber}>{statistics.absen_dinas.tidak_hadir}</Text>
+                  <Text style={styles.statBadgeLabel}>Tolak</Text>
+                  <Text style={styles.statBadgeNumber}>{statistics.absen_dinas.ditolak || 0}</Text>
                 </View>
               </View>
             </View>
@@ -682,19 +684,13 @@ export default function PusatValidasiScreen() {
           {/* Search Bar */}
           <View style={styles.searchContainer}>
             <View style={styles.searchInputWrapper}>
-              <Ionicons name="search-outline" size={20} color="#666" style={styles.searchIcon} />
+              <Ionicons name="search-outline" size={20} color="#666" />
               <TextInput
                 style={styles.searchInput}
                 placeholder="Cari pegawai atau NIP..."
                 placeholderTextColor="#999"
               />
             </View>
-            <TouchableOpacity 
-              style={styles.filterBtn}
-              onPress={openFilterModal}
-            >
-              <Ionicons name="options-outline" size={20} color="#004643" />
-            </TouchableOpacity>
           </View>
           
           {/* Tab Navigation */}
@@ -978,7 +974,7 @@ const styles = StyleSheet.create({
   
   // Statistics Section
   statsSection: {
-    backgroundColor: '#F8F9FA',
+    backgroundColor: '#FFF',
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
@@ -998,7 +994,7 @@ const styles = StyleSheet.create({
   statsTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#1A1A1A',
+    color: '#4a4747ff',
   },
   statusBadge: {
     flexDirection: 'row',
@@ -1084,45 +1080,30 @@ const styles = StyleSheet.create({
   
   // Search and Filter Section
   searchContainer: {
-    flexDirection: 'row',
     paddingHorizontal: 20,
-    paddingVertical: 12,
-    gap: 12,
-    alignItems: 'center',
-    backgroundColor: '#fff',
+    paddingVertical: 15,
+    backgroundColor: '#fff'
   },
   searchInputWrapper: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f4f3f3ff',
+    backgroundColor: '#F8F9FA',
     borderRadius: 12,
     paddingHorizontal: 15,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    gap: 12
   },
   searchIcon: {
-    marginRight: 10,
+    marginRight: 0,
   },
   searchInput: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 16,
     color: '#333',
-    paddingVertical: 12,
+    paddingVertical: 12
   },
-  filterBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: '#E8F5E8',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(0, 70, 67, 0.2)',
-  },
+
   tabContainer: {
     flexDirection: 'row',
     backgroundColor: '#F8F9FA',
@@ -1588,7 +1569,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8F9FA',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    paddingBottom: Platform.OS === 'ios' ? 34 : 20,
+    paddingBottom: Platform.OS === 'ios' ? 60 : 20,
     paddingTop: 8,
   },
   filterHandleContainer: {

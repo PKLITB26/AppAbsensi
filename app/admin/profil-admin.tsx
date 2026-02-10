@@ -304,23 +304,29 @@ export default function ProfilAdminScreen() {
           </View>
         </View>
 
-        {/* INFORMASI UMUM */}
+        {/* INFO DAN DUKUNGAN SELENGKAPNYA */}
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>INFORMASI UMUM</Text>
+          <Text style={styles.sectionLabel}>INFO DAN DUKUNGAN SELENGKAPNYA</Text>
           <View style={styles.menuCard}>
-            <TouchableOpacity style={styles.menuItem}>
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => router.push('/profile-admin/tentang/kebijakan-privasi' as any)}
+            >
               <View style={styles.menuLeft}>
-                <View style={[styles.iconCircle, { backgroundColor: '#F3E5F5' }]}>
-                  <Ionicons name="information-circle-outline" size={Platform.OS === 'ios' ? 20 : 22} color="#7B1FA2" />
+                <View style={[styles.iconCircle, { backgroundColor: '#E0F2F1' }]}>
+                  <Ionicons name="shield-checkmark-outline" size={Platform.OS === 'ios' ? 20 : 22} color="#00897B" />
                 </View>
-                <Text style={styles.menuText}>Tentang Aplikasi</Text>
+                <Text style={styles.menuText}>Kebijakan Privasi</Text>
               </View>
               <Ionicons name="chevron-forward-outline" size={20} color="#999" />
             </TouchableOpacity>
             
             <View style={styles.menuDivider} />
             
-            <TouchableOpacity style={styles.menuItem}>
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => router.push('/profile-admin/tentang/syarat-ketentuan' as any)}
+            >
               <View style={styles.menuLeft}>
                 <View style={[styles.iconCircle, { backgroundColor: '#E8F5E9' }]}>
                   <Ionicons name="document-text-outline" size={Platform.OS === 'ios' ? 20 : 22} color="#388E3C" />
@@ -334,32 +340,19 @@ export default function ProfilAdminScreen() {
             
             <TouchableOpacity style={styles.menuItem}>
               <View style={styles.menuLeft}>
-                <View style={[styles.iconCircle, { backgroundColor: '#E0F2F1' }]}>
-                  <Ionicons name="shield-checkmark-outline" size={Platform.OS === 'ios' ? 20 : 22} color="#00897B" />
+                <View style={[styles.iconCircle, { backgroundColor: '#FFF9C4' }]}>
+                  <Ionicons name="help-circle-outline" size={Platform.OS === 'ios' ? 20 : 22} color="#F9A825" />
                 </View>
-                <Text style={styles.menuText}>Kebijakan Privasi</Text>
+                <Text style={styles.menuText}>Bantuan</Text>
               </View>
               <Ionicons name="chevron-forward-outline" size={20} color="#999" />
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* BANTUAN DAN DUKUNGAN */}
+        {/* AKUN */}
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>BANTUAN DAN DUKUNGAN</Text>
           <View style={styles.menuCard}>
-            <TouchableOpacity style={styles.menuItem}>
-              <View style={styles.menuLeft}>
-                <View style={[styles.iconCircle, { backgroundColor: '#FFF9C4' }]}>
-                  <Ionicons name="help-circle-outline" size={Platform.OS === 'ios' ? 20 : 22} color="#F9A825" />
-                </View>
-                <Text style={styles.menuText}>Bantuan dan Dukungan</Text>
-              </View>
-              <Ionicons name="chevron-forward-outline" size={20} color="#999" />
-            </TouchableOpacity>
-            
-            <View style={styles.menuDivider} />
-            
             <TouchableOpacity 
               style={styles.menuItem}
               onPress={() => setLogoutModal(true)}
@@ -422,7 +415,7 @@ export default function ProfilAdminScreen() {
 
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F5F5F5" },
+  container: { flex: 1, backgroundColor: "#fff" },
   scrollContent: {
     paddingBottom: 30,
   },

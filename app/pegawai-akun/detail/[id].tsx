@@ -132,8 +132,11 @@ export default function DetailPegawai() {
         fallbackRoute="/pegawai-akun/data-pegawai-admin"
       />
 
-      <View style={styles.contentContainer}>
-        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <View style={styles.contentWrapper}>
+        <ScrollView 
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
           {/* Profile Section */}
           <LinearGradient
             colors={['#004643', '#2E7D32']}
@@ -303,6 +306,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#F8FAFB",
   },
+  contentWrapper: {
+    flex: 1,
+    backgroundColor: "#fff",
+  },
+  scrollContent: {
+    paddingTop: 20,
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
@@ -338,10 +348,6 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: "600",
-  },
-
-  contentContainer: {
-    flex: 1,
   },
 
   content: {

@@ -195,7 +195,7 @@ export default function LoginScreen() {
         }]}>
           <View style={styles.logoContainer}>
             <Image 
-              source={require('../assets/images/hadir.in.jpeg')} 
+              source={require('../assets/images/validin.png')} 
               style={styles.logoImage}
               resizeMode="contain"
             />

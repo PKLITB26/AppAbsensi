@@ -1,10 +1,10 @@
 export default {
   expo: {
-    name: "HadirinApp",
-    slug: "HadirinApp", 
+    name: "Validin",
+    slug: "Validin", 
     version: "1.0.0",
     orientation: "portrait",
-    icon: "./assets/images/icon.png",
+    icon: "./assets/images/validin.png",
     userInterfaceStyle: "light",
     splash: {
       image: "./assets/images/splash-icon.png",

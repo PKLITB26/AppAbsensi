@@ -43,7 +43,7 @@ const getAdminProfile = async (req, res) => {
 
     const db = await getConnection();
     const [rows] = await db.execute(
-      'SELECT id_user, email, nama_lengkap, foto_profil, no_telepon, role FROM users WHERE id_user = ? AND role = "admin"',
+      'SELECT id_user, email, nama_lengkap, foto_profil, no_telepon, role, created_at FROM users WHERE id_user = ? AND role = "admin"',
       [userId]
     );
 
@@ -136,7 +136,7 @@ const updateAdminProfileData = async (req, res) => {
 
     // Get updated data
     const [updatedRows] = await db.execute(
-      'SELECT id_user, email, nama_lengkap, foto_profil, no_telepon, role FROM users WHERE id_user = ?',
+      'SELECT id_user, email, nama_lengkap, foto_profil, no_telepon, role, created_at FROM users WHERE id_user = ?',
       [userId]
     );
 

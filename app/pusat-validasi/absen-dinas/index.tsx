@@ -321,19 +321,7 @@ export default function AbsenDinasValidasiScreen() {
               <View key={index} style={styles.pegawaiCard}>
                 <View style={styles.pegawaiInfo}>
                   <View style={styles.pegawaiNameRow}>
-                    {sudahAbsen ? (
-                      terlambat ? (
-                        <Ionicons name="warning" size={16} color="#FF9800" style={styles.statusIcon} />
-                      ) : (
-                        <Ionicons name="checkmark-circle" size={16} color="#4CAF50" style={styles.statusIcon} />
-                      )
-                    ) : belumWaktuAbsen ? (
-                      <Ionicons name="calendar-outline" size={16} color="#2196F3" style={styles.statusIcon} />
-                    ) : tidakHadir ? (
-                      <Ionicons name="close-circle" size={16} color="#F44336" style={styles.statusIcon} />
-                    ) : (
-                      <Ionicons name="time-outline" size={16} color="#FF9800" style={styles.statusIcon} />
-                    )}
+                    <Ionicons name="person-circle" size={20} color="#004643" style={styles.statusIcon} />
                     <Text style={styles.pegawaiName}>{pegawai.nama}</Text>
                   </View>
                   <Text style={styles.pegawaiNip}>NIP: {pegawai.nip || 'Tidak ada NIP'}</Text>
@@ -391,12 +379,12 @@ export default function AbsenDinasValidasiScreen() {
                       style={styles.actionIconBtn}
                       onPress={async () => {
                         Alert.alert(
-                          'Validasi Absen',
-                          `Validasi absen ${pegawai.nama}?`,
+                          'Terima Validasi',
+                          `Terima validasi absen ${pegawai.nama}?`,
                           [
                             { text: 'Batal', style: 'cancel' },
                             { 
-                              text: 'Validasi', 
+                              text: 'Terima', 
                               onPress: async () => {
                                 try {
                                   // TODO: Call API to validate
@@ -430,6 +418,50 @@ export default function AbsenDinasValidasiScreen() {
                   ) : (
                     <View style={[styles.actionIconBtn, styles.actionIconBtnDisabled]}>
                       <Ionicons name="checkmark-circle-outline" size={18} color="#ccc" />
+                    </View>
+                  )}
+                  
+                  {pegawai.status === 'hadir' ? (
+                    <TouchableOpacity 
+                      style={[styles.actionIconBtn, styles.actionIconBtnReject]}
+                      onPress={async () => {
+                        Alert.alert(
+                          'Tolak Validasi',
+                          `Tolak validasi absen ${pegawai.nama}?`,
+                          [
+                            { text: 'Batal', style: 'cancel' },
+                            { 
+                              text: 'Tolak',
+                              style: 'destructive',
+                              onPress: async () => {
+                                try {
+                                  // TODO: Call API to reject validation
+                                  // await KelolaDinasAPI.rejectAbsen(pegawai.id);
+                                  
+                                  Alert.alert('Berhasil', `Validasi absen ${pegawai.nama} ditolak`);
+                                  
+                                  // Update local state
+                                  setPegawaiData(prev => 
+                                    prev.map(p => 
+                                      p.nama === pegawai.nama 
+                                        ? { ...p, isRejected: true } 
+                                        : p
+                                    )
+                                  );
+                                } catch (error) {
+                                  Alert.alert('Error', 'Gagal menolak validasi absen');
+                                }
+                              }
+                            }
+                          ]
+                        );
+                      }}
+                    >
+                      <Ionicons name="close-circle-outline" size={18} color="#F44336" />
+                    </TouchableOpacity>
+                  ) : (
+                    <View style={[styles.actionIconBtn, styles.actionIconBtnDisabled]}>
+                      <Ionicons name="close-circle-outline" size={18} color="#ccc" />
                     </View>
                   )}
                 </View>
@@ -621,10 +653,10 @@ const styles = StyleSheet.create({
   // Kalender Container (Tanpa Card)
   calendarContainer: {
     marginBottom: 20,
-    paddingVertical: 12,
   },
   calendarScrollContent: {
     paddingRight: 20,
+    paddingVertical: 8,
   },
   dateBox: {
     width: 70,
@@ -636,26 +668,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#E0E0E0',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
   },
   dateBoxActive: {
     backgroundColor: '#004643',
     borderColor: '#004643',
-    elevation: 4,
-    shadowColor: '#004643',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    transform: [{ scale: 1.02 }],
   },
   dateBoxToday: {
     borderColor: '#4CAF50',
     borderWidth: 2,
-    backgroundColor: '#F1F8F4',
   },
   dayName: {
     fontSize: 11,
@@ -716,11 +736,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#E0E0E0',
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
   },
   pegawaiInfo: {
     flex: 1,
@@ -795,7 +810,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(0, 70, 67, 0.2)',
+    borderColor: '#E0E0E0',
+  },
+  actionIconBtnReject: {
+    backgroundColor: '#FFEBEE',
+    borderColor: '#E0E0E0',
   },
   actionIconBtnDisabled: {
     backgroundColor: '#F5F5F5',

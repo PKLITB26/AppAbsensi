@@ -18,139 +18,131 @@ export default function PengaturanScreen() {
         showBack={true}
       />
 
-      <View style={styles.contentContainer}>
-        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         <View style={styles.section}>
-          <Text style={styles.sectionHeader}>ABSENSI</Text>
-          <View style={styles.settingGroup}>
-            <TouchableOpacity 
-              style={styles.settingItem}
-              onPress={() => router.push('/pengaturan/jam-kerja' as any)}
-            >
-              <View style={styles.settingLeft}>
-                <View style={[styles.iconContainer, { backgroundColor: '#E3F2FD' }]}>
-                  <Ionicons name="time-outline" size={22} color="#1976D2" />
-                </View>
-                <Text style={styles.settingText}>Jam Kerja</Text>
+          <Text style={styles.sectionLabel}>PENGATURAN ABSENSI</Text>
+          <View style={styles.menuCard}>
+          <TouchableOpacity 
+            style={styles.menuItem}
+            onPress={() => router.push('/pengaturan/jam-kerja' as any)}
+          >
+            <View style={styles.menuLeft}>
+              <View style={[styles.iconCircle, { backgroundColor: '#E3F2FD' }]}>
+                <Ionicons name="time-outline" size={22} color="#1976D2" />
               </View>
-              <Ionicons name="chevron-forward" size={20} color="#C7C7CC" />
-            </TouchableOpacity>
-            
-            <View style={styles.divider} />
-            
-            <TouchableOpacity 
-              style={styles.settingItem}
-              onPress={() => router.push('/pengaturan/kalender-libur' as any)}
-            >
-              <View style={styles.settingLeft}>
-                <View style={[styles.iconContainer, { backgroundColor: '#FFEBEE' }]}>
-                  <Ionicons name="calendar-outline" size={22} color="#F44336" />
-                </View>
-                <Text style={styles.settingText}>Kalender Libur</Text>
+              <View style={styles.menuTextContainer}>
+                <Text style={styles.menuText}>Jam Kerja</Text>
+                <Text style={styles.menuDesc}>Atur jam masuk dan pulang kerja</Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color="#C7C7CC" />
-            </TouchableOpacity>
-            
-            <View style={styles.divider} />
-            
-            <TouchableOpacity 
-              style={styles.settingItem}
-              onPress={() => router.push('/pengaturan/lokasi-kantor' as any)}
-            >
-              <View style={styles.settingLeft}>
-                <View style={[styles.iconContainer, { backgroundColor: '#E8F5E9' }]}>
-                  <Ionicons name="location-outline" size={22} color="#4CAF50" />
-                </View>
-                <Text style={styles.settingText}>Lokasi Kantor</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color="#C7C7CC" />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionHeader}>TENTANG</Text>
-          <View style={styles.settingGroup}>
-            <View style={styles.settingItem}>
-              <View style={styles.settingLeft}>
-                <View style={[styles.iconContainer, { backgroundColor: '#F3E5F5' }]}>
-                  <Ionicons name="information-circle-outline" size={22} color="#9C27B0" />
-                </View>
-                <Text style={styles.settingText}>Versi Aplikasi</Text>
-              </View>
-              <Text style={styles.versionText}>1.0.0</Text>
             </View>
+            <Ionicons name="chevron-forward-outline" size={20} color="#999" />
+          </TouchableOpacity>
+          
+          <View style={styles.menuDivider} />
+          
+          <TouchableOpacity 
+            style={styles.menuItem}
+            onPress={() => router.push('/pengaturan/kalender-libur' as any)}
+          >
+            <View style={styles.menuLeft}>
+              <View style={[styles.iconCircle, { backgroundColor: '#FFEBEE' }]}>
+                <Ionicons name="calendar-outline" size={22} color="#F44336" />
+              </View>
+              <View style={styles.menuTextContainer}>
+                <Text style={styles.menuText}>Kalender Libur</Text>
+                <Text style={styles.menuDesc}>Kelola hari libur dan tanggal merah</Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward-outline" size={20} color="#999" />
+          </TouchableOpacity>
+          
+          <View style={styles.menuDivider} />
+          
+          <TouchableOpacity 
+            style={styles.menuItem}
+            onPress={() => router.push('/pengaturan/lokasi-kantor' as any)}
+          >
+            <View style={styles.menuLeft}>
+              <View style={[styles.iconCircle, { backgroundColor: '#E8F5E9' }]}>
+                <Ionicons name="location-outline" size={22} color="#4CAF50" />
+              </View>
+              <View style={styles.menuTextContainer}>
+                <Text style={styles.menuText}>Lokasi Kantor</Text>
+                <Text style={styles.menuDesc}>Tentukan lokasi dan radius absensi</Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward-outline" size={20} color="#999" />
+          </TouchableOpacity>
           </View>
         </View>
-        </ScrollView>
-      </View>
+      </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    backgroundColor: '#fff' 
-  },
-  contentContainer: {
+  container: {
     flex: 1,
-    backgroundColor: '#fff'
+    backgroundColor: '#fff',
   },
-  scrollView: {
-    flex: 1
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 30,
   },
   section: {
-    marginTop: 20
+    marginTop: 10,
   },
-  sectionHeader: {
-    fontSize: 13,
+  sectionLabel: {
+    fontSize: 12,
     fontWeight: '600',
-    color: '#6D6D72',
-    paddingHorizontal: 16,
-    paddingBottom: 8,
-    letterSpacing: -0.08
+    color: '#999',
+    marginBottom: 10,
+    marginLeft: 5,
+    letterSpacing: 0.5,
   },
-  settingGroup: {
+  menuCard: {
     backgroundColor: '#fff',
-    marginHorizontal: 16,
-    borderRadius: 10,
-    overflow: 'hidden'
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    overflow: 'hidden',
   },
-  settingItem: {
+  menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    minHeight: 44
+    paddingVertical: 16,
+    paddingHorizontal: 15,
   },
-  settingLeft: {
+  menuLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1
+    flex: 1,
   },
-  iconContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 6,
+  iconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12
+    marginRight: 12,
   },
-  settingText: {
-    fontSize: 17,
-    color: '#000',
-    letterSpacing: -0.41
+  menuTextContainer: {
+    flex: 1,
   },
-  divider: {
-    height: 0.5,
-    backgroundColor: '#C6C6C8',
-    marginLeft: 60
+  menuText: {
+    fontSize: 15,
+    color: '#333',
+    fontWeight: '500',
+    marginBottom: 2,
   },
-  versionText: {
-    fontSize: 17,
-    color: '#8E8E93',
-    letterSpacing: -0.41
-  }
+  menuDesc: {
+    fontSize: 12,
+    color: '#999',
+  },
+  menuDivider: {
+    height: 1,
+    backgroundColor: '#F0F0F0',
+  },
 });
